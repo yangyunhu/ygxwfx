@@ -54,6 +54,11 @@ export default new Router({
       component: DataCustom
     },
     {
+      path: '/sensing-basic/rules',
+      name: 'SensingBasicDataRules',
+      component: SensingBasicData
+    },
+    {
       path: '/sensing-basic/clean',
       name: 'SensingBasicData',
       component: SensingBasicData

@@ -1046,7 +1046,7 @@ export default {
   data() {
     return {
       mainTab: "clean",
-      rulesSubTab: "clean",
+      rulesSubTab: "attendance", // 默认显示第一个业务规则：无感考勤规则
       businessRuleConfigs: {},
       cleanSubTab: "missing",
       organizeSubTab: "mapping",
@@ -1361,6 +1361,10 @@ export default {
     mainTab(tab) {
       if (tab === "organize" && this.organizeSubTab === "merge" && !this.mergedRows.length) {
         this.runMerge();
+      }
+      // 切换到规则设置页签时，默认显示第一个业务规则
+      if (tab === "rules" && this.rulesSubTab === "clean") {
+        this.rulesSubTab = "attendance";
       }
     },
   },

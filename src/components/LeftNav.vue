@@ -40,6 +40,10 @@
             <i class="el-icon-folder-opened"></i>
             <span>无感基础数据管理</span>
           </template>
+          <el-menu-item index="/sensing-basic/rules">
+            <i class="el-icon-document"></i>
+            <span>规则设置</span>
+          </el-menu-item>
           <el-menu-item index="/sensing-basic/clean">
             <i class="el-icon-document"></i>
             <span>数据清洗</span>
