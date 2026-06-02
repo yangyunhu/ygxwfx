@@ -296,9 +296,9 @@ export const SENSING_ACCESS_SOURCES = [
     fields: [
       f("name", "姓名", "字符串", "员工姓名", { highlighted: true }),
       f("phone", "电话", "字符串", "联系电话", { highlighted: true }),
-      f("personId", "人员ID", "字符串", "人员唯一标识", { highlighted: true }),
+      f("idCard", "员工身份证号", "字符串", "员工身份证号码", { highlighted: true }),
       f("orgName", "所属组织机构", "字符串", "所属部门/机构", { highlighted: true }),
-      f("orgId", "组织机构ID", "字符串", "组织机构编码", { highlighted: true }),
+      f("mealTime", "时间", "日期时间", "用餐时间", { highlighted: true }),
       f("breakfast", "食堂早餐用餐记录", "日期时间", "早餐刷卡时间", { highlighted: true }),
       f("lunch", "食堂午餐用餐记录", "日期时间", "午餐刷卡时间", { highlighted: true }),
       f("dinner", "食堂晚餐用餐记录", "日期时间", "晚餐刷卡时间", { highlighted: true }),
@@ -316,9 +316,9 @@ export const SENSING_ACCESS_SOURCES = [
     fields: [
       f("name", "姓名", "字符串", "员工姓名", { highlighted: true }),
       f("phone", "电话", "字符串", "联系电话", { highlighted: true }),
-      f("personId", "人员ID", "字符串", "人员唯一标识", { highlighted: true }),
+      f("idCard", "员工身份证号", "字符串", "员工身份证号码", { highlighted: true }),
       f("orgName", "所属组织机构", "字符串", "所属部门/机构", { highlighted: true }),
-      f("orgId", "组织机构ID", "字符串", "组织机构编码", { highlighted: true }),
+      f("passTime", "时间", "日期时间", "通行时间", { highlighted: true }),
       f("entryTime", "闸机进入时间记录", "日期时间", "进场刷卡时间", { highlighted: true }),
       f("exitTime", "闸机出去时间记录", "日期时间", "出场刷卡时间", { highlighted: true }),
     ],

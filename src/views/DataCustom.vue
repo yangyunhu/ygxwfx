@@ -23,62 +23,15 @@
     <!-- 数据线下导入维护 -->
     <div v-show="activeTab === 'import'" class="tab-panel">
       <div class="sub-tabs">
+        <!-- 动态显示线下接入的数据源按钮 -->
         <div
-          class="sub-tab"
-          :class="{ active: dataType === 'gate' }"
-          @click="switchDataType('gate')"
-        >
-          闸机门禁
-        </div>
-        <div
-          class="sub-tab"
-          :class="{ active: dataType === 'canteen' }"
-          @click="switchDataType('canteen')"
-        >
-          食堂用餐记录
-        </div>
-        <!-- 新增6个线上接入数据源按钮 -->
-        <div
+          v-for="source in offlineSources"
+          :key="source.dataType"
           class="sub-tab sub-tab-button"
-          :class="{ active: dataType === 'travel' }"
-          @click="switchDataType('travel')"
+          :class="{ active: dataType === source.dataType }"
+          @click="switchDataType(source.dataType)"
         >
-          南网商旅通
-        </div>
-        <div
-          class="sub-tab sub-tab-button"
-          :class="{ active: dataType === 'learn' }"
-          @click="switchDataType('learn')"
-        >
-          南网智学
-        </div>
-        <div
-          class="sub-tab sub-tab-button"
-          :class="{ active: dataType === 'login' }"
-          @click="switchDataType('login')"
-        >
-          数认平台登录记录
-        </div>
-        <div
-          class="sub-tab sub-tab-button"
-          :class="{ active: dataType === 'leave' }"
-          @click="switchDataType('leave')"
-        >
-          人资休假台账
-        </div>
-        <div
-          class="sub-tab sub-tab-button"
-          :class="{ active: dataType === 'workticket' }"
-          @click="switchDataType('workticket')"
-        >
-          工作票
-        </div>
-        <div
-          class="sub-tab sub-tab-button"
-          :class="{ active: dataType === 'car' }"
-          @click="switchDataType('car')"
-        >
-          用车管理
+          {{ source.sourceName }}
         </div>
       </div>
 
@@ -94,9 +47,13 @@
               @keyup.enter="handleSearch"
             />
           </div>
-          <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
+          <el-button type="primary" icon="el-icon-search" @click="handleSearch"
+            >查询</el-button
+          >
           <el-button @click="handleReset">重置</el-button>
-          <el-button icon="el-icon-download" @click="downloadTemplate">下载模板</el-button>
+          <el-button icon="el-icon-download" @click="downloadTemplate"
+            >下载模板</el-button
+          >
           <el-upload
             class="import-upload"
             action="#"
@@ -107,7 +64,9 @@
           >
             <el-button type="primary" icon="el-icon-upload2">导入</el-button>
           </el-upload>
-          <el-button icon="el-icon-download" @click="exportData">导出</el-button>
+          <el-button icon="el-icon-download" @click="exportData"
+            >导出</el-button
+          >
         </div>
       </div>
 
@@ -132,7 +91,10 @@
               @node-click="handleOrgNodeClick"
             >
               <span class="custom-tree-node" slot-scope="{ node, data }">
-                <i :class="data.icon || 'el-icon-folder'" class="tree-node-icon"></i>
+                <i
+                  :class="data.icon || 'el-icon-folder'"
+                  class="tree-node-icon"
+                ></i>
                 <span class="tree-node-label">{{ node.label }}</span>
               </span>
             </el-tree>
@@ -151,36 +113,49 @@
               :style="{ width: importTableScrollWidth + 'px' }"
               :empty-text="'暂无数据'"
             >
-              <el-table-column type="index" label="序号" width="60" :index="indexMethod" />
-              <el-table-column prop="name" label="姓名" width="90" show-overflow-tooltip />
-              <el-table-column prop="phone" label="电话" width="120" show-overflow-tooltip />
-              <el-table-column prop="personId" label="人员ID" width="110" show-overflow-tooltip />
-              <el-table-column prop="orgName" label="所属组织机构" width="220" show-overflow-tooltip />
-              <el-table-column prop="orgId" label="组织机构ID" width="120" show-overflow-tooltip />
-              <template v-if="dataType === 'gate'">
-                <el-table-column prop="entryTime" label="闸机进入时间记录" width="180" show-overflow-tooltip />
-                <el-table-column prop="exitTime" label="闸机出去时间记录" width="180" show-overflow-tooltip />
-              </template>
-              <template v-else>
-                <el-table-column prop="breakfast" label="食堂早餐用餐记录" width="170" show-overflow-tooltip />
-                <el-table-column prop="lunch" label="食堂午餐用餐记录" width="170" show-overflow-tooltip />
-                <el-table-column prop="dinner" label="食堂晚餐用餐记录" width="170" show-overflow-tooltip />
-              </template>
-              <el-table-column prop="importTime" label="导入时间" width="170" show-overflow-tooltip />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="indexMethod"
+              />
+              <!-- 动态表格列 -->
+              <el-table-column
+                v-for="field in currentDataSourceFields"
+                :key="field.prop"
+                :prop="field.prop"
+                :label="field.label"
+                :width="field.width || 150"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="importTime"
+                label="导入时间"
+                width="170"
+                show-overflow-tooltip
+              />
             </el-table>
           </div>
 
           <div class="pagination">
             <div class="pagination-info">
               <span>共{{ listTotal }}条</span>
-              <select v-model.number="pageSize" class="page-size-select" @change="currentPage = 1">
+              <select
+                v-model.number="pageSize"
+                class="page-size-select"
+                @change="currentPage = 1"
+              >
                 <option :value="10">10条/页</option>
                 <option :value="25">25条/页</option>
                 <option :value="50">50条/页</option>
               </select>
             </div>
             <div class="pagination-nav">
-              <button class="page-btn" :disabled="currentPage === 1" @click="currentPage--">
+              <button
+                class="page-btn"
+                :disabled="currentPage === 1"
+                @click="currentPage--"
+              >
                 <i class="el-icon-arrow-left"></i>
               </button>
               <button
@@ -234,24 +209,46 @@
           </div>
           <div class="search-item">
             <label>数据源：</label>
-            <select v-model="modeSourceFilter" class="form-select" @change="modeCurrentPage = 1">
+            <select
+              v-model="modeSourceFilter"
+              class="form-select"
+              @change="modeCurrentPage = 1"
+            >
               <option value="">全部</option>
-              <option v-for="item in modeSourceOptions" :key="item.code" :value="item.code">
+              <option
+                v-for="item in modeSourceOptions"
+                :key="item.code"
+                :value="item.code"
+              >
                 {{ item.name }}
               </option>
             </select>
           </div>
           <div class="search-item">
             <label>接入模式：</label>
-            <select v-model="modeAccessFilter" class="form-select" @change="onModeFilterChange">
+            <select
+              v-model="modeAccessFilter"
+              class="form-select"
+              @change="onModeFilterChange"
+            >
               <option value="">全部</option>
               <option value="offline">线下接入</option>
               <option value="online">线上接入</option>
             </select>
           </div>
-          <el-button type="primary" icon="el-icon-search" @click="handleModeSearch">查询</el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-search"
+            @click="handleModeSearch"
+            >查询</el-button
+          >
           <el-button @click="handleModeReset">重置</el-button>
-          <el-button type="primary" icon="el-icon-plus" @click="openAddModeDialog">新增</el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-plus"
+            @click="openAddModeDialog"
+            >新增</el-button
+          >
         </div>
       </div>
 
@@ -259,7 +256,8 @@
         <div class="table-panel">
           <div class="mode-tip">
             <i class="el-icon-info"></i>
-            接入模式支持手动选择「线上接入」或「线下接入」；线上接入可配置南网数据中心或 API 接口。
+            接入模式支持手动选择「线上接入」或「线下接入」；线上接入可配置南网数据中心或
+            API 接口。
           </div>
           <div class="table-container table-hscroll-viewport">
             <el-table
@@ -272,8 +270,18 @@
               :style="{ width: modeTableScrollWidth + 'px' }"
               empty-text="暂无数据"
             >
-              <el-table-column type="index" label="序号" width="60" :index="modeIndexMethod" />
-              <el-table-column prop="sourceName" label="数据源名称" min-width="200" show-overflow-tooltip />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="modeIndexMethod"
+              />
+              <el-table-column
+                prop="sourceName"
+                label="数据源名称"
+                min-width="200"
+                show-overflow-tooltip
+              />
               <el-table-column label="接入模式" width="130" align="center">
                 <template slot-scope="{ row }">
                   <el-select
@@ -289,7 +297,9 @@
               </el-table-column>
               <el-table-column label="线上接入方式" width="120" align="center">
                 <template slot-scope="{ row }">
-                  <span v-if="row.accessMode === 'online'">{{ onlineTypeLabel(row.onlineType) }}</span>
+                  <span v-if="row.accessMode === 'online'">{{
+                    onlineTypeLabel(row.onlineType)
+                  }}</span>
                   <span v-else class="text-muted">—</span>
                 </template>
               </el-table-column>
@@ -298,22 +308,46 @@
                   <span class="mode-field-summary" :title="row.fieldSummary">
                     {{ row.fieldSummary }}
                   </span>
-                  <span class="mode-field-count">（{{ (row.fields || []).length }}项）</span>
+                  <span class="mode-field-count"
+                    >（{{ (row.fields || []).length }}项）</span
+                  >
                 </template>
               </el-table-column>
-              <el-table-column prop="applicableOrg" label="适用组织" min-width="160" show-overflow-tooltip />
+              <el-table-column
+                prop="applicableOrg"
+                label="适用组织"
+                min-width="160"
+                show-overflow-tooltip
+              />
               <el-table-column label="状态" width="90" align="center">
                 <template slot-scope="{ row }">
                   <el-tag :type="row.enabled ? 'success' : 'info'" size="small">
-                    {{ row.enabled ? '已启用' : '未启用' }}
+                    {{ row.enabled ? "已启用" : "未启用" }}
                   </el-tag>
                 </template>
               </el-table-column>
-              <el-table-column prop="updateTime" label="最后修改时间" width="160" show-overflow-tooltip />
-              <el-table-column prop="operator" label="操作人" width="90" show-overflow-tooltip />
-              <el-table-column label="操作" width="100" fixed="right" align="center">
+              <el-table-column
+                prop="updateTime"
+                label="最后修改时间"
+                width="160"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="operator"
+                label="操作人"
+                width="90"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                label="操作"
+                width="100"
+                fixed="right"
+                align="center"
+              >
                 <template slot-scope="{ row }">
-                  <el-button type="text" @click="openModeConfigDialog(row)">配置</el-button>
+                  <el-button type="text" @click="openModeConfigDialog(row)"
+                    >配置</el-button
+                  >
                 </template>
               </el-table-column>
             </el-table>
@@ -333,7 +367,11 @@
               </select>
             </div>
             <div class="pagination-nav">
-              <button class="page-btn" :disabled="modeCurrentPage === 1" @click="modeCurrentPage--">
+              <button
+                class="page-btn"
+                :disabled="modeCurrentPage === 1"
+                @click="modeCurrentPage--"
+              >
                 <i class="el-icon-arrow-left"></i>
               </button>
               <button
@@ -380,43 +418,84 @@
       :close-on-click-modal="false"
       @close="closeModeDialog"
     >
-      <el-form ref="modeFormRef" :model="modeForm" :rules="modeFormRules" label-width="120px" size="small">
-        <el-form-item v-if="modeDialogMode === 'add'" label="数据源名称" prop="sourceName">
-          <el-input v-model="modeForm.sourceName" placeholder="请输入数据源名称" maxlength="80" show-word-limit />
+      <el-form
+        ref="modeFormRef"
+        :model="modeForm"
+        :rules="modeFormRules"
+        label-width="120px"
+        size="small"
+      >
+        <el-form-item
+          v-if="modeDialogMode === 'add'"
+          label="数据源名称"
+          prop="sourceName"
+        >
+          <el-input
+            v-model="modeForm.sourceName"
+            placeholder="请输入数据源名称"
+            maxlength="80"
+            show-word-limit
+          />
         </el-form-item>
         <el-form-item v-else label="数据源名称">
           <span>{{ currentModeItem.sourceName }}</span>
         </el-form-item>
-        <el-form-item v-if="modeDialogMode === 'add'" label="数据源编码" prop="sourceCode">
-          <el-input v-model="modeForm.sourceCode" placeholder="留空则自动生成，如 custom_travel" />
+        <el-form-item
+          v-if="modeDialogMode === 'add'"
+          label="数据源编码"
+          prop="sourceCode"
+        >
+          <el-input
+            v-model="modeForm.sourceCode"
+            placeholder="留空则自动生成，如 custom_travel"
+          />
         </el-form-item>
         <el-form-item label="接入模式" prop="accessMode">
-          <el-radio-group v-model="modeForm.accessMode" @change="onModeFormAccessChange">
+          <el-radio-group
+            v-model="modeForm.accessMode"
+            @change="onModeFormAccessChange"
+          >
             <el-radio label="offline">线下接入</el-radio>
             <el-radio label="online">线上接入</el-radio>
           </el-radio-group>
         </el-form-item>
-        <el-form-item v-if="modeForm.accessMode === 'online'" label="线上接入方式" prop="onlineType">
+        <el-form-item
+          v-if="modeForm.accessMode === 'online'"
+          label="线上接入方式"
+          prop="onlineType"
+        >
           <el-radio-group v-model="modeForm.onlineType">
             <el-radio label="api">API接口</el-radio>
             <el-radio label="datacenter">南网数据中心</el-radio>
           </el-radio-group>
         </el-form-item>
         <el-form-item
-          v-if="modeForm.accessMode === 'online' && modeForm.onlineType === 'api'"
+          v-if="
+            modeForm.accessMode === 'online' && modeForm.onlineType === 'api'
+          "
           label="API地址"
           prop="apiUrl"
         >
           <el-input v-model="modeForm.apiUrl" placeholder="请输入接口地址" />
         </el-form-item>
         <el-form-item
-          v-if="modeForm.accessMode === 'online' && modeForm.onlineType === 'datacenter'"
+          v-if="
+            modeForm.accessMode === 'online' &&
+            modeForm.onlineType === 'datacenter'
+          "
           label="数据中心表"
           prop="datacenterTable"
         >
-          <el-input v-model="modeForm.datacenterTable" placeholder="请输入数据中心表名/主题" />
+          <el-input
+            v-model="modeForm.datacenterTable"
+            placeholder="请输入数据中心表名/主题"
+          />
         </el-form-item>
-        <el-form-item v-if="modeDialogMode === 'add'" label="数据字段" prop="fieldsList">
+        <el-form-item
+          v-if="modeDialogMode === 'add'"
+          label="数据字段"
+          prop="fieldsList"
+        >
           <el-select
             v-model="modeForm.fieldsList"
             multiple
@@ -428,24 +507,52 @@
           />
           <div class="form-hint">至少添加一个字段，如：姓名、人员ID</div>
         </el-form-item>
-        <el-form-item v-else :label="`数据字段（共 ${(currentModeItem.fields || []).length} 项）`">
+        <el-form-item
+          v-else
+          :label="`数据字段（共 ${(currentModeItem.fields || []).length} 项）`"
+        >
           <div class="field-tags field-tags--scroll">
-            <el-tag v-for="(f, idx) in currentModeItem.fields" :key="`${f}-${idx}`" size="mini" type="info">{{ f }}</el-tag>
+            <el-tag
+              v-for="(f, idx) in currentModeItem.fields"
+              :key="`${
+                typeof f === 'object' ? f.code || f.en || f.zh : f
+              }-${idx}`"
+              size="mini"
+              type="info"
+              >{{ typeof f === "object" ? f.zh || f.code || f.en : f }}</el-tag
+            >
           </div>
         </el-form-item>
         <el-form-item label="适用组织" prop="applicableOrg">
-          <el-input v-model="modeForm.applicableOrg" placeholder="适用组织机构范围" />
+          <el-input
+            v-model="modeForm.applicableOrg"
+            placeholder="适用组织机构范围"
+          />
         </el-form-item>
         <el-form-item label="启用状态">
-          <el-switch v-model="modeForm.enabled" active-text="启用" inactive-text="停用" />
+          <el-switch
+            v-model="modeForm.enabled"
+            active-text="启用"
+            inactive-text="停用"
+          />
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="modeForm.remark" type="textarea" :rows="2" placeholder="选填" />
+          <el-input
+            v-model="modeForm.remark"
+            type="textarea"
+            :rows="2"
+            placeholder="选填"
+          />
         </el-form-item>
       </el-form>
       <span slot="footer">
         <el-button @click="closeModeDialog">取消</el-button>
-        <el-button type="primary" :loading="modeSaveLoading" @click="saveModeConfig">保存</el-button>
+        <el-button
+          type="primary"
+          :loading="modeSaveLoading"
+          @click="saveModeConfig"
+          >保存</el-button
+        >
       </span>
     </el-dialog>
   </div>
@@ -455,8 +562,25 @@
 import { generateOrgTree, matchOrgFilter } from "../utils/orgTree";
 import { SENSING_ACCESS_SOURCES } from "../utils/dataAccessManagement";
 
-const GATE_HEADERS = ["姓名", "电话", "人员ID", "所属组织机构", "组织机构ID", "闸机进入时间记录", "闸机出去时间记录"];
-const CANTEEN_HEADERS = ["姓名", "电话", "人员ID", "所属组织机构", "组织机构ID", "食堂早餐用餐记录", "食堂午餐用餐记录", "食堂晚餐用餐记录"];
+const GATE_HEADERS = [
+  "姓名",
+  "电话",
+  "人员ID",
+  "所属组织机构",
+  "组织机构ID",
+  "闸机进入时间记录",
+  "闸机出去时间记录",
+];
+const CANTEEN_HEADERS = [
+  "姓名",
+  "电话",
+  "人员ID",
+  "所属组织机构",
+  "组织机构ID",
+  "食堂早餐用餐记录",
+  "食堂午餐用餐记录",
+  "食堂晚餐用餐记录",
+];
 const MODE_STORAGE_KEY = "ygxwfx_data_custom_modes";
 
 /** 模式维护列表顺序（与八类无感数据一致） */
@@ -472,12 +596,33 @@ const MODE_SOURCE_ORDER = [
 ];
 
 function buildFieldSummary(fields) {
-  return (fields || []).join("、");
+  if (!fields || fields.length === 0) return "—";
+
+  // 兼容对象数组和字符串数组
+  const fieldNames = fields.map((f) => {
+    if (typeof f === "object" && f !== null) {
+      return f.zh || f.code || f.en || "—";
+    }
+    return f;
+  });
+
+  // 如果字段太多，只显示前几个+总数
+  if (fieldNames.length > 10) {
+    return fieldNames.slice(0, 10).join("、") + " 等";
+  }
+
+  return fieldNames.join("、");
 }
 
 function fieldsFromSchema(sourceCode) {
   const src = SENSING_ACCESS_SOURCES.find((s) => s.code === sourceCode);
-  return src ? src.fields.map((f) => f.zh) : [];
+  return src
+    ? src.fields.map((f) => ({
+        code: f.en || f.code, // 使用 en 属性（英文代码）
+        zh: f.zh,
+        type: f.type,
+      }))
+    : [];
 }
 
 function isBuiltinModeSource(sourceCode) {
@@ -517,7 +662,9 @@ function syncBuiltinModeFields(item, template) {
 }
 
 function normalizeModeConfigs(stored, defaults) {
-  const defaultByCode = Object.fromEntries((defaults || []).map((d) => [d.sourceCode, d]));
+  const defaultByCode = Object.fromEntries(
+    (defaults || []).map((d) => [d.sourceCode, d]),
+  );
   const storedByCode = new Map((stored || []).map((s) => [s.sourceCode, s]));
 
   const list = (defaults || []).map((def) => {
@@ -535,7 +682,7 @@ function normalizeModeConfigs(stored, defaults) {
           ...s,
           fieldSummary: s.fieldSummary || buildFieldSummary(fields),
           fieldCount: fields.length,
-        })
+        }),
       );
     }
   });
@@ -544,26 +691,21 @@ function normalizeModeConfigs(stored, defaults) {
 }
 
 function loadModeConfigsFromStorage(defaultList) {
-  try {
-    const raw = localStorage.getItem(MODE_STORAGE_KEY);
-    if (raw) {
-      const parsed = JSON.parse(raw);
-      if (Array.isArray(parsed) && parsed.length) {
-        const normalized = normalizeModeConfigs(parsed, defaultList);
-        saveModeConfigsToStorage(normalized);
-        return normalized;
-      }
-    }
-  } catch (e) {
-    /* ignore */
-  }
+  const STORAGE_KEY_WITH_VERSION = MODE_STORAGE_KEY + "_v2"; // 增加版本号强制更新
+
+  // 强制清除旧缓存,避免字段重复和数据格式错误问题
+  localStorage.removeItem(MODE_STORAGE_KEY);
+  localStorage.removeItem(STORAGE_KEY_WITH_VERSION);
+
+  // 直接使用最新的默认配置
   const initial = defaultList;
-  localStorage.setItem(MODE_STORAGE_KEY, JSON.stringify(initial));
+  localStorage.setItem(STORAGE_KEY_WITH_VERSION, JSON.stringify(initial));
   return initial;
 }
 
 function saveModeConfigsToStorage(list) {
-  localStorage.setItem(MODE_STORAGE_KEY, JSON.stringify(list));
+  const STORAGE_KEY_WITH_VERSION = MODE_STORAGE_KEY + "_v2";
+  localStorage.setItem(STORAGE_KEY_WITH_VERSION, JSON.stringify(list));
 }
 
 function createEmptyModeForm() {
@@ -609,10 +751,24 @@ export default {
       currentModeItem: {},
       modeForm: createEmptyModeForm(),
       modeFormRules: {
-        sourceName: [{ required: true, message: "请输入数据源名称", trigger: "blur" }],
-        accessMode: [{ required: true, message: "请选择接入模式", trigger: "change" }],
-        fieldsList: [{ type: "array", required: true, min: 1, message: "请至少添加一个数据字段", trigger: "change" }],
-        applicableOrg: [{ required: true, message: "请填写适用组织", trigger: "blur" }],
+        sourceName: [
+          { required: true, message: "请输入数据源名称", trigger: "blur" },
+        ],
+        accessMode: [
+          { required: true, message: "请选择接入模式", trigger: "change" },
+        ],
+        fieldsList: [
+          {
+            type: "array",
+            required: true,
+            min: 1,
+            message: "请至少添加一个数据字段",
+            trigger: "change",
+          },
+        ],
+        applicableOrg: [
+          { required: true, message: "请填写适用组织", trigger: "blur" },
+        ],
       },
       treeProps: {
         label: "name",
@@ -631,32 +787,213 @@ export default {
       return 60 + 200 + 130 + 130 + 420 + 160 + 90 + 160 + 100;
     },
     searchPlaceholder() {
-      return this.dataType === "gate"
-        ? "搜索姓名、电话、人员ID"
-        : "搜索姓名、电话、人员ID";
+      // 根据当前数据源显示不同的搜索提示
+      const isOfflineSource = this.dataType.startsWith("offline_");
+      if (isOfflineSource) {
+        const sourceCode = this.dataType.replace("offline_", "");
+        const modeConfig = this.modeConfigs.find(
+          (m) => m.sourceCode === sourceCode,
+        );
+        if (modeConfig) {
+          return `搜索${modeConfig.sourceName}的姓名、电话、人员ID`;
+        }
+      }
+      return "搜索姓名、电话、人员ID";
     },
     offlineSources() {
-      // 从localStorage获取线下接入的数据源配置
-      const orgId = localStorage.getItem('current_selected_org_id');
-      if (!orgId) return [];
-      
-      const configStr = localStorage.getItem(`org_config_${orgId}`);
-      if (!configStr) return [];
-      
-      try {
-        const configs = JSON.parse(configStr);
-        // 过滤出线下接入的数据源,并转换为按钮格式
-        return configs
-          .filter(c => c.sourceType === 'offline')
-          .map(c => ({
-            id: c.id,
-            sourceName: c.sourceName,
-            dataType: `offline_${c.id}` // 使用唯一标识作为dataType
-          }));
-      } catch (e) {
-        console.error('解析线下数据源配置失败:', e);
-        return [];
+      // 直接使用响应式的modeConfigs数据,而不是从localStorage读取
+      // 这样当modeConfigs变化时,offlineSources会自动更新
+      if (!this.modeConfigs || this.modeConfigs.length === 0) return [];
+
+      console.log("=== offlineSources DEBUG ===");
+      console.log("modeConfigs:", this.modeConfigs);
+
+      // 过滤出接入模式为"线下接入"且已启用的数据源
+      const offlineModes = this.modeConfigs.filter(
+        (m) => m.accessMode === "offline" && m.enabled,
+      );
+
+      // 转换为按钮所需的格式
+      return offlineModes.map((m) => ({
+        id: m.id,
+        sourceCode: m.sourceCode,
+        sourceName: m.sourceName,
+        dataType: `offline_${m.sourceCode}`, // 使用sourceCode作为唯一标识
+      }));
+    },
+    // 当前数据源的字段配置
+    currentDataSourceFields() {
+      // 判断是否是线下数据源
+      const isOfflineSource = this.dataType.startsWith("offline_");
+
+      if (isOfflineSource) {
+        // 从 sourceCode 提取实际编码 (去掉 'offline_' 前缀)
+        const sourceCode = this.dataType.replace("offline_", "");
+
+        // 从 modeConfigs 中查找对应的配置
+        const modeConfig = this.modeConfigs.find(
+          (m) => m.sourceCode === sourceCode,
+        );
+
+        if (modeConfig && modeConfig.fields && modeConfig.fields.length > 0) {
+          // 兼容两种格式：字符串数组和对象数组
+          // 使用 Map 去重，避免重复的字段
+          const fieldMap = new Map();
+
+          modeConfig.fields.forEach((f, index) => {
+            let prop, label;
+
+            // 如果是对象格式
+            if (typeof f === "object" && f !== null) {
+              prop = f.code || f.en || f.zh;
+              label = f.zh || f.code || f.en;
+            } else if (typeof f === "string") {
+              // 如果是字符串格式(只有中文名称)
+              prop = f;
+              label = f;
+            } else {
+              return; // 跳过无效字段
+            }
+
+            // 如果 prop 已存在，跳过（去重）
+            if (fieldMap.has(prop)) {
+              return;
+            }
+
+            // 计算宽度
+            const code = f.code || f.en || "";
+            const width =
+              code === "name" || label === "姓名"
+                ? 90
+                : code === "phone" || label === "电话"
+                ? 120
+                : code === "personId" ||
+                  label === "人员ID" ||
+                  label === "用户ID"
+                ? 110
+                : code === "orgName" ||
+                  label === "所属组织机构" ||
+                  label === "单位名称"
+                ? 220
+                : code === "orgId" ||
+                  label === "组织机构ID" ||
+                  label === "单位ID"
+                ? 120
+                : 150;
+
+            fieldMap.set(prop, { prop, label, width });
+          });
+
+          const result = Array.from(fieldMap.values());
+          return result;
+        }
       }
+
+      // 默认:闸机门禁(兼容旧版dataType)
+      if (this.dataType === "gate") {
+        return [
+          { prop: "name", label: "姓名", width: 90 },
+          { prop: "phone", label: "电话", width: 120 },
+          { prop: "idCard", label: "员工身份证号", width: 180 },
+          { prop: "orgName", label: "所属组织机构", width: 220 },
+          { prop: "passTime", label: "时间", width: 170 },
+          { prop: "entryTime", label: "闸机进入时间记录", width: 180 },
+          { prop: "exitTime", label: "闸机出去时间记录", width: 180 },
+        ];
+      }
+
+      // 默认:食堂用餐记录(兼容旧版dataType)
+      if (this.dataType === "canteen") {
+        return [
+          { prop: "name", label: "姓名", width: 90 },
+          { prop: "phone", label: "电话", width: 120 },
+          { prop: "idCard", label: "员工身份证号", width: 180 },
+          { prop: "orgName", label: "所属组织机构", width: 220 },
+          { prop: "mealTime", label: "时间", width: 170 },
+          { prop: "breakfast", label: "食堂早餐用餐记录", width: 170 },
+          { prop: "lunch", label: "食堂午餐用餐记录", width: 170 },
+          { prop: "dinner", label: "食堂晚餐用餐记录", width: 170 },
+        ];
+      }
+
+      console.log("No fields found, returning empty array");
+      return [];
+    },
+    // 获取当前数据源的基础字段映射(用于示例数据)
+    currentBaseFieldMapping() {
+      const isOfflineSource = this.dataType.startsWith("offline_");
+      if (!isOfflineSource) return {};
+
+      const sourceCode = this.dataType.replace("offline_", "");
+      const modeConfig = this.modeConfigs.find(
+        (m) => m.sourceCode === sourceCode,
+      );
+
+      if (!modeConfig || !modeConfig.fields) return {};
+
+      // 查找 name, phone, personId, orgName, orgId 对应的实际字段
+      const mapping = {};
+      modeConfig.fields.forEach((f) => {
+        // 兼容对象和字符串格式
+        if (typeof f === "string") return; // 跳过字符串格式的字段
+        if (!f || !f.zh) return; // 跳过无效字段
+
+        const code = (f.code || f.en || "").toLowerCase();
+        const zh = f.zh || "";
+        const actualCode = f.code || f.en; // 实际使用的代码
+
+        // 映射姓名字段
+        if (
+          code.includes("name") ||
+          zh.includes("姓名") ||
+          zh.includes("人员名称") ||
+          zh.includes("用户") ||
+          zh.includes("制单人")
+        ) {
+          if (!mapping.name) mapping.name = actualCode;
+        }
+        // 映射电话字段
+        if (
+          code.includes("phone") ||
+          code.includes("mobile") ||
+          zh.includes("电话") ||
+          zh.includes("手机")
+        ) {
+          if (!mapping.phone) mapping.phone = actualCode;
+        }
+        // 映射人员ID字段
+        if (
+          code.includes("user_id") ||
+          code.includes("person_id") ||
+          code.includes("traveler_id") ||
+          zh.includes("人员ID") ||
+          zh.includes("用户ID") ||
+          zh.includes("制单人ID")
+        ) {
+          if (!mapping.personId) mapping.personId = actualCode;
+        }
+        // 映射组织名称字段
+        if (
+          zh.includes("单位名称") ||
+          zh.includes("部门名称") ||
+          zh.includes("组织名称")
+        ) {
+          if (!mapping.orgName) mapping.orgName = actualCode;
+        }
+        // 映射组织ID字段
+        if (
+          code.includes("org_id") ||
+          code.includes("unit_id") ||
+          code.includes("dept_id") ||
+          zh.includes("单位ID") ||
+          zh.includes("部门ID") ||
+          zh.includes("组织ID")
+        ) {
+          if (!mapping.orgId) mapping.orgId = actualCode;
+        }
+      });
+
+      return mapping;
     },
     filteredOrgTree() {
       const keyword = this.orgTreeKeyword.trim();
@@ -679,29 +1016,55 @@ export default {
     },
     activeListData() {
       // 判断是否是线下数据源
-      const isOfflineSource = this.dataType.startsWith('offline_');
-      
+      const isOfflineSource = this.dataType.startsWith("offline_");
+
       let source;
       if (isOfflineSource) {
-        // 对于线下数据源,使用gateData作为示例数据(实际应该从服务器或localStorage获取)
-        source = this.gateData;
+        // 从 sourceCode 提取实际编码
+        const sourceCode = this.dataType.replace("offline_", "");
+
+        // 根据 sourceCode 返回对应的数据
+        if (sourceCode === "offline_gate") {
+          source = this.gateData;
+        } else if (sourceCode === "offline_canteen") {
+          source = this.canteenData;
+        } else {
+          // 其他6个数据源,动态生成示例数据
+          source = this.generateOtherDataSourceMockData(sourceCode);
+        }
       } else {
+        // 兼容旧的硬编码数据源
         source = this.dataType === "gate" ? this.gateData : this.canteenData;
       }
-      
+
       let data = source;
 
+      // 获取字段映射,用于搜索
+      const mapping = this.currentBaseFieldMapping;
+
       if (this.selectedOrg) {
-        data = data.filter((item) => matchOrgFilter(item.orgName, this.selectedOrg));
+        data = data.filter((item) => {
+          const orgValue = mapping.orgName
+            ? item[mapping.orgName]
+            : item.orgName;
+          return matchOrgFilter(orgValue, this.selectedOrg);
+        });
       }
       if (this.searchKeyword.trim()) {
         const kw = this.searchKeyword.trim();
-        data = data.filter(
-          (item) =>
-            item.name.includes(kw) ||
-            item.phone.includes(kw) ||
-            String(item.personId).includes(kw)
-        );
+        data = data.filter((item) => {
+          const nameValue = mapping.name ? item[mapping.name] : item.name;
+          const phoneValue = mapping.phone ? item[mapping.phone] : item.phone;
+          const personIdValue = mapping.personId
+            ? item[mapping.personId]
+            : item.personId;
+
+          return (
+            (nameValue && String(nameValue).includes(kw)) ||
+            (phoneValue && String(phoneValue).includes(kw)) ||
+            (personIdValue && String(personIdValue).includes(kw))
+          );
+        });
       }
       return data;
     },
@@ -755,7 +1118,7 @@ export default {
         const kw = this.modeSearchKeyword.trim();
         data = data.filter(
           (item) =>
-            item.sourceName.includes(kw) || item.fieldSummary.includes(kw)
+            item.sourceName.includes(kw) || item.fieldSummary.includes(kw),
         );
       }
       return data;
@@ -789,7 +1152,10 @@ export default {
     modeShowEllipsis() {
       return (
         this.modeTotalPages > 7 &&
-        !(this.modeCurrentPage <= 4 || this.modeCurrentPage >= this.modeTotalPages - 3)
+        !(
+          this.modeCurrentPage <= 4 ||
+          this.modeCurrentPage >= this.modeTotalPages - 3
+        )
       );
     },
     modeDialogTitle() {
@@ -802,6 +1168,14 @@ export default {
     this.gateData = this.generateGateMockData();
     this.canteenData = this.generateCanteenMockData();
     this.modeConfigs = loadModeConfigsFromStorage(this.generateModeConfigs());
+
+    // 默认选中第一个线下接入的数据源
+    this.$nextTick(() => {
+      if (this.offlineSources && this.offlineSources.length > 0) {
+        this.dataType = this.offlineSources[0].dataType;
+      }
+    });
+
     this.$nextTick(() => this.layoutImportTable());
   },
   watch: {
@@ -873,7 +1247,11 @@ export default {
       return (this.modeCurrentPage - 1) * this.modePageSize + index + 1;
     },
     onlineTypeLabel(type) {
-      return type === "api" ? "API接口" : type === "datacenter" ? "南网数据中心" : "—";
+      return type === "api"
+        ? "API接口"
+        : type === "datacenter"
+        ? "南网数据中心"
+        : "—";
     },
     applyAccessMode(target, accessMode) {
       target.accessMode = accessMode;
@@ -884,7 +1262,8 @@ export default {
       } else {
         target.onlineType = target.onlineType || "datacenter";
         if (target.onlineType === "datacenter" && !target.datacenterTable) {
-          target.datacenterTable = ONLINE_DATACENTER_BY_CODE[target.sourceCode] || "";
+          target.datacenterTable =
+            ONLINE_DATACENTER_BY_CODE[target.sourceCode] || "";
         }
       }
       target.updateTime = this.formatDateTime();
@@ -896,7 +1275,9 @@ export default {
       if (!target) return;
       this.applyAccessMode(target, accessMode);
       saveModeConfigsToStorage(this.modeConfigs);
-      this.$message.success(`已切换为${accessMode === "online" ? "线上接入" : "线下接入"}`);
+      this.$message.success(
+        `已切换为${accessMode === "online" ? "线上接入" : "线下接入"}`,
+      );
     },
     openModeConfigDialog(row) {
       this.modeDialogMode = "edit";
@@ -932,7 +1313,12 @@ export default {
       this.$nextTick(() => {
         document.body.classList.remove("el-popup-parent--hidden");
         const modal = document.querySelector(".v-modal");
-        if (modal && !document.querySelector(".el-dialog__wrapper:not([style*='display: none'])")) {
+        if (
+          modal &&
+          !document.querySelector(
+            ".el-dialog__wrapper:not([style*='display: none'])",
+          )
+        ) {
           modal.parentNode && modal.parentNode.removeChild(modal);
         }
       });
@@ -952,11 +1338,17 @@ export default {
           this.$message.warning("请选择线上接入方式");
           return false;
         }
-        if (this.modeForm.onlineType === "api" && !this.modeForm.apiUrl.trim()) {
+        if (
+          this.modeForm.onlineType === "api" &&
+          !this.modeForm.apiUrl.trim()
+        ) {
           this.$message.warning("请填写 API 接口地址");
           return false;
         }
-        if (this.modeForm.onlineType === "datacenter" && !this.modeForm.datacenterTable.trim()) {
+        if (
+          this.modeForm.onlineType === "datacenter" &&
+          !this.modeForm.datacenterTable.trim()
+        ) {
           this.$message.warning("请填写数据中心表名");
           return false;
         }
@@ -991,10 +1383,18 @@ export default {
               fieldSummary: buildFieldSummary(fields),
               fieldCount: fields.length,
               accessMode: this.modeForm.accessMode,
-              onlineType: this.modeForm.accessMode === "online" ? this.modeForm.onlineType : "",
-              apiUrl: this.modeForm.accessMode === "online" && this.modeForm.onlineType === "api" ? this.modeForm.apiUrl.trim() : "",
+              onlineType:
+                this.modeForm.accessMode === "online"
+                  ? this.modeForm.onlineType
+                  : "",
+              apiUrl:
+                this.modeForm.accessMode === "online" &&
+                this.modeForm.onlineType === "api"
+                  ? this.modeForm.apiUrl.trim()
+                  : "",
               datacenterTable:
-                this.modeForm.accessMode === "online" && this.modeForm.onlineType === "datacenter"
+                this.modeForm.accessMode === "online" &&
+                this.modeForm.onlineType === "datacenter"
                   ? this.modeForm.datacenterTable.trim()
                   : "",
               applicableOrg: this.modeForm.applicableOrg.trim(),
@@ -1009,7 +1409,9 @@ export default {
             this.modeCurrentPage = 1;
             this.$message.success("新增成功");
           } else {
-            const target = this.modeConfigs.find((item) => item.id === this.currentModeItem.id);
+            const target = this.modeConfigs.find(
+              (item) => item.id === this.currentModeItem.id,
+            );
             if (target) {
               this.applyAccessMode(target, this.modeForm.accessMode);
               if (target.accessMode === "online") {
@@ -1040,7 +1442,9 @@ export default {
     generateModeConfigs() {
       const orgDefault = "云南电网有限责任公司";
       const now = "2026-05-27 16:00:00";
-      const byCode = Object.fromEntries(SENSING_ACCESS_SOURCES.map((s) => [s.code, s]));
+      const byCode = Object.fromEntries(
+        SENSING_ACCESS_SOURCES.map((s) => [s.code, s]),
+      );
 
       return MODE_SOURCE_ORDER.map((code, index) => {
         const src = byCode[code];
@@ -1095,10 +1499,23 @@ export default {
       this.jumpPage = "";
     },
     downloadTemplate() {
-      const headers = this.dataType === "gate" ? GATE_HEADERS : CANTEEN_HEADERS;
-      const fileName =
-        this.dataType === "gate" ? "闸机门禁数据导入模板.csv" : "食堂用餐数据导入模板.csv";
-      this.downloadCsv(headers, [], fileName);
+      // 使用动态字段配置生成表头
+      const headers = this.currentDataSourceFields.map((f) => f.label);
+
+      // 根据当前数据源生成文件名
+      const isOfflineSource = this.dataType.startsWith("offline_");
+      let sourceName = "无感数据";
+      if (isOfflineSource) {
+        const sourceCode = this.dataType.replace("offline_", "");
+        const modeConfig = this.modeConfigs.find(
+          (m) => m.sourceCode === sourceCode,
+        );
+        if (modeConfig) {
+          sourceName = modeConfig.sourceName;
+        }
+      }
+
+      this.downloadCsv(headers, [], `${sourceName}导入模板.csv`);
       this.$message.success("模板下载成功");
     },
     exportData() {
@@ -1107,37 +1524,32 @@ export default {
         this.$message.warning("没有数据可导出");
         return;
       }
-      const headers =
-        this.dataType === "gate"
-          ? [...GATE_HEADERS, "导入时间"]
-          : [...CANTEEN_HEADERS, "导入时间"];
+
+      // 使用动态字段配置生成表头
+      const headers = this.currentDataSourceFields.map((f) => f.label);
+      headers.push("导入时间");
+
       const rows = data.map((item) => {
-        if (this.dataType === "gate") {
-          return [
-            item.name,
-            item.phone,
-            item.personId,
-            item.orgName,
-            item.orgId,
-            item.entryTime,
-            item.exitTime,
-            item.importTime,
-          ];
-        }
-        return [
-          item.name,
-          item.phone,
-          item.personId,
-          item.orgName,
-          item.orgId,
-          item.breakfast,
-          item.lunch,
-          item.dinner,
-          item.importTime,
-        ];
+        // 根据当前字段配置提取数据
+        const row = this.currentDataSourceFields.map((f) => item[f.prop] || "");
+        row.push(item.importTime);
+        return row;
       });
-      const prefix = this.dataType === "gate" ? "闸机门禁数据" : "食堂用餐数据";
-      this.downloadCsv(headers, rows, `${prefix}_${this.formatDate()}.csv`);
+
+      // 根据当前数据源生成文件名
+      const isOfflineSource = this.dataType.startsWith("offline_");
+      let sourceName = "无感数据";
+      if (isOfflineSource) {
+        const sourceCode = this.dataType.replace("offline_", "");
+        const modeConfig = this.modeConfigs.find(
+          (m) => m.sourceCode === sourceCode,
+        );
+        if (modeConfig) {
+          sourceName = modeConfig.sourceName;
+        }
+      }
+
+      this.downloadCsv(headers, rows, `${sourceName}_${this.formatDate()}.csv`);
       this.$message.success("导出成功");
     },
     handleImportFile(file) {
@@ -1158,7 +1570,9 @@ export default {
             this.dataType === "gate" ? GATE_HEADERS : CANTEEN_HEADERS;
           const valid = expected.every((h, i) => headers[i] === h);
           if (!valid) {
-            this.$message.error("导入文件表头与当前数据类型模板不一致，请使用对应模板");
+            this.$message.error(
+              "导入文件表头与当前数据类型模板不一致，请使用对应模板",
+            );
             return;
           }
 
@@ -1260,17 +1674,31 @@ export default {
     formatDateTime() {
       const d = new Date();
       const pad = (n) => String(n).padStart(2, "0");
-      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
+      return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(
+        d.getDate(),
+      )} ${pad(d.getHours())}:${pad(d.getMinutes())}`;
     },
     generateGateMockData() {
       const orgs = [
-        { name: "办公室（党委办公室、董事会办公室、总经理办公室）", id: "ORG-108" },
+        {
+          name: "办公室（党委办公室、董事会办公室、总经理办公室）",
+          id: "ORG-108",
+        },
         { name: "人力资源部", id: "ORG-110" },
         { name: "数字化部", id: "ORG-115" },
         { name: "生产技术部", id: "ORG-119" },
         { name: "市场营销部（客户服务部）", id: "ORG-116" },
       ];
-      const names = ["张伟", "李娜", "王强", "刘洋", "陈静", "赵敏", "孙浩", "周婷"];
+      const names = [
+        "张伟",
+        "李娜",
+        "王强",
+        "刘洋",
+        "陈静",
+        "赵敏",
+        "孙浩",
+        "周婷",
+      ];
       const list = [];
       for (let i = 0; i < 48; i++) {
         const org = orgs[i % orgs.length];
@@ -1279,12 +1707,24 @@ export default {
           id: i + 1,
           name: names[i % names.length],
           phone: `138${String(10000000 + i).slice(-8)}`,
-          personId: `P${String(10001 + i)}`,
+          idCard: `530${String(i % 10)}${String(1000000000 + i).slice(-10)}`,
           orgName: org.name,
-          orgId: org.id,
-          entryTime: `2026-05-${day} 08:${String((i % 50) + 10).padStart(2, "0")}:00`,
-          exitTime: `2026-05-${day} 18:${String((i % 50) + 10).padStart(2, "0")}:00`,
-          importTime: `2026-05-27 ${String(9 + (i % 8)).padStart(2, "0")}:30:00`,
+          passTime: `2026-05-${day} 08:${String((i % 50) + 10).padStart(
+            2,
+            "0",
+          )}:00`,
+          entryTime: `2026-05-${day} 08:${String((i % 50) + 10).padStart(
+            2,
+            "0",
+          )}:00`,
+          exitTime: `2026-05-${day} 18:${String((i % 50) + 10).padStart(
+            2,
+            "0",
+          )}:00`,
+          importTime: `2026-05-27 ${String(9 + (i % 8)).padStart(
+            2,
+            "0",
+          )}:30:00`,
         });
       }
       return list;
@@ -1300,7 +1740,10 @@ export default {
     },
     generateCanteenMockData() {
       const orgs = [
-        { name: "办公室（党委办公室、董事会办公室、总经理办公室）", id: "ORG-108" },
+        {
+          name: "办公室（党委办公室、董事会办公室、总经理办公室）",
+          id: "ORG-108",
+        },
         { name: "人力资源部", id: "ORG-110" },
         { name: "数字化部", id: "ORG-115" },
         { name: "生产技术部", id: "ORG-119" },
@@ -1309,20 +1752,32 @@ export default {
       const list = [];
       for (let i = 0; i < 42; i++) {
         const org = orgs[i % orgs.length];
+        const day = String((i % 28) + 1).padStart(2, "0");
         list.push({
           id: i + 1,
           name: names[i % names.length],
           phone: `139${String(20000000 + i).slice(-8)}`,
-          personId: `C${String(20001 + i)}`,
+          idCard: `530${String(i % 10)}${String(1000000000 + i).slice(-10)}`,
           orgName: org.name,
-          orgId: org.id,
+          mealTime: `2026-05-${day} 12:${String((i % 50) + 10).padStart(
+            2,
+            "0",
+          )}:00`,
           breakfast: this.formatMealTime(i, 0, 7),
           lunch: this.formatMealTime(i, 1, 12),
           dinner: this.formatMealTime(i, 2, 18),
-          importTime: `2026-05-26 ${String(10 + (i % 6)).padStart(2, "0")}:15:00`,
+          importTime: `2026-05-26 ${String(10 + (i % 6)).padStart(
+            2,
+            "0",
+          )}:15:00`,
         });
       }
       return list;
+    },
+    // 为其他6个数据源生成示例数据(暂时清空)
+    generateOtherDataSourceMockData(sourceCode) {
+      // 返回空数组,不生成示例数据
+      return [];
     },
   },
 };
