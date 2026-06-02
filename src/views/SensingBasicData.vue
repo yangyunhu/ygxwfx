@@ -50,7 +50,10 @@
               <span class="workflow-step-name">{{ item.title }}</span>
               <span class="workflow-step-desc">{{ item.desc }}</span>
             </div>
-            <i v-if="item.step < 4" class="el-icon-arrow-right workflow-arrow"></i>
+            <i
+              v-if="item.step < 4"
+              class="el-icon-arrow-right workflow-arrow"
+            ></i>
           </div>
         </div>
       </div>
@@ -75,287 +78,347 @@
       </div>
 
       <div v-show="rulesSubTab === 'clean'" class="rules-sub-panel">
-      <div class="func-desc">
-        <p>按八类无感数据源配置缺失值、重复、错误三类清洗规则；清洗后进入「数据清洗」页人工处理，再经「数据整理」映射为标准宽表。</p>
-      </div>
-      <div class="clean-rules-panel">
-        <div class="rules-layout">
-          <aside class="rules-source-aside">
-            <div class="aside-title">数据源</div>
-            <div
-              v-for="item in cleanRules"
-              :key="item.sourceCode"
-              class="rules-source-item"
-              :class="{ active: activeRuleSource === item.sourceCode }"
-              @click="selectRuleSource(item.sourceCode)"
-            >
-              <span class="rules-source-name">{{ item.sourceName }}</span>
-              <el-tag v-if="!item.enabled" size="mini" type="info">停用</el-tag>
-            </div>
-          </aside>
-          <main v-if="activeCleanRule" class="rules-editor">
-            <div class="rules-editor-head">
-              <h3>{{ activeCleanRule.sourceName }}</h3>
-              <div class="rules-meta">
-                <span v-if="activeCleanRule.updateTime">最近更新：{{ activeCleanRule.updateTime }}</span>
-                <span v-if="activeCleanRule.operator">操作人：{{ activeCleanRule.operator }}</span>
-              </div>
-            </div>
-            <el-form label-width="110px" size="small" class="rules-form">
-              <el-form-item label="规则总开关">
-                <el-switch v-model="activeCleanRule.enabled" active-text="启用" inactive-text="停用" />
-              </el-form-item>
-
-              <el-divider content-position="left">缺失值规则</el-divider>
-              <el-form-item label="启用缺失检测">
-                <el-switch v-model="activeCleanRule.missing.enabled" />
-              </el-form-item>
-              <el-form-item label="必填字段">
-                <el-select
-                  v-model="ruleMissingSelectedKeys"
-                  multiple
-                  filterable
-                  :filter-method="filterFieldOption"
-                  placeholder="搜索并选择必填字段（源表全字段）"
-                  style="width: 100%"
-                  :disabled="!activeCleanRule.missing.enabled"
-                >
-                  <el-option
-                    v-for="opt in ruleFieldOptions"
-                    :key="opt.key"
-                    :label="fieldOptionSearchLabel(opt)"
-                    :value="opt.key"
-                  >
-                    <span class="field-opt-label">{{ opt.label }}</span>
-                    <span v-if="opt.en" class="field-opt-en">{{ opt.en }}</span>
-                  </el-option>
-                </el-select>
-                <div
-                  v-if="activeCleanRule.missing.enabled"
-                  class="selected-fields-panel"
-                >
-                  <div class="selected-fields-head">
-                    <span class="selected-fields-title">已选必填字段</span>
-                    <span class="selected-fields-count">{{ ruleMissingSelectedFields.length }} / {{ ruleSchemaFieldCount }}</span>
-                  </div>
-                  <div v-if="ruleMissingSelectedFields.length" class="selected-fields-tags">
-                    <el-tag
-                      v-for="item in ruleMissingSelectedFields"
-                      :key="item.key"
-                      size="small"
-                      type="primary"
-                      effect="plain"
-                      class="selected-field-tag"
-                      closable
-                      @close="removeMissingField(item.key)"
-                    >
-                      {{ fieldOptionSearchLabel(item) }}
-                    </el-tag>
-                  </div>
-                  <div v-else class="selected-fields-empty">暂未选择，请在上方的下拉框中搜索并添加</div>
-                </div>
-                <p class="form-tip">
-                  源表共 {{ ruleSchemaFieldCount }} 个字段可选；下方标签展示当前全部已选项。
-                </p>
-              </el-form-item>
-
-              <el-divider content-position="left">重复数据规则</el-divider>
-              <el-form-item label="启用重复检测">
-                <el-switch v-model="activeCleanRule.duplicate.enabled" />
-              </el-form-item>
-              <el-form-item label="唯一性字段">
-                <el-select
-                  v-model="ruleDuplicateSelectedKeys"
-                  multiple
-                  filterable
-                  :filter-method="filterFieldOption"
-                  placeholder="搜索并选择唯一性组合字段"
-                  style="width: 100%"
-                  :disabled="!activeCleanRule.duplicate.enabled"
-                >
-                  <el-option
-                    v-for="opt in ruleDuplicateOptions"
-                    :key="opt.key"
-                    :label="fieldOptionSearchLabel(opt)"
-                    :value="opt.key"
-                  >
-                    <span class="field-opt-label">{{ opt.label }}</span>
-                    <span v-if="opt.en" class="field-opt-en">{{ opt.en }}</span>
-                  </el-option>
-                </el-select>
-                <div
-                  v-if="activeCleanRule.duplicate.enabled"
-                  class="selected-fields-panel"
-                >
-                  <div class="selected-fields-head">
-                    <span class="selected-fields-title">已选唯一性字段</span>
-                    <span class="selected-fields-count">{{ ruleDuplicateSelectedFields.length }} 项</span>
-                  </div>
-                  <div v-if="ruleDuplicateSelectedFields.length" class="selected-fields-tags">
-                    <el-tag
-                      v-for="item in ruleDuplicateSelectedFields"
-                      :key="item.key"
-                      size="small"
-                      type="primary"
-                      effect="plain"
-                      class="selected-field-tag"
-                      closable
-                      @close="removeDuplicateField(item.key)"
-                    >
-                      {{ fieldOptionSearchLabel(item) }}
-                    </el-tag>
-                  </div>
-                  <div v-else class="selected-fields-empty">暂未选择，请在上方的下拉框中搜索并添加</div>
-                </div>
-                <p class="form-tip">所选字段组合完全相同时判定为重复；下方标签展示当前全部已选项。</p>
-              </el-form-item>
-
-              <el-divider content-position="left">错误数据规则</el-divider>
-              <el-form-item label="启用错误检测">
-                <el-switch v-model="activeCleanRule.error.enabled" />
-              </el-form-item>
-              <el-table
-                :data="activeCleanRule.error.rules"
-                border
-                size="small"
-                class="error-rules-table"
+        <div class="func-desc">
+          <p>
+            按八类无感数据源配置缺失值、重复、错误三类清洗规则；清洗后进入「数据清洗」页人工处理，再经「数据整理」映射为标准宽表。
+          </p>
+        </div>
+        <div class="clean-rules-panel">
+          <div class="rules-layout">
+            <aside class="rules-source-aside">
+              <div class="aside-title">数据源</div>
+              <div
+                v-for="item in cleanRules"
+                :key="item.sourceCode"
+                class="rules-source-item"
+                :class="{ active: activeRuleSource === item.sourceCode }"
+                @click="selectRuleSource(item.sourceCode)"
               >
-                <el-table-column label="字段" min-width="220">
-                  <template slot-scope="{ row }">
-                    <el-select
-                      v-model="row.key"
-                      filterable
-                      :filter-method="filterFieldOption"
-                      size="mini"
-                      style="width: 100%"
-                      :disabled="!activeCleanRule.error.enabled"
-                      @change="(key) => syncErrorRuleField(row, key)"
-                    >
-                      <el-option
-                        v-for="opt in ruleFieldOptions"
-                        :key="opt.key"
-                        :label="fieldOptionSearchLabel(opt)"
-                        :value="opt.key"
-                      >
-                        <span class="field-opt-label">{{ opt.label }}</span>
-                        <span v-if="opt.en" class="field-opt-en">{{ opt.en }}</span>
-                      </el-option>
-                    </el-select>
-                  </template>
-                </el-table-column>
-                <el-table-column label="规则类型" min-width="200">
-                  <template slot-scope="{ row }">
-                    <el-select
-                      v-model="row.type"
-                      filterable
-                      size="mini"
-                      style="width: 100%"
-                      :disabled="!activeCleanRule.error.enabled"
-                      @change="(type) => onErrorRuleTypeChange(row, type)"
-                    >
-                      <el-option-group
-                        v-for="grp in errorRuleTypeGroups"
-                        :key="grp.label"
-                        :label="grp.label"
-                      >
-                        <el-option
-                          v-for="t in grp.options"
-                          :key="t.value"
-                          :label="t.label"
-                          :value="t.value"
-                        />
-                      </el-option-group>
-                    </el-select>
-                  </template>
-                </el-table-column>
-                <el-table-column label="参照对比字段" min-width="200">
-                  <template slot-scope="{ row }">
-                    <el-select
-                      v-if="needsErrorRefField(row.type)"
-                      v-model="row.startKey"
-                      filterable
-                      :filter-method="filterFieldOption"
-                      size="mini"
-                      style="width: 100%"
-                      :disabled="!activeCleanRule.error.enabled"
-                      placeholder="选择参照字段"
-                      @change="(key) => syncErrorRuleStartField(row, key)"
-                    >
-                      <el-option
-                        v-for="opt in refFieldOptionsForRule(row)"
-                        :key="opt.key"
-                        :label="fieldOptionSearchLabel(opt)"
-                        :value="opt.key"
-                      />
-                    </el-select>
-                    <span v-else class="text-muted">—</span>
-                  </template>
-                </el-table-column>
-                <el-table-column label="启用" width="80" align="center">
-                  <template slot-scope="{ row }">
-                    <el-switch v-model="row.enabled" :disabled="!activeCleanRule.error.enabled" />
-                  </template>
-                </el-table-column>
-                <el-table-column label="操作" width="80" align="center">
-                  <template slot-scope="{ $index }">
-                    <el-button type="text" @click="removeErrorRule($index)">删除</el-button>
-                  </template>
-                </el-table-column>
-              </el-table>
-              <div class="error-rule-add">
-                <el-select
-                  v-model="newErrorRuleFieldKey"
-                  filterable
-                  :filter-method="filterFieldOption"
-                  placeholder="搜索并选择字段"
-                  size="small"
-                  style="width: 280px; margin-right: 8px"
-                  clearable
+                <span class="rules-source-name">{{ item.sourceName }}</span>
+                <el-tag v-if="!item.enabled" size="mini" type="info"
+                  >停用</el-tag
                 >
-                  <el-option
-                    v-for="opt in ruleFieldOptions"
-                    :key="opt.key"
-                    :label="fieldOptionSearchLabel(opt)"
-                    :value="opt.key"
+              </div>
+            </aside>
+            <main v-if="activeCleanRule" class="rules-editor">
+              <div class="rules-editor-head">
+                <h3>{{ activeCleanRule.sourceName }}</h3>
+                <div class="rules-meta">
+                  <span v-if="activeCleanRule.updateTime"
+                    >最近更新：{{ activeCleanRule.updateTime }}</span
                   >
-                    <span class="field-opt-label">{{ opt.label }}</span>
-                    <span v-if="opt.en" class="field-opt-en">{{ opt.en }}</span>
-                  </el-option>
-                </el-select>
-                <el-select
-                  v-model="newErrorRuleType"
-                  filterable
-                  placeholder="规则类型"
-                  size="small"
-                  style="width: 220px; margin-right: 8px"
-                >
-                  <el-option-group
-                    v-for="grp in errorRuleTypeGroups"
-                    :key="grp.label"
-                    :label="grp.label"
+                  <span v-if="activeCleanRule.operator"
+                    >操作人：{{ activeCleanRule.operator }}</span
+                  >
+                </div>
+              </div>
+              <el-form label-width="110px" size="small" class="rules-form">
+                <el-form-item label="规则总开关">
+                  <el-switch
+                    v-model="activeCleanRule.enabled"
+                    active-text="启用"
+                    inactive-text="停用"
+                  />
+                </el-form-item>
+
+                <el-divider content-position="left">缺失值规则</el-divider>
+                <el-form-item label="启用缺失检测">
+                  <el-switch v-model="activeCleanRule.missing.enabled" />
+                </el-form-item>
+                <el-form-item label="必填字段">
+                  <el-select
+                    v-model="ruleMissingSelectedKeys"
+                    multiple
+                    filterable
+                    :filter-method="filterFieldOption"
+                    placeholder="搜索并选择必填字段（源表全字段）"
+                    style="width: 100%"
+                    :disabled="!activeCleanRule.missing.enabled"
                   >
                     <el-option
-                      v-for="t in grp.options"
-                      :key="t.value"
-                      :label="t.label"
-                      :value="t.value"
-                    />
-                  </el-option-group>
-                </el-select>
-                <el-button size="small" icon="el-icon-plus" @click="addErrorRule">添加规则</el-button>
-              </div>
+                      v-for="opt in ruleFieldOptions"
+                      :key="opt.key"
+                      :label="fieldOptionSearchLabel(opt)"
+                      :value="opt.key"
+                    >
+                      <span class="field-opt-label">{{ opt.label }}</span>
+                      <span v-if="opt.en" class="field-opt-en">{{
+                        opt.en
+                      }}</span>
+                    </el-option>
+                  </el-select>
+                  <div
+                    v-if="activeCleanRule.missing.enabled"
+                    class="selected-fields-panel"
+                  >
+                    <div class="selected-fields-head">
+                      <span class="selected-fields-title">已选必填字段</span>
+                      <span class="selected-fields-count"
+                        >{{ ruleMissingSelectedFields.length }} /
+                        {{ ruleSchemaFieldCount }}</span
+                      >
+                    </div>
+                    <div
+                      v-if="ruleMissingSelectedFields.length"
+                      class="selected-fields-tags"
+                    >
+                      <el-tag
+                        v-for="item in ruleMissingSelectedFields"
+                        :key="item.key"
+                        size="small"
+                        type="primary"
+                        effect="plain"
+                        class="selected-field-tag"
+                        closable
+                        @close="removeMissingField(item.key)"
+                      >
+                        {{ fieldOptionSearchLabel(item) }}
+                      </el-tag>
+                    </div>
+                    <div v-else class="selected-fields-empty">
+                      暂未选择，请在上方的下拉框中搜索并添加
+                    </div>
+                  </div>
+                  <p class="form-tip">
+                    源表共
+                    {{
+                      ruleSchemaFieldCount
+                    }}
+                    个字段可选；下方标签展示当前全部已选项。
+                  </p>
+                </el-form-item>
 
-              <div class="rules-actions">
-                <el-button type="primary" @click="saveCleanRuleConfig">保存并应用规则</el-button>
-                <el-button @click="resetCurrentCleanRule">恢复该源默认</el-button>
-              </div>
-            </el-form>
-          </main>
+                <el-divider content-position="left">重复数据规则</el-divider>
+                <el-form-item label="启用重复检测">
+                  <el-switch v-model="activeCleanRule.duplicate.enabled" />
+                </el-form-item>
+                <el-form-item label="唯一性字段">
+                  <el-select
+                    v-model="ruleDuplicateSelectedKeys"
+                    multiple
+                    filterable
+                    :filter-method="filterFieldOption"
+                    placeholder="搜索并选择唯一性组合字段"
+                    style="width: 100%"
+                    :disabled="!activeCleanRule.duplicate.enabled"
+                  >
+                    <el-option
+                      v-for="opt in ruleDuplicateOptions"
+                      :key="opt.key"
+                      :label="fieldOptionSearchLabel(opt)"
+                      :value="opt.key"
+                    >
+                      <span class="field-opt-label">{{ opt.label }}</span>
+                      <span v-if="opt.en" class="field-opt-en">{{
+                        opt.en
+                      }}</span>
+                    </el-option>
+                  </el-select>
+                  <div
+                    v-if="activeCleanRule.duplicate.enabled"
+                    class="selected-fields-panel"
+                  >
+                    <div class="selected-fields-head">
+                      <span class="selected-fields-title">已选唯一性字段</span>
+                      <span class="selected-fields-count"
+                        >{{ ruleDuplicateSelectedFields.length }} 项</span
+                      >
+                    </div>
+                    <div
+                      v-if="ruleDuplicateSelectedFields.length"
+                      class="selected-fields-tags"
+                    >
+                      <el-tag
+                        v-for="item in ruleDuplicateSelectedFields"
+                        :key="item.key"
+                        size="small"
+                        type="primary"
+                        effect="plain"
+                        class="selected-field-tag"
+                        closable
+                        @close="removeDuplicateField(item.key)"
+                      >
+                        {{ fieldOptionSearchLabel(item) }}
+                      </el-tag>
+                    </div>
+                    <div v-else class="selected-fields-empty">
+                      暂未选择，请在上方的下拉框中搜索并添加
+                    </div>
+                  </div>
+                  <p class="form-tip">
+                    所选字段组合完全相同时判定为重复；下方标签展示当前全部已选项。
+                  </p>
+                </el-form-item>
+
+                <el-divider content-position="left">错误数据规则</el-divider>
+                <el-form-item label="启用错误检测">
+                  <el-switch v-model="activeCleanRule.error.enabled" />
+                </el-form-item>
+                <el-table
+                  :data="activeCleanRule.error.rules"
+                  border
+                  size="small"
+                  class="error-rules-table"
+                >
+                  <el-table-column label="字段" min-width="220">
+                    <template slot-scope="{ row }">
+                      <el-select
+                        v-model="row.key"
+                        filterable
+                        :filter-method="filterFieldOption"
+                        size="mini"
+                        style="width: 100%"
+                        :disabled="!activeCleanRule.error.enabled"
+                        @change="(key) => syncErrorRuleField(row, key)"
+                      >
+                        <el-option
+                          v-for="opt in ruleFieldOptions"
+                          :key="opt.key"
+                          :label="fieldOptionSearchLabel(opt)"
+                          :value="opt.key"
+                        >
+                          <span class="field-opt-label">{{ opt.label }}</span>
+                          <span v-if="opt.en" class="field-opt-en">{{
+                            opt.en
+                          }}</span>
+                        </el-option>
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="规则类型" min-width="200">
+                    <template slot-scope="{ row }">
+                      <el-select
+                        v-model="row.type"
+                        filterable
+                        size="mini"
+                        style="width: 100%"
+                        :disabled="!activeCleanRule.error.enabled"
+                        @change="(type) => onErrorRuleTypeChange(row, type)"
+                      >
+                        <el-option-group
+                          v-for="grp in errorRuleTypeGroups"
+                          :key="grp.label"
+                          :label="grp.label"
+                        >
+                          <el-option
+                            v-for="t in grp.options"
+                            :key="t.value"
+                            :label="t.label"
+                            :value="t.value"
+                          />
+                        </el-option-group>
+                      </el-select>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="参照对比字段" min-width="200">
+                    <template slot-scope="{ row }">
+                      <el-select
+                        v-if="needsErrorRefField(row.type)"
+                        v-model="row.startKey"
+                        filterable
+                        :filter-method="filterFieldOption"
+                        size="mini"
+                        style="width: 100%"
+                        :disabled="!activeCleanRule.error.enabled"
+                        placeholder="选择参照字段"
+                        @change="(key) => syncErrorRuleStartField(row, key)"
+                      >
+                        <el-option
+                          v-for="opt in refFieldOptionsForRule(row)"
+                          :key="opt.key"
+                          :label="fieldOptionSearchLabel(opt)"
+                          :value="opt.key"
+                        />
+                      </el-select>
+                      <span v-else class="text-muted">—</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="启用" width="80" align="center">
+                    <template slot-scope="{ row }">
+                      <el-switch
+                        v-model="row.enabled"
+                        :disabled="!activeCleanRule.error.enabled"
+                      />
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="80" align="center">
+                    <template slot-scope="{ $index }">
+                      <el-button type="text" @click="removeErrorRule($index)"
+                        >删除</el-button
+                      >
+                    </template>
+                  </el-table-column>
+                </el-table>
+                <div class="error-rule-add">
+                  <el-select
+                    v-model="newErrorRuleFieldKey"
+                    filterable
+                    :filter-method="filterFieldOption"
+                    placeholder="搜索并选择字段"
+                    size="small"
+                    style="width: 280px; margin-right: 8px"
+                    clearable
+                  >
+                    <el-option
+                      v-for="opt in ruleFieldOptions"
+                      :key="opt.key"
+                      :label="fieldOptionSearchLabel(opt)"
+                      :value="opt.key"
+                    >
+                      <span class="field-opt-label">{{ opt.label }}</span>
+                      <span v-if="opt.en" class="field-opt-en">{{
+                        opt.en
+                      }}</span>
+                    </el-option>
+                  </el-select>
+                  <el-select
+                    v-model="newErrorRuleType"
+                    filterable
+                    placeholder="规则类型"
+                    size="small"
+                    style="width: 220px; margin-right: 8px"
+                  >
+                    <el-option-group
+                      v-for="grp in errorRuleTypeGroups"
+                      :key="grp.label"
+                      :label="grp.label"
+                    >
+                      <el-option
+                        v-for="t in grp.options"
+                        :key="t.value"
+                        :label="t.label"
+                        :value="t.value"
+                      />
+                    </el-option-group>
+                  </el-select>
+                  <el-button
+                    size="small"
+                    icon="el-icon-plus"
+                    @click="addErrorRule"
+                    >添加规则</el-button
+                  >
+                </div>
+
+                <div class="rules-actions">
+                  <el-button type="primary" @click="saveCleanRuleConfig"
+                    >保存并应用规则</el-button
+                  >
+                  <el-button @click="resetCurrentCleanRule"
+                    >恢复该源默认</el-button
+                  >
+                </div>
+              </el-form>
+            </main>
+          </div>
         </div>
       </div>
-      </div>
 
-      <div v-for="tab in businessRuleTabs" :key="tab.id" v-show="rulesSubTab === tab.id" class="rules-sub-panel">
+      <div
+        v-for="tab in businessRuleTabs"
+        :key="tab.id"
+        v-show="rulesSubTab === tab.id"
+        class="rules-sub-panel"
+      >
         <business-rule-panel
           :catalog-id="tab.catalogId"
           :all-configs="businessRuleConfigs"
@@ -367,7 +430,9 @@
     <!-- 数据清洗 -->
     <div v-show="mainTab === 'clean'" class="tab-panel tab-panel--clean">
       <div class="func-desc">
-        <p>对八类无感数据源进行缺失值、重复、错误识别与人工修复；规则在「规则设置」页维护，修复后进入数据整理映射标准表。</p>
+        <p>
+          对八类无感数据源进行缺失值、重复、错误识别与人工修复；规则在「规则设置」页维护，修复后进入数据整理映射标准表。
+        </p>
       </div>
       <div class="source-stats">
         <div v-for="s in sourceStats" :key="s.code" class="source-stat-card">
@@ -411,101 +476,217 @@
               @keyup.enter="handleCleanSearch"
             />
           </div>
-          <el-select v-model="cleanSourceFilter" placeholder="数据源" clearable size="small" style="width: 200px">
-            <el-option v-for="s in sourceOptions" :key="s" :label="s" :value="s" />
+          <el-select
+            v-model="cleanSourceFilter"
+            placeholder="数据源"
+            clearable
+            size="small"
+            style="width: 200px"
+          >
+            <el-option
+              v-for="s in sourceOptions"
+              :key="s"
+              :label="s"
+              :value="s"
+            />
           </el-select>
-          <el-button type="primary" icon="el-icon-search" :loading="cleanSearchLoading" @click="handleCleanSearch">查询</el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-search"
+            :loading="cleanSearchLoading"
+            @click="handleCleanSearch"
+            >查询</el-button
+          >
           <el-button @click="resetCleanFilter">重置</el-button>
         </div>
       </div>
 
       <div class="table-panel">
-        <div class="table-body-wrap" v-loading="cleanSearchLoading" element-loading-text="查询中...">
-        <div v-show="cleanSubTab === 'missing'" class="table-container table-hscroll-viewport table-fill-viewport">
-          <el-table
-            :data="pagedMissingRows"
-            border
-            stripe
-            size="small"
-            style="width: 100%"
+        <div
+          class="table-body-wrap"
+          v-loading="cleanSearchLoading"
+          element-loading-text="查询中..."
+        >
+          <div
+            v-show="cleanSubTab === 'missing'"
+            class="table-container table-hscroll-viewport table-fill-viewport"
           >
-            <el-table-column type="index" label="序号" width="60" :index="cleanIndexMethod" />
-            <el-table-column prop="sourceName" label="数据源" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="name" label="姓名" width="90" />
-            <el-table-column prop="personId" label="人员ID" width="110" />
-            <el-table-column prop="fieldLabel" label="缺失字段" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="fieldValue" label="当前值" width="100">
-              <template slot-scope="{ row }">
-                <span class="text-danger">{{ row.fieldValue || "（空）" }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="orgName" label="组织机构" min-width="200" show-overflow-tooltip />
-            <el-table-column label="操作" width="80" align="center">
-              <template slot-scope="{ row }">
-                <el-button type="text" @click="openEditDialog('missing', row)">修改</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+            <el-table
+              :data="pagedMissingRows"
+              border
+              stripe
+              size="small"
+              style="width: 100%"
+            >
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="cleanIndexMethod"
+              />
+              <el-table-column
+                prop="sourceName"
+                label="数据源"
+                min-width="160"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="name" label="姓名" width="90" />
+              <el-table-column prop="personId" label="人员ID" width="110" />
+              <el-table-column
+                prop="fieldLabel"
+                label="缺失字段"
+                min-width="140"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="fieldValue" label="当前值" width="100">
+                <template slot-scope="{ row }">
+                  <span class="text-danger">{{
+                    row.fieldValue || "（空）"
+                  }}</span>
+                </template>
+              </el-table-column>
+              <el-table-column
+                prop="orgName"
+                label="组织机构"
+                min-width="200"
+                show-overflow-tooltip
+              />
+              <el-table-column label="操作" width="80" align="center">
+                <template slot-scope="{ row }">
+                  <el-button type="text" @click="openEditDialog('missing', row)"
+                    >修改</el-button
+                  >
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
 
-        <div v-show="cleanSubTab === 'duplicate'" class="table-container table-hscroll-viewport table-fill-viewport">
-          <el-table
-            :data="pagedDuplicateRows"
-            border
-            stripe
-            size="small"
-            style="width: 100%"
+          <div
+            v-show="cleanSubTab === 'duplicate'"
+            class="table-container table-hscroll-viewport table-fill-viewport"
           >
-            <el-table-column type="index" label="序号" width="60" :index="cleanIndexMethod" />
-            <el-table-column prop="dupGroup" label="重复组" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="sourceName" label="数据源" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="name" label="姓名" width="90" />
-            <el-table-column prop="personId" label="人员ID" width="110" />
-            <el-table-column prop="recordDate" label="记录日期" width="120" />
-            <el-table-column prop="summary" label="关键记录摘要" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="dupCount" label="重复条数" width="90" align="center" />
-            <el-table-column label="操作" width="100" align="center">
-              <template slot-scope="{ row }">
-                <el-button type="text" @click="removeDuplicate(row)">保留一条</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+            <el-table
+              :data="pagedDuplicateRows"
+              border
+              stripe
+              size="small"
+              style="width: 100%"
+            >
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="cleanIndexMethod"
+              />
+              <el-table-column
+                prop="dupGroup"
+                label="重复组"
+                min-width="140"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="sourceName"
+                label="数据源"
+                min-width="160"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="name" label="姓名" width="90" />
+              <el-table-column prop="personId" label="人员ID" width="110" />
+              <el-table-column prop="recordDate" label="记录日期" width="120" />
+              <el-table-column
+                prop="summary"
+                label="关键记录摘要"
+                min-width="200"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="dupCount"
+                label="重复条数"
+                width="90"
+                align="center"
+              />
+              <el-table-column label="操作" width="100" align="center">
+                <template slot-scope="{ row }">
+                  <el-button type="text" @click="removeDuplicate(row)"
+                    >保留一条</el-button
+                  >
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
 
-        <div v-show="cleanSubTab === 'error'" class="table-container table-hscroll-viewport table-fill-viewport">
-          <el-table
-            :data="pagedErrorRows"
-            border
-            stripe
-            size="small"
-            style="width: 100%"
+          <div
+            v-show="cleanSubTab === 'error'"
+            class="table-container table-hscroll-viewport table-fill-viewport"
           >
-            <el-table-column type="index" label="序号" width="60" :index="cleanIndexMethod" />
-            <el-table-column prop="sourceName" label="数据源" min-width="160" show-overflow-tooltip />
-            <el-table-column prop="name" label="姓名" width="90" />
-            <el-table-column prop="fieldLabel" label="问题字段" min-width="140" show-overflow-tooltip />
-            <el-table-column prop="fieldValue" label="当前值" min-width="120" show-overflow-tooltip />
-            <el-table-column prop="errorReason" label="错误说明" min-width="200" show-overflow-tooltip />
-            <el-table-column label="操作" width="80" align="center">
-              <template slot-scope="{ row }">
-                <el-button type="text" @click="openEditDialog('error', row)">校正</el-button>
-              </template>
-            </el-table-column>
-          </el-table>
-        </div>
+            <el-table
+              :data="pagedErrorRows"
+              border
+              stripe
+              size="small"
+              style="width: 100%"
+            >
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="cleanIndexMethod"
+              />
+              <el-table-column
+                prop="sourceName"
+                label="数据源"
+                min-width="160"
+                show-overflow-tooltip
+              />
+              <el-table-column prop="name" label="姓名" width="90" />
+              <el-table-column
+                prop="fieldLabel"
+                label="问题字段"
+                min-width="140"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="fieldValue"
+                label="当前值"
+                min-width="120"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="errorReason"
+                label="错误说明"
+                min-width="200"
+                show-overflow-tooltip
+              />
+              <el-table-column label="操作" width="80" align="center">
+                <template slot-scope="{ row }">
+                  <el-button type="text" @click="openEditDialog('error', row)"
+                    >校正</el-button
+                  >
+                </template>
+              </el-table-column>
+            </el-table>
+          </div>
         </div>
 
         <div class="pagination">
           <div class="pagination-info">
             <span>共 {{ cleanListTotal }} 条</span>
-            <select v-model.number="cleanPageSize" class="page-size-select" @change="cleanPage = 1">
+            <select
+              v-model.number="cleanPageSize"
+              class="page-size-select"
+              @change="cleanPage = 1"
+            >
               <option :value="10">10条/页</option>
               <option :value="25">25条/页</option>
               <option :value="50">50条/页</option>
             </select>
           </div>
           <div class="pagination-nav">
-            <button class="page-btn" :disabled="cleanPage === 1" @click="cleanPage--">
+            <button
+              class="page-btn"
+              :disabled="cleanPage === 1"
+              @click="cleanPage--"
+            >
               <i class="el-icon-arrow-left"></i>
             </button>
             <button
@@ -532,7 +713,10 @@
     <!-- 数据整理 -->
     <div v-show="mainTab === 'organize'" class="tab-panel tab-panel--organize">
       <div class="func-desc">
-        <p>① 数据一致性处理：八类无感源字段映射为标准字段；② 多源整合：按人员ID+日期生成业务标准宽表，供考勤/异常/工时规则计算使用。规则在「规则设置」页配置。</p>
+        <p>
+          ① 数据一致性处理：八类无感源字段映射为标准字段；②
+          多源整合：按人员ID+日期生成业务标准宽表，供考勤/异常/工时规则计算使用。规则在「规则设置」页配置。
+        </p>
       </div>
       <div class="sub-tabs">
         <div
@@ -557,7 +741,12 @@
           按无感数据源字段与出勤标准字段建立映射（闸机进出、三餐用餐、登录、休假等）；支持手动新增映射关系。
         </div>
         <div class="mapping-toolbar">
-          <el-button type="primary" icon="el-icon-plus" size="small" @click="openAddMappingDialog">
+          <el-button
+            type="primary"
+            icon="el-icon-plus"
+            size="small"
+            @click="openAddMappingDialog"
+          >
             新增映射
           </el-button>
           <el-select
@@ -567,29 +756,67 @@
             size="small"
             style="width: 220px"
           >
-            <el-option v-for="s in sourceOptions" :key="s" :label="s" :value="s" />
+            <el-option
+              v-for="s in sourceOptions"
+              :key="s"
+              :label="s"
+              :value="s"
+            />
           </el-select>
           <span v-if="mappingSourceFilter" class="mapping-filter-count">
             共 {{ filteredFieldMappings.length }} 条
           </span>
-          <span class="mapping-toolbar-hint">新增映射立即生效，将参与多源整合与结果输出</span>
+          <span class="mapping-toolbar-hint"
+            >新增映射立即生效，将参与多源整合与结果输出</span
+          >
         </div>
         <div class="table-container table-hscroll-viewport table-fill-viewport">
-          <el-table :data="filteredFieldMappings" border stripe size="small" style="width: 100%">
+          <el-table
+            :data="filteredFieldMappings"
+            border
+            stripe
+            size="small"
+            style="width: 100%"
+          >
             <el-table-column type="index" label="序号" width="60" />
-            <el-table-column prop="source" label="数据源" width="200" show-overflow-tooltip />
-            <el-table-column prop="sourceField" label="源字段" min-width="200" show-overflow-tooltip />
-            <el-table-column prop="targetField" label="标准字段" width="160" show-overflow-tooltip />
-            <el-table-column prop="status" label="映射状态" width="110" align="center">
+            <el-table-column
+              prop="source"
+              label="数据源"
+              width="200"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="sourceField"
+              label="源字段"
+              min-width="200"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="targetField"
+              label="标准字段"
+              width="160"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="status"
+              label="映射状态"
+              width="110"
+              align="center"
+            >
               <template slot-scope="{ row }">
-                <el-tag :type="row.status === '已映射' ? 'success' : 'warning'" size="small">
+                <el-tag
+                  :type="row.status === '已映射' ? 'success' : 'warning'"
+                  size="small"
+                >
                   {{ row.status }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="120" align="center">
               <template slot-scope="{ row }">
-                <el-button type="text" @click="openEditMappingDialog(row)">编辑</el-button>
+                <el-button type="text" @click="openEditMappingDialog(row)"
+                  >编辑</el-button
+                >
                 <el-button
                   type="text"
                   class="btn-text-danger"
@@ -606,7 +833,13 @@
       <div v-show="organizeSubTab === 'merge'" class="table-panel">
         <div class="search-area">
           <div class="search-row">
-            <el-button type="primary" icon="el-icon-refresh" :loading="mergeLoading" @click="handleRunMerge">执行整合生成标准表</el-button>
+            <el-button
+              type="primary"
+              icon="el-icon-refresh"
+              :loading="mergeLoading"
+              @click="handleRunMerge"
+              >执行整合生成标准表</el-button
+            >
           </div>
         </div>
         <div
@@ -614,36 +847,57 @@
           v-loading="mergeLoading"
           element-loading-text="处理中..."
         >
-            <el-table
-              ref="mergeTable"
-              :data="mergedRows"
-              border
-              stripe
-              size="small"
-              :style="{ width: '100%', minWidth: standardTableScrollWidth + 'px' }"
+          <el-table
+            ref="mergeTable"
+            :data="mergedRows"
+            border
+            stripe
+            size="small"
+            :style="{
+              width: '100%',
+              minWidth: standardTableScrollWidth + 'px',
+            }"
+          >
+            <el-table-column type="index" label="序号" width="60" />
+            <el-table-column prop="name" label="姓名" width="90" />
+            <el-table-column prop="personId" label="人员ID" width="110" />
+            <el-table-column
+              prop="orgName"
+              label="组织机构"
+              width="220"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="orgId"
+              label="组织机构ID"
+              width="120"
+              show-overflow-tooltip
+            />
+            <el-table-column prop="recordDate" label="记录日期" width="120" />
+            <el-table-column
+              v-for="col in standardMergeColumns"
+              :key="col.prop"
+              :prop="col.prop"
+              :label="col.label"
+              width="170"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              prop="mergeStatus"
+              label="整合状态"
+              width="100"
+              align="center"
             >
-              <el-table-column type="index" label="序号" width="60" />
-              <el-table-column prop="name" label="姓名" width="90" />
-              <el-table-column prop="personId" label="人员ID" width="110" />
-              <el-table-column prop="orgName" label="组织机构" width="220" show-overflow-tooltip />
-              <el-table-column prop="orgId" label="组织机构ID" width="120" show-overflow-tooltip />
-              <el-table-column prop="recordDate" label="记录日期" width="120" />
-              <el-table-column
-                v-for="col in standardMergeColumns"
-                :key="col.prop"
-                :prop="col.prop"
-                :label="col.label"
-                width="170"
-                show-overflow-tooltip
-              />
-              <el-table-column prop="mergeStatus" label="整合状态" width="100" align="center">
-                <template slot-scope="{ row }">
-                  <el-tag :type="row.mergeStatus === '已整合' ? 'success' : 'info'" size="small">
-                    {{ row.mergeStatus }}
-                  </el-tag>
-                </template>
-              </el-table-column>
-            </el-table>
+              <template slot-scope="{ row }">
+                <el-tag
+                  :type="row.mergeStatus === '已整合' ? 'success' : 'info'"
+                  size="small"
+                >
+                  {{ row.mergeStatus }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
         </div>
       </div>
     </div>
@@ -651,31 +905,58 @@
     <!-- 数据结果输出 -->
     <div v-show="mainTab === 'output'" class="tab-panel tab-panel--output">
       <div class="func-desc">
-        <p>基于标准宽表应用「规则设置」中配置的业务规则，生成无感考勤表、异常考勤校验表、工时统计表（管理类/专业技术类、技能类）。</p>
+        <p>
+          基于标准宽表应用「规则设置」中配置的业务规则，生成无感考勤表、异常考勤校验表、工时统计表（管理类/专业技术类、技能类）。
+        </p>
         <p class="form-tip">
-          <el-button type="text" size="mini" @click="goSection('rules')">前往规则设置</el-button>
+          <el-button type="text" size="mini" @click="goSection('rules')"
+            >前往规则设置</el-button
+          >
           修改考勤/异常/工时规则后，请点击下方「结果表生成」刷新结果。
         </p>
       </div>
 
       <div class="config-bar config-bar--compact">
-        <el-button type="primary" size="small" icon="el-icon-s-operation" @click="runBusinessRules">
+        <el-button
+          type="primary"
+          size="small"
+          icon="el-icon-s-operation"
+          @click="runBusinessRules"
+        >
           结果表生成
         </el-button>
-        <span class="merge-hint">按照当前规则设定生成无感考勤表，异常考勤校验表，工时统计</span>
+        <span class="merge-hint"
+          >按照当前规则设定生成无感考勤表，异常考勤校验表，工时统计</span
+        >
       </div>
 
       <div class="sub-tabs">
-        <div class="sub-tab" :class="{ active: outputSubTab === 'standard' }" @click="outputSubTab = 'standard'">
+        <div
+          class="sub-tab"
+          :class="{ active: outputSubTab === 'standard' }"
+          @click="outputSubTab = 'standard'"
+        >
           业务标准表
         </div>
-        <div class="sub-tab" :class="{ active: outputSubTab === 'attendance' }" @click="outputSubTab = 'attendance'">
+        <div
+          class="sub-tab"
+          :class="{ active: outputSubTab === 'attendance' }"
+          @click="outputSubTab = 'attendance'"
+        >
           无感考勤表
         </div>
-        <div class="sub-tab" :class="{ active: outputSubTab === 'abnormal' }" @click="outputSubTab = 'abnormal'">
+        <div
+          class="sub-tab"
+          :class="{ active: outputSubTab === 'abnormal' }"
+          @click="outputSubTab = 'abnormal'"
+        >
           异常考勤校验表
         </div>
-        <div class="sub-tab" :class="{ active: outputSubTab === 'hours' }" @click="outputSubTab = 'hours'">
+        <div
+          class="sub-tab"
+          :class="{ active: outputSubTab === 'hours' }"
+          @click="outputSubTab = 'hours'"
+        >
           工时统计
         </div>
       </div>
@@ -726,9 +1007,20 @@
             <el-option label="管理类/专业技术类" value="management" />
             <el-option label="技能类" value="skill" />
           </el-select>
-          <el-button type="primary" icon="el-icon-search" :loading="outputSearchLoading" @click="handleOutputSearch">查询</el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-search"
+            :loading="outputSearchLoading"
+            @click="handleOutputSearch"
+            >查询</el-button
+          >
           <el-button @click="resetOutputFilter">重置</el-button>
-          <el-button type="primary" icon="el-icon-download" @click="exportCurrentOutput">导出当前结果</el-button>
+          <el-button
+            type="primary"
+            icon="el-icon-download"
+            @click="exportCurrentOutput"
+            >导出当前结果</el-button
+          >
         </div>
       </div>
 
@@ -767,11 +1059,29 @@
               border
               stripe
               size="small"
-              :style="{ width: '100%', minWidth: currentOutputScrollWidth + 'px' }"
+              :style="{
+                width: '100%',
+                minWidth: currentOutputScrollWidth + 'px',
+              }"
             >
-              <el-table-column type="index" label="序号" width="60" :index="attendanceIndex" />
-              <el-table-column prop="orgName" label="组织机构" width="200" show-overflow-tooltip />
-              <el-table-column prop="orgId" label="组织机构ID" width="120" show-overflow-tooltip />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="attendanceIndex"
+              />
+              <el-table-column
+                prop="orgName"
+                label="组织机构"
+                width="200"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="orgId"
+                label="组织机构ID"
+                width="120"
+                show-overflow-tooltip
+              />
               <el-table-column prop="name" label="姓名" width="90" />
               <el-table-column prop="personId" label="人员ID" width="110" />
               <el-table-column prop="recordDate" label="记录日期" width="120" />
@@ -783,8 +1093,17 @@
                 width="170"
                 show-overflow-tooltip
               />
-              <el-table-column prop="mergeStatus" label="整合状态" width="100" />
-              <el-table-column prop="dataSources" label="数据来源" width="160" show-overflow-tooltip />
+              <el-table-column
+                prop="mergeStatus"
+                label="整合状态"
+                width="100"
+              />
+              <el-table-column
+                prop="dataSources"
+                label="数据来源"
+                width="160"
+                show-overflow-tooltip
+              />
             </el-table>
 
             <el-table
@@ -793,11 +1112,24 @@
               border
               stripe
               size="small"
-              :style="{ width: '100%', minWidth: currentOutputScrollWidth + 'px' }"
+              :style="{
+                width: '100%',
+                minWidth: currentOutputScrollWidth + 'px',
+              }"
               @cell-click="onAttendanceCellClick"
             >
-              <el-table-column type="index" label="序号" width="60" :index="attendanceIndex" />
-              <el-table-column prop="orgName" label="组织机构" width="200" show-overflow-tooltip />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="attendanceIndex"
+              />
+              <el-table-column
+                prop="orgName"
+                label="组织机构"
+                width="200"
+                show-overflow-tooltip
+              />
               <el-table-column
                 prop="name"
                 label="姓名"
@@ -808,12 +1140,29 @@
               />
               <el-table-column prop="personId" label="人员ID" width="110" />
               <el-table-column prop="recordDate" label="考勤日期" width="120" />
-              <el-table-column prop="attendanceType" label="考勤类型" width="100" />
-              <el-table-column prop="arrivalTime" label="到岗时间" width="170" />
-              <el-table-column prop="departureTime" label="离岗时间" width="170" />
+              <el-table-column
+                prop="attendanceType"
+                label="考勤类型"
+                width="100"
+              />
+              <el-table-column
+                prop="arrivalTime"
+                label="到岗时间"
+                width="170"
+              />
+              <el-table-column
+                prop="departureTime"
+                label="离岗时间"
+                width="170"
+              />
               <el-table-column prop="ruleLevel" label="规则层级" width="100" />
               <el-table-column prop="targetTable" label="输出表" width="120" />
-              <el-table-column prop="dataSources" label="数据来源" width="160" show-overflow-tooltip />
+              <el-table-column
+                prop="dataSources"
+                label="数据来源"
+                width="160"
+                show-overflow-tooltip
+              />
             </el-table>
 
             <el-table
@@ -822,17 +1171,44 @@
               border
               stripe
               size="small"
-              :style="{ width: '100%', minWidth: currentOutputScrollWidth + 'px' }"
+              :style="{
+                width: '100%',
+                minWidth: currentOutputScrollWidth + 'px',
+              }"
             >
-              <el-table-column type="index" label="序号" width="60" :index="attendanceIndex" />
-              <el-table-column prop="orgName" label="组织机构" width="200" show-overflow-tooltip />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="attendanceIndex"
+              />
+              <el-table-column
+                prop="orgName"
+                label="组织机构"
+                width="200"
+                show-overflow-tooltip
+              />
               <el-table-column prop="name" label="姓名" width="90" />
               <el-table-column prop="personId" label="人员ID" width="110" />
               <el-table-column prop="recordDate" label="日期" width="120" />
-              <el-table-column prop="abnormalType" label="异常类型" width="130" />
+              <el-table-column
+                prop="abnormalType"
+                label="异常类型"
+                width="130"
+              />
               <el-table-column prop="ruleLevel" label="规则层级" width="110" />
-              <el-table-column prop="detail" label="说明" width="280" show-overflow-tooltip />
-              <el-table-column prop="dataSources" label="数据来源" width="140" show-overflow-tooltip />
+              <el-table-column
+                prop="detail"
+                label="说明"
+                width="280"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="dataSources"
+                label="数据来源"
+                width="140"
+                show-overflow-tooltip
+              />
             </el-table>
 
             <el-table
@@ -841,33 +1217,73 @@
               border
               stripe
               size="small"
-              :style="{ width: '100%', minWidth: currentOutputScrollWidth + 'px' }"
+              :style="{
+                width: '100%',
+                minWidth: currentOutputScrollWidth + 'px',
+              }"
             >
-              <el-table-column type="index" label="序号" width="60" :index="attendanceIndex" />
-              <el-table-column prop="orgName" label="组织机构" width="200" show-overflow-tooltip />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="60"
+                :index="attendanceIndex"
+              />
+              <el-table-column
+                prop="orgName"
+                label="组织机构"
+                width="200"
+                show-overflow-tooltip
+              />
               <el-table-column prop="name" label="姓名" width="90" />
               <el-table-column prop="personId" label="人员ID" width="110" />
               <el-table-column prop="recordDate" label="日期" width="120" />
-              <el-table-column prop="attendanceType" label="考勤类型" width="100" />
+              <el-table-column
+                prop="attendanceType"
+                label="考勤类型"
+                width="100"
+              />
               <el-table-column prop="hoursType" label="工时类型" width="110" />
-              <el-table-column prop="workHours" label="工时(h)" width="90" align="center" />
+              <el-table-column
+                prop="workHours"
+                label="工时(h)"
+                width="90"
+                align="center"
+              />
               <el-table-column prop="ruleLevel" label="规则层级" width="100" />
-              <el-table-column prop="dataSources" label="数据来源" min-width="180" show-overflow-tooltip />
-              <el-table-column prop="remark" label="计算说明" min-width="200" show-overflow-tooltip />
+              <el-table-column
+                prop="dataSources"
+                label="数据来源"
+                min-width="180"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="remark"
+                label="计算说明"
+                min-width="200"
+                show-overflow-tooltip
+              />
               <el-table-column prop="category" label="岗位类别" width="140" />
             </el-table>
           </div>
           <div class="pagination">
             <div class="pagination-info">
               <span>共{{ filteredOutputList.length }}条</span>
-              <select v-model.number="outputPageSize" class="page-size-select" @change="outputCurrentPage = 1">
+              <select
+                v-model.number="outputPageSize"
+                class="page-size-select"
+                @change="outputCurrentPage = 1"
+              >
                 <option :value="10">10条/页</option>
                 <option :value="25">25条/页</option>
                 <option :value="50">50条/页</option>
               </select>
             </div>
             <div class="pagination-nav">
-              <button class="page-btn" :disabled="outputCurrentPage === 1" @click="outputCurrentPage--">
+              <button
+                class="page-btn"
+                :disabled="outputCurrentPage === 1"
+                @click="outputCurrentPage--"
+              >
                 <i class="el-icon-arrow-left"></i>
               </button>
               <button
@@ -905,7 +1321,13 @@
       append-to-body
       @close="resetMappingForm"
     >
-      <el-form ref="mappingFormRef" :model="mappingForm" :rules="mappingFormRules" label-width="100px" size="small">
+      <el-form
+        ref="mappingFormRef"
+        :model="mappingForm"
+        :rules="mappingFormRules"
+        label-width="100px"
+        size="small"
+      >
         <el-form-item label="数据源" prop="source">
           <el-select
             v-model="mappingForm.source"
@@ -914,7 +1336,12 @@
             style="width: 100%"
             @change="onMappingSourceChange"
           >
-            <el-option v-for="s in sensingSourceOptions" :key="s.name" :label="s.name" :value="s.name" />
+            <el-option
+              v-for="s in sensingSourceOptions"
+              :key="s.name"
+              :label="s.name"
+              :value="s.name"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="源字段" prop="sourceField">
@@ -953,7 +1380,10 @@
           </el-select>
         </el-form-item>
         <el-form-item label="字段标识" prop="prop">
-          <el-input v-model="mappingForm.prop" placeholder="自动生成，可手动调整" />
+          <el-input
+            v-model="mappingForm.prop"
+            placeholder="自动生成，可手动调整"
+          />
         </el-form-item>
       </el-form>
       <span slot="footer">
@@ -1012,7 +1442,10 @@ import {
   generateAbnormalAttendanceTable,
   generateWorkHoursTable,
 } from "../utils/sensingBusinessRules";
-import { getGlobalWorkConfig, getRuleCatalog } from "../utils/behaviorModeSettings";
+import {
+  getGlobalWorkConfig,
+  getRuleCatalog,
+} from "../utils/behaviorModeSettings";
 import { buildFlexibleAttendanceSheet } from "../utils/flexibleAttendance";
 import FlexibleAttendanceDialog from "../components/FlexibleAttendanceDialog.vue";
 import BusinessRulePanel from "../components/BusinessRulePanel.vue";
@@ -1075,9 +1508,15 @@ export default {
         prop: "",
       },
       mappingFormRules: {
-        source: [{ required: true, message: "请选择数据源", trigger: "change" }],
-        sourceField: [{ required: true, message: "请填写源字段", trigger: "change" }],
-        targetField: [{ required: true, message: "请选择标准字段", trigger: "change" }],
+        source: [
+          { required: true, message: "请选择数据源", trigger: "change" },
+        ],
+        sourceField: [
+          { required: true, message: "请填写源字段", trigger: "change" },
+        ],
+        targetField: [
+          { required: true, message: "请选择标准字段", trigger: "change" },
+        ],
         prop: [{ required: true, message: "请填写字段标识", trigger: "blur" }],
       },
       mergedRows: [],
@@ -1088,7 +1527,10 @@ export default {
       abnormalRows: [],
       workHoursRows: [],
       workHoursCategory: "management",
-      workConfig: { ...DEFAULT_WORK_CONFIG, lateDays: DEFAULT_WORK_CONFIG.loginLateConsecutiveDays },
+      workConfig: {
+        ...DEFAULT_WORK_CONFIG,
+        lateDays: DEFAULT_WORK_CONFIG.loginLateConsecutiveDays,
+      },
       workConfigArrival: DEFAULT_WORK_CONFIG.arrivalTime,
       workConfigDeparture: DEFAULT_WORK_CONFIG.departureTime,
       ruleCatalog: RULE_CATALOG,
@@ -1129,7 +1571,9 @@ export default {
       return STANDARD_TARGET_FIELDS;
     },
     mappingSourceFieldOptions() {
-      const src = SENSING_SOURCES.find((s) => s.name === this.mappingForm.source);
+      const src = SENSING_SOURCES.find(
+        (s) => s.name === this.mappingForm.source,
+      );
       if (!src) return [];
       return getFieldOptionsForSource(src.code);
     },
@@ -1144,7 +1588,17 @@ export default {
     },
     currentOutputScrollWidth() {
       if (this.outputSubTab === "standard") {
-        return 60 + 200 + 90 + 110 + 120 + 120 + this.standardMergeColumns.length * 170 + 100 + 160;
+        return (
+          60 +
+          200 +
+          90 +
+          110 +
+          120 +
+          120 +
+          this.standardMergeColumns.length * 170 +
+          100 +
+          160
+        );
       }
       if (this.outputSubTab === "attendance") {
         return 60 + 200 + 100 + 110 + 120 + 100 + 170 + 170 + 100 + 120 + 160;
@@ -1159,7 +1613,9 @@ export default {
     },
     filteredFieldMappings() {
       if (!this.mappingSourceFilter) return this.fieldMappings;
-      return this.fieldMappings.filter((m) => m.source === this.mappingSourceFilter);
+      return this.fieldMappings.filter(
+        (m) => m.source === this.mappingSourceFilter,
+      );
     },
     filteredMissingRows() {
       return this.filterCleanList(this.missingRows);
@@ -1171,18 +1627,32 @@ export default {
       return this.filterCleanList(this.errorRows);
     },
     cleanListTotal() {
-      if (this.cleanSubTab === "missing") return this.filteredMissingRows.length;
-      if (this.cleanSubTab === "duplicate") return this.filteredDuplicateRows.length;
+      if (this.cleanSubTab === "missing")
+        return this.filteredMissingRows.length;
+      if (this.cleanSubTab === "duplicate")
+        return this.filteredDuplicateRows.length;
       return this.filteredErrorRows.length;
     },
     pagedMissingRows() {
-      return this.pageSlice(this.filteredMissingRows, this.cleanPage, this.cleanPageSize);
+      return this.pageSlice(
+        this.filteredMissingRows,
+        this.cleanPage,
+        this.cleanPageSize,
+      );
     },
     pagedDuplicateRows() {
-      return this.pageSlice(this.filteredDuplicateRows, this.cleanPage, this.cleanPageSize);
+      return this.pageSlice(
+        this.filteredDuplicateRows,
+        this.cleanPage,
+        this.cleanPageSize,
+      );
     },
     pagedErrorRows() {
-      return this.pageSlice(this.filteredErrorRows, this.cleanPage, this.cleanPageSize);
+      return this.pageSlice(
+        this.filteredErrorRows,
+        this.cleanPage,
+        this.cleanPageSize,
+      );
     },
     cleanTotalPages() {
       return Math.max(1, Math.ceil(this.cleanListTotal / this.cleanPageSize));
@@ -1192,11 +1662,15 @@ export default {
       const cur = this.cleanPage;
       if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
       if (cur <= 4) return [1, 2, 3, 4, 5];
-      if (cur >= total - 3) return [total - 4, total - 3, total - 2, total - 1, total];
+      if (cur >= total - 3)
+        return [total - 4, total - 3, total - 2, total - 1, total];
       return [cur - 2, cur - 1, cur, cur + 1, cur + 2];
     },
     activeCleanRule() {
-      return this.cleanRules.find((r) => r.sourceCode === this.activeRuleSource) || null;
+      return (
+        this.cleanRules.find((r) => r.sourceCode === this.activeRuleSource) ||
+        null
+      );
     },
     ruleFieldOptions() {
       return getFieldOptionsForSource(this.activeRuleSource);
@@ -1208,7 +1682,7 @@ export default {
       return this.ruleFieldOptions.filter(
         (f) =>
           (f.label && (f.label.includes("时间") || f.label.includes("日期"))) ||
-          (f.fieldType && String(f.fieldType).toLowerCase().includes("time"))
+          (f.fieldType && String(f.fieldType).toLowerCase().includes("time")),
       );
     },
     ruleDuplicateOptions() {
@@ -1270,14 +1744,18 @@ export default {
         nodes.reduce((acc, node) => {
           const children = node.children ? filterNodes(node.children) : [];
           if (node.name.includes(keyword) || children.length) {
-            acc.push({ ...node, children: children.length ? children : node.children });
+            acc.push({
+              ...node,
+              children: children.length ? children : node.children,
+            });
           }
           return acc;
         }, []);
       return filterNodes(this.orgTree);
     },
     currentOutputList() {
-      if (this.outputSubTab === "attendance") return this.senselessAttendanceRows;
+      if (this.outputSubTab === "attendance")
+        return this.senselessAttendanceRows;
       if (this.outputSubTab === "abnormal") return this.abnormalRows;
       if (this.outputSubTab === "hours") return this.workHoursRows;
       return this.mergedRows;
@@ -1285,7 +1763,9 @@ export default {
     filteredOutputList() {
       let data = this.currentOutputList;
       if (this.outputSelectedOrg) {
-        data = data.filter((r) => matchOrgFilter(r.orgName, this.outputSelectedOrg));
+        data = data.filter((r) =>
+          matchOrgFilter(r.orgName, this.outputSelectedOrg),
+        );
       }
       if (this.outputStatusFilter && this.outputSubTab === "standard") {
         data = data.filter((r) => r.mergeStatus === this.outputStatusFilter);
@@ -1296,7 +1776,7 @@ export default {
       if (this.outputKeyword.trim()) {
         const kw = this.outputKeyword.trim();
         data = data.filter(
-          (r) => r.name.includes(kw) || String(r.personId).includes(kw)
+          (r) => r.name.includes(kw) || String(r.personId).includes(kw),
         );
       }
       return data;
@@ -1306,14 +1786,18 @@ export default {
       return this.filteredOutputList.slice(start, start + this.outputPageSize);
     },
     outputTotalPages() {
-      return Math.max(1, Math.ceil(this.filteredOutputList.length / this.outputPageSize));
+      return Math.max(
+        1,
+        Math.ceil(this.filteredOutputList.length / this.outputPageSize),
+      );
     },
     outputVisiblePages() {
       const total = this.outputTotalPages;
       const cur = this.outputCurrentPage;
       if (total <= 7) return Array.from({ length: total }, (_, i) => i + 1);
       if (cur <= 4) return [1, 2, 3, 4, 5];
-      if (cur >= total - 3) return [total - 4, total - 3, total - 2, total - 1, total];
+      if (cur >= total - 3)
+        return [total - 4, total - 3, total - 2, total - 1, total];
       return [cur - 2, cur - 1, cur, cur + 1, cur + 2];
     },
     editDialogTitle() {
@@ -1359,7 +1843,11 @@ export default {
       this.outputCurrentPage = 1;
     },
     mainTab(tab) {
-      if (tab === "organize" && this.organizeSubTab === "merge" && !this.mergedRows.length) {
+      if (
+        tab === "organize" &&
+        this.organizeSubTab === "merge" &&
+        !this.mergedRows.length
+      ) {
         this.runMerge();
       }
       // 切换到规则设置页签时，默认显示第一个业务规则
@@ -1382,7 +1870,7 @@ export default {
     if (allowed.includes(section)) {
       this.mainTab = section;
     }
-    
+
     this.orgTree = generateOrgTree();
     this.syncBehaviorModeConfig();
     this.loadCleanRulesConfig();
@@ -1412,7 +1900,9 @@ export default {
     },
     loadCleanRulesConfig() {
       this.cleanRules = loadCleanRules();
-      if (!this.cleanRules.some((r) => r.sourceCode === this.activeRuleSource)) {
+      if (
+        !this.cleanRules.some((r) => r.sourceCode === this.activeRuleSource)
+      ) {
         this.activeRuleSource = SOURCE_META[0]?.code || "offline_gate";
       }
     },
@@ -1425,10 +1915,14 @@ export default {
       return formatFieldOptionLabel(opt);
     },
     removeMissingField(key) {
-      this.ruleMissingSelectedKeys = this.ruleMissingSelectedKeys.filter((k) => k !== key);
+      this.ruleMissingSelectedKeys = this.ruleMissingSelectedKeys.filter(
+        (k) => k !== key,
+      );
     },
     removeDuplicateField(key) {
-      this.ruleDuplicateSelectedKeys = this.ruleDuplicateSelectedKeys.filter((k) => k !== key);
+      this.ruleDuplicateSelectedKeys = this.ruleDuplicateSelectedKeys.filter(
+        (k) => k !== key,
+      );
     },
     syncErrorRuleField(row, key) {
       const opt = getFieldOptionByKey(this.activeRuleSource, key);
@@ -1476,7 +1970,9 @@ export default {
       const code = this.activeRuleSource;
       const idx = this.cleanRules.findIndex((r) => r.sourceCode === code);
       if (idx < 0) return;
-      this.$confirm("确定恢复该数据源的默认清洗规则？", "提示", { type: "warning" })
+      this.$confirm("确定恢复该数据源的默认清洗规则？", "提示", {
+        type: "warning",
+      })
         .then(() => {
           const next = [...this.cleanRules];
           next[idx] = buildDefaultRule(code);
@@ -1492,9 +1988,16 @@ export default {
         this.$message.warning("请选择要添加规则的字段");
         return;
       }
-      const opt = getFieldOptionByKey(this.activeRuleSource, this.newErrorRuleFieldKey);
+      const opt = getFieldOptionByKey(
+        this.activeRuleSource,
+        this.newErrorRuleFieldKey,
+      );
       if (!opt) return;
-      if (rule.error.rules.some((r) => r.key === opt.key && r.type === this.newErrorRuleType)) {
+      if (
+        rule.error.rules.some(
+          (r) => r.key === opt.key && r.type === this.newErrorRuleType,
+        )
+      ) {
         this.$message.warning("该字段下已存在相同类型的规则");
         return;
       }
@@ -1505,7 +2008,9 @@ export default {
         enabled: true,
       };
       if (errorRuleNeedsRefField(this.newErrorRuleType)) {
-        const start = this.refFieldOptionsForRule(item).find((f) => f.key !== opt.key);
+        const start = this.refFieldOptionsForRule(item).find(
+          (f) => f.key !== opt.key,
+        );
         if (start) {
           item.startKey = start.key;
           item.startLabel = start.label;
@@ -1523,7 +2028,11 @@ export default {
       this.gateRows = generateGateRows();
       this.canteenRows = generateCanteenRows();
       this.onlineRows = generateOnlineRows();
-      this.sourceStats = countSourceStats(this.gateRows, this.canteenRows, this.onlineRows);
+      this.sourceStats = countSourceStats(
+        this.gateRows,
+        this.canteenRows,
+        this.onlineRows,
+      );
       this.refreshCleanLists();
       this.rebuildStandardAndRules();
     },
@@ -1543,49 +2052,56 @@ export default {
         arrivalTime: this.workConfigArrival || wc.arrivalTime,
         departureTime: this.workConfigDeparture || wc.departureTime,
         overtimeStartTime: wc.overtimeStartTime,
-        loginLateConsecutiveDays: this.workConfig.lateDays ?? wc.loginLateConsecutiveDays,
+        loginLateConsecutiveDays:
+          this.workConfig.lateDays ?? wc.loginLateConsecutiveDays,
       };
     },
     rebuildStandardAndRules() {
       this.attendanceRows = buildAttendanceResults(
         this.gateRows,
         this.canteenRows,
-        this.onlineRows
+        this.onlineRows,
       );
       this.mergedRows = buildMergedPreviewFromStandardRows(
         this.attendanceRows,
-        this.fieldMappings
+        this.fieldMappings,
       );
-      this.personContexts = buildPersonDayContextsFromStandardRows(this.attendanceRows);
+      this.personContexts = buildPersonDayContextsFromStandardRows(
+        this.attendanceRows,
+      );
       this.runBusinessRules(false);
     },
     runBusinessRules(showMsg = true) {
       const config = this.getWorkConfig();
       this.senselessAttendanceRows = generateSenselessAttendanceTable(
         this.personContexts,
-        config
+        config,
       );
       this.abnormalRows = generateAbnormalAttendanceTable(
         this.personContexts,
         config,
-        getBusinessRuleConfig("abnormal", this.businessRuleConfigs)
+        getBusinessRuleConfig("abnormal", this.businessRuleConfigs),
       );
       this.refreshWorkHours();
       if (showMsg) {
         this.$message.success(
-          `规则计算完成：考勤 ${this.senselessAttendanceRows.length} 条，异常 ${this.abnormalRows.length} 条，工时 ${this.workHoursRows.length} 条`
+          `规则计算完成：考勤 ${this.senselessAttendanceRows.length} 条，异常 ${this.abnormalRows.length} 条，工时 ${this.workHoursRows.length} 条`,
         );
       }
     },
     refreshWorkHours() {
-      const catalogId = this.workHoursCategory === "skill" ? "hours_skill" : "hours_mgmt";
-      const ruleCfg = getBusinessRuleConfig(catalogId, this.businessRuleConfigs);
+      const catalogId =
+        this.workHoursCategory === "skill" ? "hours_skill" : "hours_mgmt";
+      const ruleCfg = getBusinessRuleConfig(
+        catalogId,
+        this.businessRuleConfigs,
+      );
       this.workHoursRows = generateWorkHoursTable(
         this.personContexts,
         this.senselessAttendanceRows,
         this.workHoursCategory,
         ruleCfg,
-        ruleCfg.hoursParams
+        ruleCfg.hoursParams,
       );
     },
     refreshCleanLists() {
@@ -1593,19 +2109,19 @@ export default {
         this.gateRows,
         this.canteenRows,
         this.onlineRows,
-        this.cleanRules
+        this.cleanRules,
       );
       this.duplicateRows = buildDuplicateRows(
         this.gateRows,
         this.canteenRows,
         this.onlineRows,
-        this.cleanRules
+        this.cleanRules,
       ).filter((r) => !this.removedDupGroups.includes(r.dupGroup));
       this.errorRows = buildErrorRows(
         this.gateRows,
         this.canteenRows,
         this.onlineRows,
-        this.cleanRules
+        this.cleanRules,
       );
     },
     filterCleanList(list) {
@@ -1619,7 +2135,7 @@ export default {
           (r) =>
             (r.name && r.name.includes(kw)) ||
             (r.personId && String(r.personId).includes(kw)) ||
-            (r.sourceName && r.sourceName.includes(kw))
+            (r.sourceName && r.sourceName.includes(kw)),
         );
       }
       return data;
@@ -1638,7 +2154,8 @@ export default {
         task();
         this[loadingKey] = false;
         if (successMsg) {
-          const msg = typeof successMsg === "function" ? successMsg() : successMsg;
+          const msg =
+            typeof successMsg === "function" ? successMsg() : successMsg;
           this.$message.success(msg);
         }
       }, 400);
@@ -1649,7 +2166,7 @@ export default {
         () => {
           this.cleanPage = 1;
         },
-        () => `查询成功，共 ${this.cleanListTotal} 条`
+        () => `查询成功，共 ${this.cleanListTotal} 条`,
       );
     },
     handleOutputSearch() {
@@ -1658,7 +2175,7 @@ export default {
         () => {
           this.outputCurrentPage = 1;
         },
-        () => `查询成功，共 ${this.filteredOutputList.length} 条`
+        () => `查询成功，共 ${this.filteredOutputList.length} 条`,
       );
     },
     handleRunMerge() {
@@ -1667,7 +2184,7 @@ export default {
         () => {
           this.runMerge(false);
         },
-        () => `标准表已生成 ${this.mergedRows.length} 条，并完成规则计算`
+        () => `标准表已生成 ${this.mergedRows.length} 条，并完成规则计算`,
       );
     },
     resetCleanFilter() {
@@ -1751,7 +2268,10 @@ export default {
       this.mappingForm.sourceField = "";
     },
     onMappingTargetChange(val) {
-      this.mappingForm.prop = resolveMappingProp(val, this.fieldMappings.filter((m) => m.id !== this.mappingForm.id));
+      this.mappingForm.prop = resolveMappingProp(
+        val,
+        this.fieldMappings.filter((m) => m.id !== this.mappingForm.id),
+      );
     },
     saveMapping() {
       const form = this.$refs.mappingFormRef;
@@ -1762,9 +2282,12 @@ export default {
           {
             ...this.mappingForm,
             status: "已映射",
-            isManual: this.mappingDialogMode === "add" ? true : this.mappingForm.isManual,
+            isManual:
+              this.mappingDialogMode === "add"
+                ? true
+                : this.mappingForm.isManual,
           },
-          this.fieldMappings
+          this.fieldMappings,
         );
         if (!result.ok) {
           this.$message.warning(result.message);
@@ -1774,7 +2297,9 @@ export default {
           this.fieldMappings.push(result.mapping);
           this.$message.success("映射已新增");
         } else {
-          const idx = this.fieldMappings.findIndex((m) => m.id === result.mapping.id);
+          const idx = this.fieldMappings.findIndex(
+            (m) => m.id === result.mapping.id,
+          );
           if (idx >= 0) {
             this.$set(this.fieldMappings, idx, result.mapping);
             this.$message.success("映射已更新");
@@ -1787,11 +2312,17 @@ export default {
       });
     },
     deleteMapping(row) {
-      this.$confirm(`确定删除映射「${row.sourceField} → ${row.targetField}」？`, "提示", {
-        type: "warning",
-      })
+      this.$confirm(
+        `确定删除映射「${row.sourceField} → ${row.targetField}」？`,
+        "提示",
+        {
+          type: "warning",
+        },
+      )
         .then(() => {
-          this.fieldMappings = this.fieldMappings.filter((m) => m.id !== row.id);
+          this.fieldMappings = this.fieldMappings.filter(
+            (m) => m.id !== row.id,
+          );
           this.rebuildStandardAndRules();
           this.$message.success("已删除映射");
         })
@@ -1799,7 +2330,10 @@ export default {
     },
     onAttendanceCellClick(row, column) {
       if (!row) return;
-      if (column && (column.columnKey === "personName" || column.label === "姓名")) {
+      if (
+        column &&
+        (column.columnKey === "personName" || column.label === "姓名")
+      ) {
         this.openFlexibleAttendance(row);
       }
     },
@@ -1816,7 +2350,7 @@ export default {
               r.personId === row.personId &&
               r.abnormalType === "旷工" &&
               r.recordDate &&
-              (!period || r.recordDate.startsWith(period))
+              (!period || r.recordDate.startsWith(period)),
           )
           .map((r) => r.recordDate);
 
@@ -1843,14 +2377,21 @@ export default {
     },
     exportFlexibleAttendance(sheet) {
       if (!sheet) return;
-      const dayHeaders = sheet.days.flatMap((d) => [`${d.day}日上午`, `${d.day}日下午`]);
+      const dayHeaders = sheet.days.flatMap((d) => [
+        `${d.day}日上午`,
+        `${d.day}日下午`,
+      ]);
       const dayValues = sheet.days.flatMap((d) => [d.am.text, d.pm.text]);
       const headers = ["姓名", "员工编码", "考勤月份", ...dayHeaders];
       const row = [sheet.name, sheet.personId, sheet.yearMonth, ...dayValues];
       const csv = [headers, row]
-        .map((line) => line.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+        .map((line) =>
+          line.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","),
+        )
         .join("\n");
-      const blob = new Blob(["\ufeff" + csv], { type: "text/csv;charset=utf-8" });
+      const blob = new Blob(["\ufeff" + csv], {
+        type: "text/csv;charset=utf-8",
+      });
       const url = URL.createObjectURL(blob);
       const a = document.createElement("a");
       a.href = url;
@@ -1866,7 +2407,9 @@ export default {
         if (table && table.doLayout) table.doLayout();
       });
       if (showMsg) {
-        this.$message.success(`标准表已生成 ${this.mergedRows.length} 条，并完成规则计算`);
+        this.$message.success(
+          `标准表已生成 ${this.mergedRows.length} 条，并完成规则计算`,
+        );
       }
     },
     handleOrgClick(data) {
@@ -1914,7 +2457,17 @@ export default {
           r.dataSources,
         ]);
       } else if (tab === "attendance") {
-        headers = ["组织机构", "姓名", "人员ID", "日期", "考勤类型", "到岗时间", "离岗时间", "规则层级", "输出表"];
+        headers = [
+          "组织机构",
+          "姓名",
+          "人员ID",
+          "日期",
+          "考勤类型",
+          "到岗时间",
+          "离岗时间",
+          "规则层级",
+          "输出表",
+        ];
         rows = data.map((r) => [
           r.orgName,
           r.name,
@@ -1927,7 +2480,15 @@ export default {
           r.targetTable,
         ]);
       } else if (tab === "abnormal") {
-        headers = ["组织机构", "姓名", "人员ID", "日期", "异常类型", "规则层级", "说明"];
+        headers = [
+          "组织机构",
+          "姓名",
+          "人员ID",
+          "日期",
+          "异常类型",
+          "规则层级",
+          "说明",
+        ];
         rows = data.map((r) => [
           r.orgName,
           r.name,
@@ -1938,7 +2499,19 @@ export default {
           r.detail,
         ]);
       } else {
-        headers = ["组织机构", "姓名", "人员ID", "日期", "考勤类型", "工时类型", "工时", "规则层级", "数据来源", "计算说明", "岗位类别"];
+        headers = [
+          "组织机构",
+          "姓名",
+          "人员ID",
+          "日期",
+          "考勤类型",
+          "工时类型",
+          "工时",
+          "规则层级",
+          "数据来源",
+          "计算说明",
+          "岗位类别",
+        ];
         rows = data.map((r) => [
           r.orgName,
           r.name,
@@ -1954,12 +2527,21 @@ export default {
         ]);
       }
       const csv = [headers, ...rows]
-        .map((line) => line.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","))
+        .map((line) =>
+          line.map((c) => `"${String(c).replace(/"/g, '""')}"`).join(","),
+        )
         .join("\n");
-      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8" });
+      const blob = new Blob(["\uFEFF" + csv], {
+        type: "text/csv;charset=utf-8",
+      });
       const a = document.createElement("a");
       a.href = URL.createObjectURL(blob);
-      const names = { standard: "业务标准表", attendance: "无感考勤表", abnormal: "异常考勤校验表", hours: "工时统计" };
+      const names = {
+        standard: "业务标准表",
+        attendance: "无感考勤表",
+        abnormal: "异常考勤校验表",
+        hours: "工时统计",
+      };
       a.download = `${names[tab]}_${new Date().toISOString().slice(0, 10)}.csv`;
       a.click();
       URL.revokeObjectURL(a.href);
@@ -2156,7 +2738,6 @@ export default {
 .btn-text-danger:hover {
   color: #f78989;
 }
-
 
 .merge-hint {
   font-size: 13px;
