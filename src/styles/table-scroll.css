@@ -70,14 +70,41 @@
   width: 100%;
   max-width: 100%;
   min-width: 0;
-  padding: 12px;
+  padding: 0 12px 12px 12px;
   box-sizing: border-box;
   overflow-x: auto !important;
   overflow-y: visible !important;
   -webkit-overflow-scrolling: touch;
 }
 
+/* 美化横向滚动条 */
+.table-hscroll-viewport::-webkit-scrollbar {
+  height: 8px;
+}
+
+.table-hscroll-viewport::-webkit-scrollbar-track {
+  background: #f5f7fa;
+  border-radius: 4px;
+}
+
+.table-hscroll-viewport::-webkit-scrollbar-thumb {
+  background: #c0c4cc;
+  border-radius: 4px;
+  transition: background 0.3s;
+}
+
+.table-hscroll-viewport::-webkit-scrollbar-thumb:hover {
+  background: #909399;
+}
+
+.table-hscroll-viewport::-webkit-scrollbar-corner {
+  background: #f5f7fa;
+}
+
+/* 确保表格可以完全展开 */
 .table-hscroll-viewport .el-table {
+  min-width: max-content !important;
+  width: max-content !important;
   max-width: none !important;
   overflow: visible !important;
 }
