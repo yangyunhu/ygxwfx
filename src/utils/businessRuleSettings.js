@@ -128,7 +128,10 @@ export function buildDefaultBusinessRuleConfig(catalogId) {
     })),
     workConfig:
       catalogId === "attendance" || catalogId === "abnormal"
-        ? { ...DEFAULT_WORK_CONFIG }
+        ? { 
+            ...DEFAULT_WORK_CONFIG,
+            timeOverrides: [] // 时间优先级配置数组
+          }
         : null,
     hoursParams: DEFAULT_HOURS_PARAMS[catalogId]
       ? { ...DEFAULT_HOURS_PARAMS[catalogId] }
@@ -185,7 +188,11 @@ function normalizeConfig(raw) {
       }
       return merged;
     }),
-    workConfig: raw.workConfig ? { ...base.workConfig, ...raw.workConfig } : base.workConfig,
+    workConfig: raw.workConfig ? { 
+      ...base.workConfig, 
+      ...raw.workConfig,
+      timeOverrides: raw.workConfig.timeOverrides || base.workConfig.timeOverrides
+    } : base.workConfig,
     hoursParams: raw.hoursParams
       ? { ...base.hoursParams, ...raw.hoursParams }
       : base.hoursParams,
