@@ -8,11 +8,6 @@
       <el-button size="small" icon="el-icon-refresh-left" @click="handleReset">恢复默认</el-button>
     </div>
 
-    <div class="stats-row">
-      <span>格式规则 <strong>{{ enabledRuleCount }}</strong> 条</span>
-      <span>匹配方式 <strong>{{ formatForm.autoMatch ? "自动匹配" : "手动指定" }}</strong></span>
-    </div>
-
     <section class="config-card">
       <div class="card-head">
         <div class="card-title" style="margin:0;border:none;padding:0">请求数据格式设定</div>

@@ -1,39 +1,27 @@
 <template>
   <div class="perm-page">
-    <div class="page-head">
-      <div>
-        <h2 class="page-title">数据处理与转换</h2>
-        <p class="page-desc">
-          将外部数据转换为系统内部格式，映射至标准表字段，供无感考勤规则链使用。
-        </p>
+    <!-- 字段映射配置区 -->
+    <el-card class="section-card" shadow="hover">
+      <div slot="header" class="card-header">
+        <span class="card-title">
+          <i class="el-icon-s-grid"></i>
+          字段映射配置
+        </span>
+        <span class="card-subtitle">外部字段 → 标准字段</span>
       </div>
-      <el-button size="small" icon="el-icon-refresh-left" @click="resetMapping"
-        >恢复默认映射</el-button
+      
+      <!-- 功能说明 -->
+      <el-alert
+        title="功能说明"
+        type="info"
+        :closable="false"
+        show-icon
+        class="section-tip"
       >
-    </div>
+        按外部 API 字段与标准表字段建立映射（数据源为八类无感数据）；支持手动新增、编辑与删除映射关系，保存后参与数据转换。
+      </el-alert>
 
-    <div class="stats-row">
-      <span
-        >映射规则 <strong>{{ mapping.length }}</strong></span
-      >
-      <span
-        >已映射 <strong>{{ mappedCount }}</strong></span
-      >
-      <span
-        >已转换 <strong>{{ attendanceRows.length }}</strong> 条</span
-      >
-      <span
-        >标准字段 <strong>{{ targetFields.length }}</strong></span
-      >
-    </div>
-
-    <section class="config-card mapping-section">
-      <div class="card-title">字段映射配置（外部 → 标准表）</div>
-      <div class="panel-tip">
-        <i class="el-icon-info"></i>
-        按外部 API
-        字段与标准表字段建立映射（数据源为八类无感数据）；支持手动新增、编辑与删除映射关系，保存后参与数据转换。
-      </div>
+      <!-- 工具栏 -->
       <div class="mapping-toolbar">
         <el-button
           type="primary"
@@ -57,125 +45,160 @@
             :value="s"
           />
         </el-select>
-        <span v-if="mappingSourceFilter" class="mapping-filter-count">
+        <el-tag v-if="mappingSourceFilter" type="info" size="small" effect="plain">
           共 {{ filteredMapping.length }} 条
+        </el-tag>
+        <span class="toolbar-hint">
+          <i class="el-icon-info"></i>
+          新增映射保存后立即参与转换
         </span>
-        <span class="mapping-toolbar-hint">新增映射保存后立即参与转换</span>
       </div>
-      <el-table :data="filteredMapping" border stripe size="small">
-        <el-table-column type="index" label="序号" width="55" />
-        <el-table-column
-          prop="source"
-          label="数据源"
-          width="140"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="externalField"
-          label="外部字段"
-          width="120"
-          show-overflow-tooltip
-        />
-        <el-table-column label="" width="40" align="center">→</el-table-column>
-        <el-table-column
-          prop="targetField"
-          label="标准字段"
-          width="120"
-          show-overflow-tooltip
-        />
-        <el-table-column
-          prop="label"
-          label="说明"
-          width="140"
-          show-overflow-tooltip
-        />
-        <el-table-column label="必填" width="60" align="center">
-          <template>
-            <el-tag size="mini" type="danger">是</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column
-          prop="status"
-          label="映射状态"
-          width="90"
-          align="center"
-        >
-          <template slot-scope="{ row }">
-            <el-tag
-              :type="row.status === '已映射' ? 'success' : 'warning'"
-              size="small"
-            >
-              {{ row.status }}
-            </el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column label="操作" width="100" align="center">
-          <template slot-scope="{ row }">
-            <el-button
-              type="text"
-              size="small"
-              @click="openEditMappingDialog(row)"
-              >编辑</el-button
-            >
-            <el-button
-              type="text"
-              size="small"
-              class="btn-text-danger"
-              @click="deleteMapping(row)"
-              >删除</el-button
-            >
-          </template>
-        </el-table-column>
-      </el-table>
-      <el-button
-        size="small"
-        type="primary"
-        plain
-        style="margin-top: 12px"
-        @click="persistMapping"
-        >保存映射</el-button
-      >
-    </section>
 
-    <section class="config-card standard-fields-section">
-      <div class="card-head standard-fields-section__head">
-        <div class="card-title card-title-inline">标准表字段说明</div>
-        <span class="standard-fields-count"
-          >共 {{ targetFields.length }} 项，均为必填</span
-        >
-      </div>
-      <div class="standard-fields-grid">
-        <div
-          v-for="field in targetFields"
-          :key="field.key"
-          class="standard-field-item"
-        >
-          <div class="standard-field-item__main">
-            <span class="standard-field-item__label">{{ field.label }}</span>
-            <code class="standard-field-item__key">{{ field.key }}</code>
-          </div>
-          <el-tag type="danger" size="mini">必填</el-tag>
-        </div>
-      </div>
-    </section>
-
-    <section class="config-card">
-      <div class="card-head">
-        <div class="card-title" style="margin: 0; border: none; padding: 0">
-          转换结果预览
-        </div>
-        <el-button size="small" type="primary" @click="runTransform"
-          >执行转换（示例数据）</el-button
-        >
-      </div>
-      <div class="preview-table-wrap">
-        <el-table
-          :data="previewRows"
-          border
+      <!-- 映射表格 -->
+      <div class="table-wrapper">
+        <el-table 
+          :data="filteredMapping" 
+          border 
+          stripe 
           size="small"
-          :style="{ width: '100%', minWidth: previewTableMinWidth + 'px' }"
-          empty-text="暂无转换数据，请先在「数据接收与解析」接入数据"
+          :header-cell-style="{background: '#f5f7fa', color: '#606266', fontWeight: '600'}"
+          class="mapping-table"
         >
+          <el-table-column type="index" label="序号" width="50" align="center" fixed="left" />
+          <el-table-column
+            prop="source"
+            label="数据源"
+            width="110"
+            show-overflow-tooltip
+            fixed="left"
+          >
+            <template slot-scope="{ row }">
+              <el-tag size="mini" effect="plain">{{ row.source }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="externalField"
+            label="外部字段"
+            width="130"
+            show-overflow-tooltip
+          >
+            <template slot-scope="{ row }">
+              <code class="field-code">{{ row.externalField }}</code>
+            </template>
+          </el-table-column>
+          <el-table-column label="" width="30" align="center">
+            <template>
+              <i class="el-icon-right arrow-icon"></i>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="targetField"
+            label="标准字段"
+            width="120"
+            show-overflow-tooltip
+          >
+            <template slot-scope="{ row }">
+              <span class="target-field">{{ row.targetField }}</span>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="label"
+            label="说明"
+            width="250"
+            show-overflow-tooltip
+          />
+          <el-table-column label="必填" width="60" align="center">
+            <template>
+              <el-tag size="mini" type="danger" effect="plain">必填</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column
+            prop="status"
+            label="映射状态"
+            width="90"
+            align="center"
+          >
+            <template slot-scope="{ row }">
+              <el-tag
+                :type="row.status === '已映射' ? 'success' : 'warning'"
+                size="small"
+                effect="light"
+              >
+                <i :class="row.status === '已映射' ? 'el-icon-success' : 'el-icon-warning'"></i>
+                {{ row.status }}
+              </el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="110" align="center">
+            <template slot-scope="{ row }">
+              <el-button
+                type="text"
+                size="small"
+                icon="el-icon-edit"
+                @click="openEditMappingDialog(row)"
+              >编辑</el-button>
+              <el-button
+                type="text"
+                size="small"
+                icon="el-icon-delete"
+                class="btn-text-danger"
+                @click="deleteMapping(row)"
+              >删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <!-- 操作按钮 -->
+      <div class="table-actions">
+        <el-button
+          type="primary"
+          icon="el-icon-check"
+          @click="persistMapping"
+        >
+          保存映射
+        </el-button>
+        <el-tag type="info" size="small" effect="plain" style="margin-left: 12px">
+          <i class="el-icon-timer"></i>
+          保存后自动生效
+        </el-tag>
+      </div>
+    </el-card>
+
+    <!-- 转换结果预览区 -->
+    <el-card class="section-card" shadow="hover">
+      <div slot="header" class="card-header">
+        <span class="card-title">
+          <i class="el-icon-view"></i>
+          转换结果预览
+        </span>
+        <el-button size="small" type="primary" icon="el-icon-refresh" @click="runTransform">
+          执行转换
+        </el-button>
+      </div>
+      
+      <!-- 空状态提示 -->
+      <el-empty
+        v-if="!previewRows || previewRows.length === 0"
+        description="暂无转换数据，请先在「数据接收与解析」接入数据"
+        :image-size="120"
+      >
+        <el-button type="primary" size="small" @click="runTransform">
+          加载示例数据
+        </el-button>
+      </el-empty>
+
+      <!-- 预览表格 -->
+      <el-table
+        v-else
+        :data="previewRows"
+        border
+        stripe
+        size="small"
+        :header-cell-style="{background: '#f5f7fa', color: '#606266', fontWeight: '600'}"
+        :style="{ width: '100%', minWidth: previewTableMinWidth + 'px' }"
+        class="preview-table"
+      >
           <el-table-column type="index" label="序号" width="55" fixed="left" />
           <el-table-column
             v-for="col in standardPreviewColumns"
@@ -186,21 +209,7 @@
             show-overflow-tooltip
           />
         </el-table>
-      </div>
-    </section>
-
-    <section
-      v-if="transformResult && transformResult.failed.length"
-      class="config-card"
-    >
-      <div class="card-title">转换失败记录</div>
-      <el-table :data="transformResult.failed" border size="small">
-        <el-table-column prop="index" label="序号" width="60" />
-        <el-table-column label="错误" min-width="280">
-          <template slot-scope="{ row }">{{ row.errors.join("；") }}</template>
-        </el-table-column>
-      </el-table>
-    </section>
+    </el-card>
 
     <el-dialog
       :title="mappingDialogTitle"
@@ -505,108 +514,280 @@ export default {
 
 <style scoped src="../styles/permission-page.css"></style>
 <style scoped>
-/* 修复布局，确保页面不会被左侧菜单遮挡，并且不会超出右边屏幕 */
-.perm-page {
-  padding: 20px;
-  background: #f0f2f5;
-  min-height: 100%;
-  width: 100%;
-  box-sizing: border-box;
-  overflow-x: hidden;
+/* 页面头部卡片 */
+.page-header-card {
+  margin-bottom: 16px;
+  border: none;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: #fff;
 }
 
-.mapping-section {
-  padding-bottom: 16px;
+.page-header-content {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 0;
 }
-.panel-tip {
-  margin: 0 0 12px;
-  padding: 10px 14px;
+
+.header-left {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.page-icon {
+  font-size: 36px;
+  color: #fff;
+  margin-top: 4px;
+  background: rgba(255, 255, 255, 0.2);
+  width: 56px;
+  height: 56px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 12px;
+  backdrop-filter: blur(10px);
+}
+
+.page-title {
+  margin: 0 0 6px 0;
+  font-size: 20px;
+  font-weight: 600;
+  color: #fff;
+  letter-spacing: 0.5px;
+}
+
+.page-desc {
+  margin: 0;
   font-size: 13px;
-  color: #606266;
-  background: #ecf5ff;
-  border-radius: 4px;
+  color: rgba(255, 255, 255, 0.9);
+  line-height: 1.6;
 }
-.panel-tip i {
+
+/* 卡片通用样式 */
+.section-card {
+  margin-bottom: 16px;
+  border: none;
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.05);
+  transition: box-shadow 0.3s;
+}
+
+.section-card:hover {
+  box-shadow: 0 4px 16px 0 rgba(0, 0, 0, 0.1);
+}
+
+.card-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0;
+  margin-bottom: 16px;
+}
+
+.card-title {
+  font-size: 16px;
+  font-weight: 600;
+  color: #303133;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.card-title i {
+  font-size: 18px;
   color: #409eff;
-  margin-right: 6px;
 }
+
+.card-subtitle {
+  font-size: 12px;
+  color: #909399;
+  font-weight: normal;
+}
+
+/* 提示信息 */
+.section-tip {
+  margin-bottom: 16px;
+  border-radius: 6px;
+}
+
+/* 工具栏 */
 .mapping-toolbar {
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background: #f5f7fa;
+  border-radius: 6px;
+  flex-wrap: wrap;
 }
-.mapping-toolbar-hint {
+
+.toolbar-hint {
   font-size: 12px;
   color: #909399;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-left: auto;
 }
-.mapping-filter-count {
+
+.toolbar-hint i {
+  color: #409eff;
+}
+
+/* 表格样式 */
+.table-wrapper {
+  overflow-x: auto;
+  overflow-y: visible;
+  margin: 0 -16px;
+  padding: 0 16px;
+}
+
+.mapping-table,
+.preview-table {
+  border-radius: 6px;
+  overflow: hidden;
+  min-width: 740px;
+}
+
+.mapping-table >>> .el-table__header,
+.preview-table >>> .el-table__header {
+  background: #f5f7fa;
+}
+
+.mapping-table >>> .el-table__body-wrapper {
+  max-height: 600px;
+  overflow-y: auto;
+}
+
+.field-code {
+  background: #f5f7fa;
+  color: #e6a23c;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-family: 'Courier New', monospace;
   font-size: 12px;
-  color: #606266;
+  font-weight: 500;
 }
+
+.target-field {
+  color: #409eff;
+  font-weight: 500;
+}
+
+.arrow-icon {
+  color: #c0c4cc;
+  font-size: 16px;
+}
+
+/* 操作按钮 */
 .btn-text-danger {
   color: #f56c6c;
 }
+
 .btn-text-danger:hover {
   color: #f78989;
 }
-.standard-fields-section__head {
+
+.table-actions {
+  margin-top: 16px;
+  padding-top: 16px;
+  border-top: 1px solid #ebeef5;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 12px;
 }
-.card-title-inline {
-  margin: 0;
-  border: none;
-  padding: 0;
+
+/* 空状态 */
+.preview-table >>> .el-empty {
+  padding: 40px 0;
 }
-.standard-fields-count {
-  font-size: 12px;
-  color: #909399;
+
+/* 警告卡片 */
+.warning-card {
+  border-left: 4px solid #e6a23c;
 }
-.standard-fields-grid {
-  display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 10px;
+
+.warning-card >>> .el-card__header {
+  background: #fdf6ec;
+  border-bottom: 1px solid #faecd8;
 }
-.standard-field-item {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 8px;
-  padding: 8px 10px;
-  background: #fafafa;
-  border: 1px solid #ebeef5;
-  border-radius: 4px;
-  min-height: 44px;
+
+/* 对话框样式 */
+.el-dialog >>> .el-dialog__header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 16px 20px;
+  border-radius: 6px 6px 0 0;
 }
-.standard-field-item__main {
-  display: flex;
-  flex-direction: column;
-  gap: 2px;
-  min-width: 0;
+
+.el-dialog >>> .el-dialog__title {
+  color: #fff;
+  font-weight: 600;
 }
-.standard-field-item__label {
-  font-size: 12px;
-  color: #303133;
-  font-weight: 500;
+
+.el-dialog >>> .el-dialog__headerbtn .el-dialog__close {
+  color: #fff;
+  font-size: 18px;
 }
-.standard-field-item__key {
-  font-size: 10px;
-  color: #909399;
-  background: #f0f2f5;
-  padding: 1px 4px;
-  border-radius: 2px;
+
+.el-dialog >>> .el-dialog__body {
+  padding: 20px;
 }
-@media (max-width: 640px) {
-  .standard-fields-grid {
-    grid-template-columns: 1fr;
+
+/* 响应式设计 */
+@media (max-width: 768px) {
+  .page-header-content {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+  
+  .header-left {
+    width: 100%;
+  }
+  
+  .mapping-toolbar {
+    flex-direction: column;
+    align-items: stretch;
+  }
+  
+  .toolbar-hint {
+    margin-left: 0;
+    justify-content: flex-start;
+  }
+  
+  .mapping-toolbar .el-select,
+  .mapping-toolbar .el-button {
+    width: 100%;
   }
 }
-.preview-table-wrap {
-  overflow-x: auto;
-  border: 1px solid #ebeef5;
-  border-radius: 6px;
+
+/* 动画效果 */
+.section-card {
+  animation: fadeInUp 0.4s ease-out;
+}
+
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* 标签样式优化 */
+.mapping-table >>> .el-tag,
+.mapping-toolbar >>> .el-tag {
+  border-radius: 4px;
+  font-weight: 500;
+}
+
+.mapping-toolbar >>> .el-tag--info.el-tag--plain {
+  background: #f5f7fa;
+  border-color: #dcdfe6;
+  color: #909399;
 }
 </style>

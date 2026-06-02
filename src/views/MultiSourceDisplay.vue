@@ -12,15 +12,6 @@
       </div>
     </div>
 
-    <div class="stats-row">
-      <span>汇集记录 <strong>{{ stats.totalRows || 0 }}</strong></span>
-      <span>人员 <strong>{{ stats.personCount || 0 }}</strong></span>
-      <span>闸机 <strong>{{ stats.gateCount || 0 }}</strong></span>
-      <span>食堂 <strong>{{ stats.canteenCount || 0 }}</strong></span>
-      <span>线上源 <strong>{{ stats.onlineCount || 0 }}</strong></span>
-      <span>API <strong>{{ stats.apiCount || 0 }}</strong></span>
-    </div>
-
     <div class="agg-pane-toolbar">
       <el-button size="small" icon="el-icon-upload2" @click="triggerImport">导入</el-button>
       <el-button size="small" icon="el-icon-download" :disabled="!displayRows.length" @click="exportData">导出</el-button>

@@ -8,11 +8,6 @@
       <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增密钥</el-button>
     </div>
 
-    <div class="stats-row">
-      <span>密钥总数 <strong>{{ keys.length }}</strong></span>
-      <span>启用 <strong>{{ enabledCount }}</strong></span>
-    </div>
-
     <section class="config-card">
       <div class="card-title">API Key 管理</div>
       <el-table :data="keys" border size="small">

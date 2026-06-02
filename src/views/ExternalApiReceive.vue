@@ -8,11 +8,6 @@
       <el-button size="small" @click="loadSample">加载示例数据</el-button>
     </div>
 
-    <div class="stats-row">
-      <span>接收日志 <strong>{{ logs.length }}</strong></span>
-      <span>今日接收 <strong>{{ stats.todayReceive }}</strong></span>
-    </div>
-
     <section class="config-card">
       <div class="card-title">API 请求模拟</div>
       <el-form label-width="88px" size="small">

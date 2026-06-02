@@ -8,11 +8,6 @@
       <el-button size="small" icon="el-icon-refresh-left" @click="handleReset">恢复默认</el-button>
     </div>
 
-    <div class="stats-row">
-      <span>服务地址 <strong>{{ summary.endpoint }}</strong></span>
-      <span>服务状态 <strong>{{ serverForm.enabled ? "启用" : "停用" }}</strong></span>
-    </div>
-
     <section class="config-card">
       <div class="card-title">服务器端口配置</div>
       <p class="section-tip">配置 API 接口所在服务器的 IP 地址或域名，以及接口监听的端口号。</p>
