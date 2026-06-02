@@ -3,37 +3,81 @@
     <div class="page-head">
       <div>
         <h2 class="page-title">请求数据格式设定</h2>
-        <p class="page-desc">根据接口接收到的请求数据格式，确定返回给调用方的响应数据格式。</p>
+        <p class="page-desc">
+          根据接口接收到的请求数据格式，确定返回给调用方的响应数据格式。
+        </p>
       </div>
-      <el-button size="small" icon="el-icon-refresh-left" @click="handleReset">恢复默认</el-button>
+      <el-button size="small" icon="el-icon-refresh-left" @click="handleReset"
+        >恢复默认</el-button
+      >
     </div>
 
     <section class="config-card">
       <div class="card-head">
-        <div class="card-title" style="margin:0;border:none;padding:0">请求数据格式设定</div>
-        <el-switch v-model="formatForm.autoMatch" active-text="自动匹配响应格式" inactive-text="手动指定" />
+        <div class="card-title" style="margin: 0; border: none; padding: 0">
+          请求数据格式设定
+        </div>
+        <el-switch
+          v-model="formatForm.autoMatch"
+          active-text="自动匹配响应格式"
+          inactive-text="手动指定"
+        />
       </div>
-      <p class="section-tip">根据接口接收到的请求数据格式，确定返回给调用方的响应数据格式。</p>
+      <p class="section-tip">
+        根据接口接收到的请求数据格式，确定返回给调用方的响应数据格式。
+      </p>
 
       <el-form label-width="120px" size="small" class="config-form">
         <el-form-item v-if="!formatForm.autoMatch" label="默认响应格式">
-          <el-select v-model="formatForm.defaultResponseFormat" style="width: 140px">
-            <el-option v-for="r in responseFormatOptions" :key="r.value" :label="r.label" :value="r.value" />
+          <el-select
+            v-model="formatForm.defaultResponseFormat"
+            style="width: 140px"
+          >
+            <el-option
+              v-for="r in responseFormatOptions"
+              :key="r.value"
+              :label="r.label"
+              :value="r.value"
+            />
           </el-select>
         </el-form-item>
       </el-form>
 
       <el-table :data="formatForm.rules" border size="small">
         <el-table-column prop="requestFormat" label="请求格式" width="100">
-          <template slot-scope="{ row }">{{ requestFormatLabel(row.requestFormat) }}</template>
+          <template slot-scope="{ row }">{{
+            requestFormatLabel(row.requestFormat)
+          }}</template>
         </el-table-column>
         <el-table-column prop="responseFormat" label="响应格式" width="100">
-          <template slot-scope="{ row }">{{ responseFormatLabel(row.responseFormat) }}</template>
+          <template slot-scope="{ row }">{{
+            responseFormatLabel(row.responseFormat)
+          }}</template>
         </el-table-column>
-        <el-table-column prop="requestContentType" label="请求 Content-Type" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="responseContentType" label="响应 Content-Type" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="charset" label="编码" width="80" align="center" />
-        <el-table-column prop="desc" label="规则说明" min-width="220" show-overflow-tooltip />
+        <el-table-column
+          prop="requestContentType"
+          label="请求 Content-Type"
+          min-width="200"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="responseContentType"
+          label="响应 Content-Type"
+          min-width="200"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="charset"
+          label="编码"
+          width="80"
+          align="center"
+        />
+        <el-table-column
+          prop="desc"
+          label="规则说明"
+          min-width="220"
+          show-overflow-tooltip
+        />
         <el-table-column label="启用" width="70" align="center">
           <template slot-scope="{ row }">
             <el-switch v-model="row.enabled" @change="saveFormat" />
@@ -41,14 +85,28 @@
         </el-table-column>
         <el-table-column label="预览" width="80" align="center">
           <template slot-scope="{ row }">
-            <el-button type="text" size="small" @click="previewResponse(row)">示例</el-button>
+            <el-button type="text" size="small" @click="previewResponse(row)"
+              >示例</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
-      <el-button size="small" type="primary" plain style="margin-top: 12px" @click="saveFormat">保存格式配置</el-button>
+      <el-button
+        size="small"
+        type="primary"
+        plain
+        style="margin-top: 12px"
+        @click="saveFormat"
+        >保存格式配置</el-button
+      >
     </section>
 
-    <el-dialog title="响应示例" :visible.sync="showPreview" width="560px" append-to-body>
+    <el-dialog
+      title="响应示例"
+      :visible.sync="showPreview"
+      width="560px"
+      append-to-body
+    >
       <p class="preview-meta">Content-Type: {{ previewContentType }}</p>
       <pre class="preview-body">{{ previewBody }}</pre>
       <span slot="footer">
@@ -121,9 +179,19 @@ export default {
 
 <style scoped src="../styles/permission-page.css"></style>
 <style scoped>
-.section-tip { margin: 0 0 12px; font-size: 12px; color: #909399; }
-.config-form { max-width: 640px; }
-.preview-meta { margin: 0 0 8px; font-size: 12px; color: #909399; }
+.section-tip {
+  margin: 0 0 12px;
+  font-size: 12px;
+  color: #909399;
+}
+.config-form {
+  max-width: 640px;
+}
+.preview-meta {
+  margin: 0 0 8px;
+  font-size: 12px;
+  color: #909399;
+}
 .preview-body {
   background: #f5f7fa;
   padding: 12px;

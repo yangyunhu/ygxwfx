@@ -9,7 +9,7 @@
         </span>
         <span class="card-subtitle">外部字段 → 标准字段</span>
       </div>
-      
+
       <!-- 功能说明 -->
       <el-alert
         title="功能说明"
@@ -18,7 +18,8 @@
         show-icon
         class="section-tip"
       >
-        按外部 API 字段与标准表字段建立映射（数据源为八类无感数据）；支持手动新增、编辑与删除映射关系，保存后参与数据转换。
+        按外部 API
+        字段与标准表字段建立映射（数据源为八类无感数据）；支持手动新增、编辑与删除映射关系，保存后参与数据转换。
       </el-alert>
 
       <!-- 工具栏 -->
@@ -45,7 +46,12 @@
             :value="s"
           />
         </el-select>
-        <el-tag v-if="mappingSourceFilter" type="info" size="small" effect="plain">
+        <el-tag
+          v-if="mappingSourceFilter"
+          type="info"
+          size="small"
+          effect="plain"
+        >
           共 {{ filteredMapping.length }} 条
         </el-tag>
         <span class="toolbar-hint">
@@ -56,15 +62,25 @@
 
       <!-- 映射表格 -->
       <div class="table-wrapper">
-        <el-table 
-          :data="filteredMapping" 
-          border 
-          stripe 
+        <el-table
+          :data="filteredMapping"
+          border
+          stripe
           size="small"
-          :header-cell-style="{background: '#f5f7fa', color: '#606266', fontWeight: '600'}"
+          :header-cell-style="{
+            background: '#f5f7fa',
+            color: '#606266',
+            fontWeight: '600',
+          }"
           class="mapping-table"
         >
-          <el-table-column type="index" label="序号" width="50" align="center" fixed="left" />
+          <el-table-column
+            type="index"
+            label="序号"
+            width="50"
+            align="center"
+            fixed="left"
+          />
           <el-table-column
             prop="source"
             label="数据源"
@@ -124,7 +140,13 @@
                 size="small"
                 effect="light"
               >
-                <i :class="row.status === '已映射' ? 'el-icon-success' : 'el-icon-warning'"></i>
+                <i
+                  :class="
+                    row.status === '已映射'
+                      ? 'el-icon-success'
+                      : 'el-icon-warning'
+                  "
+                ></i>
                 {{ row.status }}
               </el-tag>
             </template>
@@ -136,14 +158,16 @@
                 size="small"
                 icon="el-icon-edit"
                 @click="openEditMappingDialog(row)"
-              >编辑</el-button>
+                >编辑</el-button
+              >
               <el-button
                 type="text"
                 size="small"
                 icon="el-icon-delete"
                 class="btn-text-danger"
                 @click="deleteMapping(row)"
-              >删除</el-button>
+                >删除</el-button
+              >
             </template>
           </el-table-column>
         </el-table>
@@ -151,14 +175,15 @@
 
       <!-- 操作按钮 -->
       <div class="table-actions">
-        <el-button
-          type="primary"
-          icon="el-icon-check"
-          @click="persistMapping"
-        >
+        <el-button type="primary" icon="el-icon-check" @click="persistMapping">
           保存映射
         </el-button>
-        <el-tag type="info" size="small" effect="plain" style="margin-left: 12px">
+        <el-tag
+          type="info"
+          size="small"
+          effect="plain"
+          style="margin-left: 12px"
+        >
           <i class="el-icon-timer"></i>
           保存后自动生效
         </el-tag>
@@ -172,11 +197,16 @@
           <i class="el-icon-view"></i>
           转换结果预览
         </span>
-        <el-button size="small" type="primary" icon="el-icon-refresh" @click="runTransform">
+        <el-button
+          size="small"
+          type="primary"
+          icon="el-icon-refresh"
+          @click="runTransform"
+        >
           执行转换
         </el-button>
       </div>
-      
+
       <!-- 空状态提示 -->
       <el-empty
         v-if="!previewRows || previewRows.length === 0"
@@ -195,20 +225,24 @@
         border
         stripe
         size="small"
-        :header-cell-style="{background: '#f5f7fa', color: '#606266', fontWeight: '600'}"
+        :header-cell-style="{
+          background: '#f5f7fa',
+          color: '#606266',
+          fontWeight: '600',
+        }"
         :style="{ width: '100%', minWidth: previewTableMinWidth + 'px' }"
         class="preview-table"
       >
-          <el-table-column type="index" label="序号" width="55" fixed="left" />
-          <el-table-column
-            v-for="col in standardPreviewColumns"
-            :key="col.prop"
-            :prop="col.prop"
-            :label="col.label"
-            width="120"
-            show-overflow-tooltip
-          />
-        </el-table>
+        <el-table-column type="index" label="序号" width="55" fixed="left" />
+        <el-table-column
+          v-for="col in standardPreviewColumns"
+          :key="col.prop"
+          :prop="col.prop"
+          :label="col.label"
+          width="120"
+          show-overflow-tooltip
+        />
+      </el-table>
     </el-card>
 
     <el-dialog
@@ -665,7 +699,7 @@ export default {
   color: #e6a23c;
   padding: 2px 8px;
   border-radius: 4px;
-  font-family: 'Courier New', monospace;
+  font-family: "Courier New", monospace;
   font-size: 12px;
   font-weight: 500;
 }
@@ -741,21 +775,21 @@ export default {
     align-items: flex-start;
     gap: 12px;
   }
-  
+
   .header-left {
     width: 100%;
   }
-  
+
   .mapping-toolbar {
     flex-direction: column;
     align-items: stretch;
   }
-  
+
   .toolbar-hint {
     margin-left: 0;
     justify-content: flex-start;
   }
-  
+
   .mapping-toolbar .el-select,
   .mapping-toolbar .el-button {
     width: 100%;

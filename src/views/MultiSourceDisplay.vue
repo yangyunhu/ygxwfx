@@ -3,26 +3,48 @@
     <div class="page-head">
       <div>
         <h2 class="page-title">数据展示及导入导出</h2>
-        <p class="page-desc">按组织机构层级展示出勤轨迹明细，支持 CSV 导入导出。</p>
+        <p class="page-desc">
+          按组织机构层级展示出勤轨迹明细，支持 CSV 导入导出。
+        </p>
       </div>
       <div class="head-actions">
-        <el-tag v-if="aggregated && aggregated.aggregatedAt" size="small" type="info">
+        <el-tag
+          v-if="aggregated && aggregated.aggregatedAt"
+          size="small"
+          type="info"
+        >
           最近汇集：{{ formatAggregatedAt(aggregated.aggregatedAt) }}
         </el-tag>
       </div>
     </div>
 
     <div class="agg-pane-toolbar">
-      <el-button size="small" icon="el-icon-upload2" @click="triggerImport">导入</el-button>
-      <el-button size="small" icon="el-icon-download" :disabled="!displayRows.length" @click="exportData">导出</el-button>
-      <span class="agg-pane-hint">按组织机构层级展示出勤轨迹明细，支持 CSV 导入导出</span>
+      <el-button size="small" icon="el-icon-upload2" @click="triggerImport"
+        >导入</el-button
+      >
+      <el-button
+        size="small"
+        icon="el-icon-download"
+        :disabled="!displayRows.length"
+        @click="exportData"
+        >导出</el-button
+      >
+      <span class="agg-pane-hint"
+        >按组织机构层级展示出勤轨迹明细，支持 CSV 导入导出</span
+      >
     </div>
 
     <div class="perm-layout agg-display-layout">
       <aside class="perm-sidebar">
         <div class="sidebar-head">组织机构</div>
         <div class="sidebar-search">
-          <el-input v-model="orgKeyword" placeholder="机构名称" prefix-icon="el-icon-search" size="small" clearable />
+          <el-input
+            v-model="orgKeyword"
+            placeholder="机构名称"
+            prefix-icon="el-icon-search"
+            size="small"
+            clearable
+          />
         </div>
         <div class="sidebar-body">
           <el-tree
@@ -43,7 +65,9 @@
           <div class="card-head agg-display-card__head">
             <div class="card-title card-title-inline">
               出勤轨迹明细
-              <span v-if="selectedOrgName" class="org-tag">{{ selectedOrgName }}</span>
+              <span v-if="selectedOrgName" class="org-tag">{{
+                selectedOrgName
+              }}</span>
             </div>
             <el-input
               v-model="personKeyword"
@@ -64,21 +88,57 @@
               :height="displayTableHeight"
               empty-text="暂无轨迹数据"
             >
-              <el-table-column type="index" label="序号" width="55" :index="indexMethod" />
+              <el-table-column
+                type="index"
+                label="序号"
+                width="55"
+                :index="indexMethod"
+              />
               <el-table-column prop="personId" label="人员ID" width="100" />
               <el-table-column prop="name" label="姓名" width="80" />
-              <el-table-column prop="orgName" label="组织机构" min-width="180" show-overflow-tooltip />
+              <el-table-column
+                prop="orgName"
+                label="组织机构"
+                min-width="180"
+                show-overflow-tooltip
+              />
               <el-table-column prop="recordDate" label="日期" width="110" />
-              <el-table-column prop="arrivalTime" label="到岗" width="150" show-overflow-tooltip />
-              <el-table-column prop="departureTime" label="离岗" width="150" show-overflow-tooltip />
-              <el-table-column label="用餐/登录" min-width="140" show-overflow-tooltip>
-                <template slot-scope="{ row }">{{ mealLoginSummary(row) }}</template>
+              <el-table-column
+                prop="arrivalTime"
+                label="到岗"
+                width="150"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                prop="departureTime"
+                label="离岗"
+                width="150"
+                show-overflow-tooltip
+              />
+              <el-table-column
+                label="用餐/登录"
+                min-width="140"
+                show-overflow-tooltip
+              >
+                <template slot-scope="{ row }">{{
+                  mealLoginSummary(row)
+                }}</template>
               </el-table-column>
-              <el-table-column prop="dataSources" label="数据来源" min-width="140" show-overflow-tooltip />
+              <el-table-column
+                prop="dataSources"
+                label="数据来源"
+                min-width="140"
+                show-overflow-tooltip
+              />
               <el-table-column prop="status" label="状态" width="120" />
               <el-table-column label="操作" width="80" align="center">
                 <template slot-scope="{ row }">
-                  <el-button type="text" size="small" @click="openTrackDetail(row)">轨迹</el-button>
+                  <el-button
+                    type="text"
+                    size="small"
+                    @click="openTrackDetail(row)"
+                    >轨迹</el-button
+                  >
                 </template>
               </el-table-column>
             </el-table>
@@ -97,31 +157,84 @@
       </main>
     </div>
 
-    <input ref="fileInput" type="file" accept=".csv" style="display: none" @change="handleImportFile" />
+    <input
+      ref="fileInput"
+      type="file"
+      accept=".csv"
+      style="display: none"
+      @change="handleImportFile"
+    />
 
-    <el-dialog title="出勤轨迹详情" :visible.sync="showDetail" width="640px" append-to-body>
+    <el-dialog
+      title="出勤轨迹详情"
+      :visible.sync="showDetail"
+      width="640px"
+      append-to-body
+    >
       <el-descriptions v-if="detailRow" :column="2" border size="small">
-        <el-descriptions-item label="人员ID">{{ detailRow.personId }}</el-descriptions-item>
-        <el-descriptions-item label="姓名">{{ detailRow.name }}</el-descriptions-item>
-        <el-descriptions-item label="组织机构" :span="2">{{ detailRow.orgName }}</el-descriptions-item>
-        <el-descriptions-item label="考勤日期">{{ detailRow.recordDate }}</el-descriptions-item>
-        <el-descriptions-item label="状态">{{ detailRow.status }}</el-descriptions-item>
-        <el-descriptions-item label="到岗时间">{{ detailRow.arrivalTime }}</el-descriptions-item>
-        <el-descriptions-item label="离岗时间">{{ detailRow.departureTime }}</el-descriptions-item>
-        <el-descriptions-item label="早餐">{{ detailRow.breakfastTime }}</el-descriptions-item>
-        <el-descriptions-item label="午餐">{{ detailRow.lunchTime }}</el-descriptions-item>
-        <el-descriptions-item label="晚餐">{{ detailRow.dinnerTime }}</el-descriptions-item>
-        <el-descriptions-item label="登录">{{ detailRow.loginTime }}</el-descriptions-item>
-        <el-descriptions-item label="休假类型">{{ detailRow.leaveType || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="休假开始">{{ detailRow.leaveStartTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="休假结束">{{ detailRow.leaveEndTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="出差开始">{{ detailRow.businessTripStartTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="出差结束">{{ detailRow.businessTripEndTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="外出开始">{{ detailRow.travelStartTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="培训开始">{{ detailRow.trainingStartTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="培训结束">{{ detailRow.trainingEndTime || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="工作票">{{ detailRow.workTicketRange || "—" }}</el-descriptions-item>
-        <el-descriptions-item label="数据来源" :span="2">{{ detailRow.dataSources }}</el-descriptions-item>
+        <el-descriptions-item label="人员ID">{{
+          detailRow.personId
+        }}</el-descriptions-item>
+        <el-descriptions-item label="姓名">{{
+          detailRow.name
+        }}</el-descriptions-item>
+        <el-descriptions-item label="组织机构" :span="2">{{
+          detailRow.orgName
+        }}</el-descriptions-item>
+        <el-descriptions-item label="考勤日期">{{
+          detailRow.recordDate
+        }}</el-descriptions-item>
+        <el-descriptions-item label="状态">{{
+          detailRow.status
+        }}</el-descriptions-item>
+        <el-descriptions-item label="到岗时间">{{
+          detailRow.arrivalTime
+        }}</el-descriptions-item>
+        <el-descriptions-item label="离岗时间">{{
+          detailRow.departureTime
+        }}</el-descriptions-item>
+        <el-descriptions-item label="早餐">{{
+          detailRow.breakfastTime
+        }}</el-descriptions-item>
+        <el-descriptions-item label="午餐">{{
+          detailRow.lunchTime
+        }}</el-descriptions-item>
+        <el-descriptions-item label="晚餐">{{
+          detailRow.dinnerTime
+        }}</el-descriptions-item>
+        <el-descriptions-item label="登录">{{
+          detailRow.loginTime
+        }}</el-descriptions-item>
+        <el-descriptions-item label="休假类型">{{
+          detailRow.leaveType || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="休假开始">{{
+          detailRow.leaveStartTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="休假结束">{{
+          detailRow.leaveEndTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="出差开始">{{
+          detailRow.businessTripStartTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="出差结束">{{
+          detailRow.businessTripEndTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="外出开始">{{
+          detailRow.travelStartTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="培训开始">{{
+          detailRow.trainingStartTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="培训结束">{{
+          detailRow.trainingEndTime || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="工作票">{{
+          detailRow.workTicketRange || "—"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="数据来源" :span="2">{{
+          detailRow.dataSources
+        }}</el-descriptions-item>
       </el-descriptions>
     </el-dialog>
   </div>
@@ -175,7 +288,7 @@ export default {
         rows = rows.filter(
           (r) =>
             r.personId.toLowerCase().includes(kw) ||
-            (r.name && r.name.toLowerCase().includes(kw))
+            (r.name && r.name.toLowerCase().includes(kw)),
         );
       }
       return rows;
@@ -243,8 +356,13 @@ export default {
       return (this.page - 1) * this.pageSize + index + 1;
     },
     exportData() {
-      const criteria = this.selectedOrgName === "全部" ? "全部机构" : this.selectedOrgName;
-      exportTrajectoryCsv(this.displayRows, `多源数据汇总_${Date.now()}.csv`, criteria);
+      const criteria =
+        this.selectedOrgName === "全部" ? "全部机构" : this.selectedOrgName;
+      exportTrajectoryCsv(
+        this.displayRows,
+        `多源数据汇总_${Date.now()}.csv`,
+        criteria,
+      );
       this.$message.success("导出完成");
     },
     triggerImport() {
@@ -276,7 +394,12 @@ export default {
 
 <style scoped src="../styles/permission-page.css"></style>
 <style scoped>
-.head-actions { display: flex; gap: 8px; flex-shrink: 0; align-items: center; }
+.head-actions {
+  display: flex;
+  gap: 8px;
+  flex-shrink: 0;
+  align-items: center;
+}
 .agg-pane-toolbar {
   display: flex;
   align-items: center;
@@ -287,8 +410,13 @@ export default {
   border: 1px solid #ebeef5;
   border-radius: 8px;
 }
-.agg-pane-hint { font-size: 12px; color: #909399; }
-.agg-pane-card { margin-bottom: 0; }
+.agg-pane-hint {
+  font-size: 12px;
+  color: #909399;
+}
+.agg-pane-card {
+  margin-bottom: 0;
+}
 .agg-display-layout {
   display: flex;
   align-items: stretch;
@@ -341,7 +469,19 @@ export default {
   margin-top: 0;
   padding-top: 12px;
 }
-.card-title-inline { margin: 0; border: none; padding: 0; }
-.org-tag { margin-left: 8px; font-size: 12px; color: #409eff; font-weight: normal; }
-.pager { margin-top: 12px; text-align: right; }
+.card-title-inline {
+  margin: 0;
+  border: none;
+  padding: 0;
+}
+.org-tag {
+  margin-left: 8px;
+  font-size: 12px;
+  color: #409eff;
+  font-weight: normal;
+}
+.pager {
+  margin-top: 12px;
+  text-align: right;
+}
 </style>
