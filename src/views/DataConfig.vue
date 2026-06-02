@@ -70,6 +70,23 @@
                         <i class="el-icon-plus"></i> 添加数据源
                       </el-button>
                     </div>
+                    
+                    <!-- 线下接入数据源按钮区域 -->
+                    <div v-if="offlineSources.length > 0" class="offline-sources-toolbar">
+                      <div class="toolbar-label">线下接入数据:</div>
+                      <div class="toolbar-buttons">
+                        <el-button 
+                          v-for="source in offlineSources" 
+                          :key="source.id"
+                          type="primary" 
+                          size="small"
+                          @click="openOfflineDataUpload(source)"
+                        >
+                          <i class="el-icon-upload2"></i> {{ source.sourceName }}
+                        </el-button>
+                      </div>
+                    </div>
+                    
                     <el-table :data="orgConfigSources" border stripe size="small">
                       <el-table-column type="index" label="序号" width="60" align="center"></el-table-column>
                       <el-table-column prop="sourceName" label="数据源名称" min-width="180"></el-table-column>
@@ -201,6 +218,81 @@
         <el-button type="primary" @click="confirmAddSource">确定</el-button>
       </div>
     </el-dialog>
+
+    <!-- 线下数据上传对话框 -->
+    <el-dialog :title="`线下数据上传 - ${currentOfflineSource ? currentOfflineSource.sourceName : ''}`" :visible.sync="offlineUploadDialogVisible" width="800px">
+      <div class="offline-upload-content">
+        <el-alert
+          title="上传说明"
+          type="info"
+          :closable="false"
+          show-icon
+          style="margin-bottom: 20px;"
+        >
+          <template slot="default">
+            <p>请按照以下步骤上传线下数据:</p>
+            <ol style="padding-left: 20px; margin: 10px 0;">
+              <li>下载数据模板文件</li>
+              <li>按照模板格式填写数据</li>
+              <li>上传填写好的数据文件</li>
+            </ol>
+          </template>
+        </el-alert>
+
+        <div class="upload-section">
+          <h4>1. 下载模板</h4>
+          <el-button type="primary" size="small" @click="downloadTemplate">
+            <i class="el-icon-download"></i> 下载数据模板
+          </el-button>
+        </div>
+
+        <div class="upload-section">
+          <h4>2. 上传数据文件</h4>
+          <el-upload
+            ref="upload"
+            :action="uploadUrl"
+            :before-upload="beforeUpload"
+            :on-success="handleUploadSuccess"
+            :on-error="handleUploadError"
+            :file-list="uploadedFiles"
+            accept=".xlsx,.xls,.csv"
+            drag
+          >
+            <i class="el-icon-upload"></i>
+            <div class="el-upload__text">将文件拖到此处,或<em>点击上传</em></div>
+            <div class="el-upload__tip" slot="tip">支持 xlsx、xls、csv 格式的文件,单个文件不超过10MB</div>
+          </el-upload>
+        </div>
+
+        <div class="upload-section">
+          <h4>3. 已上传文件列表</h4>
+          <el-table :data="uploadedFiles" border stripe size="small" max-height="300">
+            <el-table-column prop="name" label="文件名" min-width="200"></el-table-column>
+            <el-table-column prop="size" label="文件大小" width="120">
+              <template slot-scope="scope">
+                {{ formatFileSize(scope.row.size) }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100" align="center">
+              <template slot-scope="scope">
+                <el-tag :type="scope.row.status === 'success' ? 'success' : 'warning'" size="small">
+                  {{ scope.row.status === 'success' ? '上传成功' : '上传中' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="100" align="center">
+              <template slot-scope="scope">
+                <el-button type="text" size="small" @click="removeUploadedFile(scope.$index)" style="color: #f56c6c;">删除</el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+      <div slot="footer">
+        <el-button @click="offlineUploadDialogVisible = false">关闭</el-button>
+        <el-button type="primary" @click="submitOfflineData">提交数据</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -212,6 +304,7 @@ export default {
   name: "DataConfig",
   data() {
     return {
+      orgTreeData:[],
       activeTab: "org",
       orgSearch: "",
       selectedOrg: null,
@@ -229,7 +322,12 @@ export default {
         webSources: []
       },
       majorConfigList: [],
-      SENSING_ACCESS_SOURCES
+      SENSING_ACCESS_SOURCES,
+      // 线下数据上传相关
+      offlineUploadDialogVisible: false,
+      currentOfflineSource: null,
+      uploadUrl: "#",
+      uploadedFiles: []
     };
   },
   computed: {
@@ -241,6 +339,13 @@ export default {
     },
     majorCategories() {
       return getEnabledLeafCategories();
+    },
+    offlineSources() {
+      // 获取所有线下接入的数据源
+      const sources = this.orgConfigSources.filter(source => source.sourceType === 'offline');
+      console.log('orgConfigSources:', this.orgConfigSources);
+      console.log('offlineSources:', sources);
+      return sources;
     }
   },
   mounted() {
@@ -451,6 +556,78 @@ export default {
     },
     saveMajorConfigList() {
       localStorage.setItem("major_config_list", JSON.stringify(this.majorConfigList));
+    },
+    // 线下数据上传相关方法
+    openOfflineDataUpload(source) {
+      this.currentOfflineSource = source;
+      this.offlineUploadDialogVisible = true;
+      this.uploadedFiles = [];
+    },
+    downloadTemplate() {
+      // 模拟下载模板
+      this.$message.success("模板下载成功");
+    },
+    beforeUpload(file) {
+      const isLt10M = file.size / 1024 / 1024 < 10;
+      if (!isLt10M) {
+        this.$message.error("文件大小不能超过10MB!");
+        return false;
+      }
+      
+      // 添加到文件列表
+      this.uploadedFiles.push({
+        name: file.name,
+        size: file.size,
+        status: 'uploading'
+      });
+      
+      return true;
+    },
+    handleUploadSuccess(response, file, fileList) {
+      // 更新文件状态为成功
+      const index = this.uploadedFiles.findIndex(f => f.name === file.name);
+      if (index > -1) {
+        this.uploadedFiles[index].status = 'success';
+      }
+      this.$message.success(`${file.name} 上传成功`);
+    },
+    handleUploadError(err, file, fileList) {
+      // 更新文件状态为失败
+      const index = this.uploadedFiles.findIndex(f => f.name === file.name);
+      if (index > -1) {
+        this.uploadedFiles[index].status = 'error';
+      }
+      this.$message.error(`${file.name} 上传失败`);
+    },
+    removeUploadedFile(index) {
+      this.uploadedFiles.splice(index, 1);
+    },
+    formatFileSize(size) {
+      if (size < 1024) {
+        return size + ' B';
+      } else if (size < 1024 * 1024) {
+        return (size / 1024).toFixed(2) + ' KB';
+      } else {
+        return (size / 1024 / 1024).toFixed(2) + ' MB';
+      }
+    },
+    submitOfflineData() {
+      if (this.uploadedFiles.length === 0) {
+        this.$message.warning("请先上传数据文件");
+        return;
+      }
+      
+      // 检查是否有上传成功的文件
+      const successFiles = this.uploadedFiles.filter(f => f.status === 'success');
+      if (successFiles.length === 0) {
+        this.$message.warning("没有上传成功的文件");
+        return;
+      }
+      
+      // 模拟提交数据
+      const sourceName = this.currentOfflineSource ? this.currentOfflineSource.sourceName : '';
+      this.$message.success(`已为"${sourceName}"提交 ${successFiles.length} 个文件的数据`);
+      this.offlineUploadDialogVisible = false;
     }
   }
 };
@@ -668,5 +845,54 @@ export default {
 
 .config-form {
   padding-top: 12px;
+}
+
+/* 线下接入数据入口样式 */
+.offline-sources-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 0;
+  margin-bottom: 16px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.toolbar-label {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  white-space: nowrap;
+}
+
+.toolbar-buttons {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+/* 线下数据上传对话框样式 */
+.offline-upload-content {
+  padding: 10px 0;
+}
+
+.upload-section {
+  margin-bottom: 24px;
+}
+
+.upload-section h4 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.upload-section >>> .el-upload-dragger {
+  width: 100%;
+}
+
+.upload-section >>> .el-upload__tip {
+  margin-top: 8px;
+  font-size: 12px;
+  color: #909399;
 }
 </style>

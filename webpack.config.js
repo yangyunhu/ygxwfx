@@ -7,7 +7,8 @@ module.exports = {
   output: {
     path: path.resolve(__dirname, 'dist'),
     filename: 'bundle.js',
-    clean: true
+    clean: true,
+    publicPath: ''
   },
   resolve: {
     extensions: ['.js', '.vue', '.json'],
@@ -62,8 +63,9 @@ module.exports = {
       directory: path.join(__dirname, 'public')
     },
     compress: true,
-    port: 3000,
+    port: 9000,
     hot: true,
-    open: false
+    open: false,
+    historyApiFallback: true
   }
 };

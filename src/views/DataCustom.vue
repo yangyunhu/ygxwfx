@@ -37,6 +37,49 @@
         >
           食堂用餐记录
         </div>
+        <!-- 新增6个线上接入数据源按钮 -->
+        <div
+          class="sub-tab sub-tab-button"
+          :class="{ active: dataType === 'travel' }"
+          @click="switchDataType('travel')"
+        >
+          南网商旅通
+        </div>
+        <div
+          class="sub-tab sub-tab-button"
+          :class="{ active: dataType === 'learn' }"
+          @click="switchDataType('learn')"
+        >
+          南网智学
+        </div>
+        <div
+          class="sub-tab sub-tab-button"
+          :class="{ active: dataType === 'login' }"
+          @click="switchDataType('login')"
+        >
+          数认平台登录记录
+        </div>
+        <div
+          class="sub-tab sub-tab-button"
+          :class="{ active: dataType === 'leave' }"
+          @click="switchDataType('leave')"
+        >
+          人资休假台账
+        </div>
+        <div
+          class="sub-tab sub-tab-button"
+          :class="{ active: dataType === 'workticket' }"
+          @click="switchDataType('workticket')"
+        >
+          工作票
+        </div>
+        <div
+          class="sub-tab sub-tab-button"
+          :class="{ active: dataType === 'car' }"
+          @click="switchDataType('car')"
+        >
+          用车管理
+        </div>
       </div>
 
       <div class="search-area">
@@ -592,6 +635,29 @@ export default {
         ? "搜索姓名、电话、人员ID"
         : "搜索姓名、电话、人员ID";
     },
+    offlineSources() {
+      // 从localStorage获取线下接入的数据源配置
+      const orgId = localStorage.getItem('current_selected_org_id');
+      if (!orgId) return [];
+      
+      const configStr = localStorage.getItem(`org_config_${orgId}`);
+      if (!configStr) return [];
+      
+      try {
+        const configs = JSON.parse(configStr);
+        // 过滤出线下接入的数据源,并转换为按钮格式
+        return configs
+          .filter(c => c.sourceType === 'offline')
+          .map(c => ({
+            id: c.id,
+            sourceName: c.sourceName,
+            dataType: `offline_${c.id}` // 使用唯一标识作为dataType
+          }));
+      } catch (e) {
+        console.error('解析线下数据源配置失败:', e);
+        return [];
+      }
+    },
     filteredOrgTree() {
       const keyword = this.orgTreeKeyword.trim();
       if (!keyword) return this.orgTree;
@@ -612,7 +678,17 @@ export default {
       return filterNodes(this.orgTree);
     },
     activeListData() {
-      const source = this.dataType === "gate" ? this.gateData : this.canteenData;
+      // 判断是否是线下数据源
+      const isOfflineSource = this.dataType.startsWith('offline_');
+      
+      let source;
+      if (isOfflineSource) {
+        // 对于线下数据源,使用gateData作为示例数据(实际应该从服务器或localStorage获取)
+        source = this.gateData;
+      } else {
+        source = this.dataType === "gate" ? this.gateData : this.canteenData;
+      }
+      
       let data = source;
 
       if (this.selectedOrg) {
@@ -1328,6 +1404,29 @@ export default {
 }
 
 .sub-tab.active {
+  color: #fff;
+  background: #409eff;
+}
+
+/* 线下接入数据源按钮样式 */
+.sub-tab-button {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  font-size: 13px;
+  color: #606266;
+  cursor: pointer;
+  border-radius: 4px;
+  transition: all 0.3s;
+}
+
+.sub-tab-button:hover {
+  color: #409eff;
+  background: #ecf5ff;
+}
+
+.sub-tab-button.active {
   color: #fff;
   background: #409eff;
 }
