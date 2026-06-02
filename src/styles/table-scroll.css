@@ -1,0 +1,258 @@
+/**
+ * 表格滚动
+ * - 表头 sticky 固定，纵向随页面滚动
+ * - 横向滚动条在表格容器底部
+ */
+
+.main-wrapper {
+  min-height: 0;
+  min-width: 0;
+}
+
+.main-content {
+  flex: 1;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* 业务页 */
+.data-custom-page,
+.data-config-page,
+.sensing-basic-page,
+.data-access-page,
+.employee-ledger-page,
+.attendance-ledger-page,
+.assessment-ledger-page {
+  min-width: 0;
+  max-width: 100%;
+  box-sizing: border-box;
+}
+
+.content-wrapper {
+  display: flex;
+  gap: 16px;
+  align-items: flex-start;
+  min-width: 0;
+  max-width: 100%;
+}
+
+.content-wrapper > .table-panel,
+.table-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  background: #fff;
+}
+
+.table-panel > .pagination,
+.table-panel > .panel-tip,
+.table-panel > .search-area,
+.table-panel > .mode-tip {
+  flex-shrink: 0;
+}
+
+.table-body-wrap {
+  min-width: 0;
+}
+
+.table-container {
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+}
+
+/* 表格横向滚动容器：不限制纵向高度 */
+.table-hscroll-viewport {
+  display: block;
+  width: 100%;
+  max-width: 100%;
+  min-width: 0;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
+}
+
+.table-hscroll-viewport .el-table {
+  max-width: none !important;
+  overflow: visible !important;
+}
+
+.table-hscroll-viewport .el-table__body-wrapper {
+  overflow-x: visible !important;
+  overflow-y: visible !important;
+}
+
+.table-hscroll-viewport .el-table__header-wrapper {
+  overflow: visible !important;
+}
+
+/* ========== 固定表头（页面滚动时生效） ========== */
+.main-content .el-table {
+  overflow: visible !important;
+}
+
+.main-content .el-table .el-table__header-wrapper,
+.main-content .table-hscroll-viewport .el-table .el-table__header-wrapper {
+  position: sticky;
+  top: 0;
+  z-index: 12;
+  background-color: #f5f7fa;
+}
+
+.main-content .el-table thead th.el-table__cell,
+.main-content .table-hscroll-viewport .el-table thead th.el-table__cell {
+  position: sticky;
+  top: 0;
+  z-index: 11;
+  background-color: #f5f7fa !important;
+}
+
+.main-content .el-table thead th.el-table__cell .cell {
+  background-color: #f5f7fa !important;
+}
+
+.main-content .el-table--striped thead th.el-table__cell {
+  background-color: #f5f7fa !important;
+}
+
+.main-content .el-table--border thead th.el-table__cell {
+  border-bottom: 1px solid #ebeef5;
+}
+
+.main-content .el-table::before {
+  z-index: 10;
+}
+
+/* fixed="right" 操作列表头 */
+.main-content .el-table__fixed-right .el-table__fixed-header-wrapper,
+.main-content .el-table__fixed .el-table__fixed-header-wrapper {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 14;
+  background-color: #f5f7fa;
+}
+
+.main-content .el-table__fixed-right thead th.el-table__cell,
+.main-content .el-table__fixed thead th.el-table__cell {
+  position: sticky !important;
+  top: 0 !important;
+  z-index: 13;
+  background-color: #f5f7fa !important;
+}
+
+/* 原生 table */
+.main-content .table-hscroll-viewport table.data-table,
+.main-content .table-hscroll-viewport table {
+  border-collapse: separate !important;
+  border-spacing: 0;
+}
+
+.main-content table.data-table thead th,
+.main-content .table-hscroll-viewport table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f5f7fa !important;
+  box-shadow: 0 1px 0 #ebeef5;
+}
+
+.main-content table.data-table thead tr {
+  background-color: #f5f7fa;
+}
+
+/* 弹窗内柔性考勤表（弹窗内仍限制高度） */
+.flex-att-dialog .flex-att-scroll {
+  min-height: 280px;
+  max-height: calc(100vh - 260px);
+  height: auto;
+  flex: none;
+  overflow: auto;
+}
+
+.flex-att-scroll .flex-att-table thead tr.head-row-day th {
+  position: sticky;
+  top: 0;
+  z-index: 4;
+  background-color: #ecf5ff !important;
+}
+
+.flex-att-scroll .flex-att-table thead tr.head-row-slot th {
+  position: sticky;
+  top: var(--flex-att-head-row-h, 36px);
+  z-index: 4;
+  background-color: #f5f7fa !important;
+}
+
+.flex-att-scroll .flex-att-table thead .sticky-col {
+  top: 0;
+  z-index: 6;
+  background-color: #ecf5ff !important;
+}
+
+.flex-att-scroll .flex-att-table thead tr.head-row-slot .sticky-col {
+  top: 0;
+}
+
+/* 考勤台账 / 评估台账 / 无感考勤表：姓名列蓝色可点击 */
+.attendance-ledger-page .el-table td.col-person-name .cell,
+.assessment-ledger-page .el-table td.col-person-name .cell,
+.sensing-basic-page .el-table td.col-person-name .cell {
+  color: #409eff !important;
+  font-weight: 500;
+  cursor: pointer !important;
+}
+
+.attendance-ledger-page .el-table td.col-person-name:hover .cell,
+.assessment-ledger-page .el-table td.col-person-name:hover .cell,
+.sensing-basic-page .el-table td.col-person-name:hover .cell {
+  color: #66b1ff !important;
+  text-decoration: underline;
+}
+
+/* 员工台账：禁用 fixed 列，避免姓名列后半段空白 */
+.employee-ledger-page .table-hscroll-viewport .el-table__fixed,
+.employee-ledger-page .table-hscroll-viewport .el-table__fixed-right {
+  display: none !important;
+}
+
+/* 无 table-hscroll-viewport 时的横向滚动 */
+.table-panel > .table-container:not(.table-hscroll-viewport),
+.table-container:not(.table-hscroll-viewport) {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.table-panel > .table-container:not(.table-hscroll-viewport) table thead th,
+.table-container:not(.table-hscroll-viewport) table thead th {
+  position: sticky;
+  top: 0;
+  z-index: 10;
+  background-color: #f5f7fa !important;
+}
+
+.table-container > table,
+.table-container table.data-table {
+  width: max-content;
+  min-width: 100%;
+}
+
+.org-tree-panel {
+  align-self: flex-start;
+  position: sticky;
+  top: 0;
+  max-height: calc(100vh - 80px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.org-tree-panel .tree-container {
+  flex: 1;
+  min-height: 0;
+  overflow-y: auto;
+}

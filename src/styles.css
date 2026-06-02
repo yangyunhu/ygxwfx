@@ -1,0 +1,15 @@
+.el-menu {
+  background-color: transparent !important;
+  border-right: none !important;
+}
+
+.el-submenu__dropdown {
+  background-color: transparent !important;
+  border: none !important;
+  box-shadow: none !important;
+}
+
+.el-menu-item,
+.el-submenu__title {
+  background-color: transparent !important;
+}

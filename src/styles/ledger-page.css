@@ -1,0 +1,268 @@
+/**
+ * 台账类页面共用布局（员工基本信息台账、考勤管理台账等）
+ */
+
+.employee-ledger-page,
+.attendance-ledger-page,
+.assessment-ledger-page,
+.behavior-mode-page {
+  min-height: calc(100vh - 60px);
+  padding: 12px 16px;
+  background: #f0f2f5;
+  box-sizing: border-box;
+}
+
+.employee-ledger-page .page-layout,
+.attendance-ledger-page .page-layout,
+.assessment-ledger-page .page-layout {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.employee-ledger-page .org-sidebar,
+.attendance-ledger-page .org-sidebar,
+.assessment-ledger-page .org-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  position: sticky;
+  top: 0;
+  align-self: flex-start;
+  max-height: calc(100vh - 84px);
+}
+
+.employee-ledger-page .org-search,
+.attendance-ledger-page .org-search,
+.assessment-ledger-page .org-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebeef5;
+  flex-shrink: 0;
+}
+
+.employee-ledger-page .org-tree-wrap,
+.attendance-ledger-page .org-tree-wrap,
+.assessment-ledger-page .org-tree-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 4px;
+}
+
+.employee-ledger-page .tree-node,
+.attendance-ledger-page .tree-node,
+.assessment-ledger-page .tree-node {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.employee-ledger-page .tree-node i,
+.attendance-ledger-page .tree-node i,
+.assessment-ledger-page .tree-node i {
+  margin-right: 6px;
+  color: #909399;
+}
+
+.employee-ledger-page .tree-label,
+.attendance-ledger-page .tree-label,
+.assessment-ledger-page .tree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.employee-ledger-page .main-panel,
+.attendance-ledger-page .main-panel,
+.assessment-ledger-page .main-panel {
+  flex: 1;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.employee-ledger-page .query-panel,
+.attendance-ledger-page .query-panel,
+.assessment-ledger-page .query-panel {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.employee-ledger-page .query-panel-head,
+.attendance-ledger-page .query-panel-head,
+.assessment-ledger-page .query-panel-head {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 12px;
+}
+
+.employee-ledger-page .query-title,
+.attendance-ledger-page .query-title,
+.assessment-ledger-page .query-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.employee-ledger-page .query-actions,
+.attendance-ledger-page .query-actions,
+.assessment-ledger-page .query-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.employee-ledger-page .query-row,
+.attendance-ledger-page .query-row,
+.assessment-ledger-page .query-row {
+  display: flex;
+  align-items: flex-start;
+  margin-bottom: 10px;
+  font-size: 13px;
+}
+
+.employee-ledger-page .query-row:last-child,
+.attendance-ledger-page .query-row:last-child,
+.assessment-ledger-page .query-row:last-child {
+  margin-bottom: 0;
+}
+
+.employee-ledger-page .query-label,
+.attendance-ledger-page .query-label,
+.assessment-ledger-page .query-label {
+  width: 72px;
+  flex-shrink: 0;
+  color: #606266;
+  line-height: 28px;
+}
+
+.employee-ledger-page .tag-group,
+.attendance-ledger-page .tag-group,
+.assessment-ledger-page .tag-group {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.employee-ledger-page .filter-tag,
+.attendance-ledger-page .filter-tag,
+.assessment-ledger-page .filter-tag {
+  padding: 4px 12px;
+  border: 1px solid #dcdfe6;
+  border-radius: 3px;
+  cursor: pointer;
+  color: #606266;
+  background: #fff;
+  font-size: 12px;
+  line-height: 1.4;
+  user-select: none;
+}
+
+.employee-ledger-page .filter-tag:hover,
+.attendance-ledger-page .filter-tag:hover,
+.assessment-ledger-page .filter-tag:hover {
+  border-color: #409eff;
+  color: #409eff;
+}
+
+.employee-ledger-page .filter-tag.active,
+.attendance-ledger-page .filter-tag.active,
+.assessment-ledger-page .filter-tag.active {
+  background: #409eff;
+  border-color: #409eff;
+  color: #fff;
+}
+
+.employee-ledger-page .query-input-wide,
+.attendance-ledger-page .query-input-wide,
+.assessment-ledger-page .query-input-wide {
+  max-width: 420px;
+  width: 100%;
+}
+
+.employee-ledger-page .query-body,
+.attendance-ledger-page .query-body,
+.assessment-ledger-page .query-body {
+  border-top: 1px dashed #ebeef5;
+  padding-top: 12px;
+  margin-top: 4px;
+}
+
+.employee-ledger-page .toolbar,
+.attendance-ledger-page .toolbar,
+.assessment-ledger-page .toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-bottom: 10px;
+  flex-shrink: 0;
+}
+
+.employee-ledger-page .toolbar-tip,
+.attendance-ledger-page .toolbar-tip,
+.assessment-ledger-page .toolbar-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-left: 8px;
+}
+
+.employee-ledger-page .table-section,
+.attendance-ledger-page .table-section,
+.assessment-ledger-page .table-section {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  min-width: 0;
+}
+
+.employee-ledger-page .table-section .table-container,
+.attendance-ledger-page .table-section .table-container,
+.assessment-ledger-page .table-section .table-container {
+  width: 100%;
+  min-width: 0;
+}
+
+.employee-ledger-page .pagination-bar,
+.attendance-ledger-page .pagination-bar,
+.assessment-ledger-page .pagination-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 16px;
+  border-top: 1px solid #ebeef5;
+  flex-shrink: 0;
+}
+
+.employee-ledger-page .total-text,
+.attendance-ledger-page .total-text,
+.assessment-ledger-page .total-text {
+  font-size: 13px;
+  color: #606266;
+}
+
+.attendance-ledger-page .panel-desc,
+.assessment-ledger-page .panel-desc {
+  font-size: 12px;
+  color: #909399;
+  margin: 0 0 12px;
+  line-height: 1.5;
+}
