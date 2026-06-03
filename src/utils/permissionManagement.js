@@ -23,7 +23,6 @@ export const ROLE_DATA_SCOPE_OPTIONS = [
   {
     value: "CURRENT_ORG_CHILD",
     label: "当前组织及下级",
-    desc: "可见本单位及全部下级组织数据",
   },
   { value: "SELF", label: "只展示当前登录人的数据" },
 ];
