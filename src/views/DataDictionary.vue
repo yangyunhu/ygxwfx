@@ -3,10 +3,14 @@
     <div class="page-head">
       <div>
         <h2 class="page-title">数据字典</h2>
-        <p class="page-desc">管理系统中的字典数据，包括字典类型和字典项的增删改查。</p>
+        <p class="page-desc">
+          管理系统中的字典数据，包括字典类型和字典项的增删改查。
+        </p>
       </div>
       <div>
-        <el-button size="small" icon="el-icon-plus" @click="handleAddDict">新增字典</el-button>
+        <el-button size="small" icon="el-icon-plus" @click="handleAddDict"
+          >新增字典</el-button
+        >
       </div>
     </div>
 
@@ -14,14 +18,19 @@
       <!-- 左侧：数据字典组列表 -->
       <div class="dict-sidebar">
         <div class="sidebar-header">
-          <span class="sidebar-title">字典总数 <strong>{{ dictGroups.length }}</strong></span>
+          <span class="sidebar-title"
+            >字典总数 <strong>{{ dictGroups.length }}</strong></span
+          >
         </div>
         <div class="sidebar-list" v-loading="loading">
           <div
             v-for="group in dictGroups"
             :key="group.dictCode"
             class="dict-group-item"
-            :class="{ active: selectedGroup && selectedGroup.dictCode === group.dictCode }"
+            :class="{
+              active:
+                selectedGroup && selectedGroup.dictCode === group.dictCode,
+            }"
             @click="selectGroup(group)"
           >
             <div class="group-info">
@@ -42,29 +51,68 @@
             <span v-else class="placeholder">请选择字典组</span>
           </div>
           <div v-if="selectedGroup" class="content-actions">
-            <el-button size="small" icon="el-icon-plus" @click="handleAddItem">新增字典项</el-button>
-            <el-button size="small" icon="el-icon-edit" @click="handleEditGroup">编辑字典组</el-button>
+            <el-button size="small" icon="el-icon-plus" @click="handleAddItem"
+              >新增字典项</el-button
+            >
+            <el-button size="small" icon="el-icon-edit" @click="handleEditGroup"
+              >编辑字典组</el-button
+            >
           </div>
         </div>
 
         <div v-if="selectedGroup" class="content-table">
           <el-table :data="dictItems" border size="small" v-loading="loading">
             <el-table-column prop="itemCode" label="字典项编码" width="150" />
-            <el-table-column prop="itemName" label="字典项名称" min-width="150" />
+            <el-table-column
+              prop="itemName"
+              label="字典项名称"
+              min-width="150"
+            />
             <el-table-column prop="itemValue" label="字典值" width="120" />
-            <el-table-column prop="sort" label="排序" width="80" align="center" />
-            <el-table-column prop="status" label="状态" width="100" align="center">
+            <el-table-column
+              prop="sort"
+              label="排序"
+              width="80"
+              align="center"
+            />
+            <el-table-column
+              prop="status"
+              label="状态"
+              width="100"
+              align="center"
+            >
               <template slot-scope="{ row }">
-                <el-tag :type="row.status === '1' ? 'success' : 'danger'" size="small">
-                  {{ row.status === '1' ? '启用' : '禁用' }}
+                <el-tag
+                  :type="row.status === '1' ? 'success' : 'danger'"
+                  size="small"
+                >
+                  {{ row.status === "1" ? "启用" : "禁用" }}
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column prop="remark" label="备注" min-width="180" show-overflow-tooltip />
-            <el-table-column label="操作" width="150" align="center" fixed="right">
+            <el-table-column
+              prop="remark"
+              label="备注"
+              min-width="180"
+              show-overflow-tooltip
+            />
+            <el-table-column
+              label="操作"
+              width="150"
+              align="center"
+              fixed="right"
+            >
               <template slot-scope="{ row }">
-                <el-button type="text" size="small" @click="handleEditItem(row)">编辑</el-button>
-                <el-button type="text" size="small" style="color: #f56c6c;" @click="handleDeleteItem(row)">删除</el-button>
+                <el-button type="text" size="small" @click="handleEditItem(row)"
+                  >编辑</el-button
+                >
+                <el-button
+                  type="text"
+                  size="small"
+                  style="color: #f56c6c"
+                  @click="handleDeleteItem(row)"
+                  >删除</el-button
+                >
               </template>
             </el-table-column>
           </el-table>
@@ -81,8 +129,13 @@
         </div>
 
         <div v-else class="empty-content">
-          <i class="el-icon-document" style="font-size: 64px; color: #c0c4cc;"></i>
-          <p style="color: #909399; margin-top: 16px;">请从左侧选择一个字典组查看字典项</p>
+          <i
+            class="el-icon-document"
+            style="font-size: 64px; color: #c0c4cc"
+          ></i>
+          <p style="color: #909399; margin-top: 16px">
+            请从左侧选择一个字典组查看字典项
+          </p>
         </div>
       </div>
     </div>
@@ -94,20 +147,41 @@
       width="600px"
       @close="resetGroupForm"
     >
-      <el-form :model="groupForm" :rules="groupRules" ref="groupForm" label-width="100px">
+      <el-form
+        :model="groupForm"
+        :rules="groupRules"
+        ref="groupForm"
+        label-width="100px"
+      >
         <el-form-item label="字典名称" prop="dictName">
-          <el-input v-model="groupForm.dictName" placeholder="请输入字典名称" @input="autoGenerateDictCode" />
+          <el-input
+            v-model="groupForm.dictName"
+            placeholder="请输入字典名称"
+            @input="autoGenerateDictCode"
+          />
         </el-form-item>
         <el-form-item label="字典编码" prop="dictCode">
-          <el-input v-model="groupForm.dictCode" placeholder="根据字典名称自动生成" :disabled="isEditGroup">
+          <el-input
+            v-model="groupForm.dictCode"
+            placeholder="根据字典名称自动生成"
+            :disabled="isEditGroup"
+          >
             <template slot="append">
-              <el-button @click="autoGenerateDictCode" icon="el-icon-refresh">生成</el-button>
+              <el-button @click="autoGenerateDictCode" icon="el-icon-refresh"
+                >生成</el-button
+              >
             </template>
           </el-input>
-          <div style="font-size: 12px; color: #909399; margin-top: 4px;">自动生成规则：中文转拼音/英文，小写下划线分隔</div>
+          <div style="font-size: 12px; color: #909399; margin-top: 4px">
+            自动生成规则：中文转拼音/英文，小写下划线分隔
+          </div>
         </el-form-item>
         <el-form-item label="字典类型" prop="dictType">
-          <el-select v-model="groupForm.dictType" placeholder="请选择字典类型" style="width: 100%">
+          <el-select
+            v-model="groupForm.dictType"
+            placeholder="请选择字典类型"
+            style="width: 100%"
+          >
             <el-option label="系统字典" value="sys" />
             <el-option label="业务字典" value="biz" />
           </el-select>
@@ -119,7 +193,12 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="groupForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+          <el-input
+            v-model="groupForm.remark"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入备注"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer">
@@ -135,23 +214,45 @@
       width="600px"
       @close="resetItemForm"
     >
-      <el-form :model="itemForm" :rules="itemRules" ref="itemForm" label-width="100px">
+      <el-form
+        :model="itemForm"
+        :rules="itemRules"
+        ref="itemForm"
+        label-width="100px"
+      >
         <el-form-item label="字典项名称" prop="itemName">
-          <el-input v-model="itemForm.itemName" placeholder="请输入字典项名称" @input="autoGenerateItemCode" />
+          <el-input
+            v-model="itemForm.itemName"
+            placeholder="请输入字典项名称"
+            @input="autoGenerateItemCode"
+          />
         </el-form-item>
         <el-form-item label="字典项编码" prop="itemCode">
-          <el-input v-model="itemForm.itemCode" placeholder="根据字典项名称自动生成" :disabled="isEditItem">
+          <el-input
+            v-model="itemForm.itemCode"
+            placeholder="根据字典项名称自动生成"
+            :disabled="isEditItem"
+          >
             <template slot="append">
-              <el-button @click="autoGenerateItemCode" icon="el-icon-refresh">生成</el-button>
+              <el-button @click="autoGenerateItemCode" icon="el-icon-refresh"
+                >生成</el-button
+              >
             </template>
           </el-input>
-          <div style="font-size: 12px; color: #909399; margin-top: 4px;">自动生成规则：中文转拼音/英文，小写下划线分隔</div>
+          <div style="font-size: 12px; color: #909399; margin-top: 4px">
+            自动生成规则：中文转拼音/英文，小写下划线分隔
+          </div>
         </el-form-item>
         <el-form-item label="字典值" prop="itemValue">
           <el-input v-model="itemForm.itemValue" placeholder="请输入字典值" />
         </el-form-item>
         <el-form-item label="排序" prop="sort">
-          <el-input-number v-model="itemForm.sort" :min="1" :max="999" style="width: 100%" />
+          <el-input-number
+            v-model="itemForm.sort"
+            :min="1"
+            :max="999"
+            style="width: 100%"
+          />
         </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="itemForm.status">
@@ -160,7 +261,12 @@
           </el-radio-group>
         </el-form-item>
         <el-form-item label="备注">
-          <el-input v-model="itemForm.remark" type="textarea" :rows="3" placeholder="请输入备注" />
+          <el-input
+            v-model="itemForm.remark"
+            type="textarea"
+            :rows="3"
+            placeholder="请输入备注"
+          />
         </el-form-item>
       </el-form>
       <div slot="footer">
@@ -182,61 +288,69 @@ export default {
       dictGroups: [], // 字典组列表
       dictItems: [], // 当前选中字典组的字典项列表
       selectedGroup: null, // 当前选中的字典组
-      
+
       // 字典组表单
       groupDialogVisible: false,
       isEditGroup: false,
       groupForm: {
-        dictCode: '',
-        dictName: '',
-        dictType: 'sys',
-        status: '1',
-        remark: '',
+        dictCode: "",
+        dictName: "",
+        dictType: "sys",
+        status: "1",
+        remark: "",
       },
       groupRules: {
         dictCode: [
-          { required: true, message: '请输入字典编码', trigger: 'blur' },
-          { pattern: /^[a-zA-Z_]+$/, message: '字典编码只能包含英文字母和下划线', trigger: 'blur' }
+          { required: true, message: "请输入字典编码", trigger: "blur" },
+          {
+            pattern: /^[a-zA-Z_]+$/,
+            message: "字典编码只能包含英文字母和下划线",
+            trigger: "blur",
+          },
         ],
         dictName: [
-          { required: true, message: '请输入字典名称', trigger: 'blur' }
+          { required: true, message: "请输入字典名称", trigger: "blur" },
         ],
         dictType: [
-          { required: true, message: '请选择字典类型', trigger: 'change' }
+          { required: true, message: "请选择字典类型", trigger: "change" },
         ],
       },
-      
+
       // 字典项表单
       itemDialogVisible: false,
       isEditItem: false,
       itemForm: {
-        itemCode: '',
-        itemName: '',
-        itemValue: '',
+        itemCode: "",
+        itemName: "",
+        itemValue: "",
         sort: 1,
-        status: '1',
-        remark: '',
+        status: "1",
+        remark: "",
       },
       itemRules: {
         itemCode: [
-          { required: true, message: '请输入字典项编码', trigger: 'blur' },
-          { pattern: /^[a-zA-Z0-9_]+$/, message: '字典项编码只能包含英文字母、数字和下划线', trigger: 'blur' }
+          { required: true, message: "请输入字典项编码", trigger: "blur" },
+          {
+            pattern: /^[a-zA-Z0-9_]+$/,
+            message: "字典项编码只能包含英文字母、数字和下划线",
+            trigger: "blur",
+          },
         ],
         itemName: [
-          { required: true, message: '请输入字典项名称', trigger: 'blur' }
+          { required: true, message: "请输入字典项名称", trigger: "blur" },
         ],
         itemValue: [
-          { required: true, message: '请输入字典值', trigger: 'blur' }
+          { required: true, message: "请输入字典值", trigger: "blur" },
         ],
       },
     };
   },
   computed: {
     groupFormTitle() {
-      return this.isEditGroup ? '编辑字典组' : '新增字典组';
+      return this.isEditGroup ? "编辑字典组" : "新增字典组";
     },
     itemFormTitle() {
-      return this.isEditItem ? '编辑字典项' : '新增字典项';
+      return this.isEditItem ? "编辑字典项" : "新增字典项";
     },
   },
   mounted() {
@@ -411,11 +525,13 @@ export default {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
         type: "warning",
-      }).then(() => {
-        this.$message.success("删除成功");
-      }).catch(() => {});
+      })
+        .then(() => {
+          this.$message.success("删除成功");
+        })
+        .catch(() => {});
     },
-    
+
     // 提交字典组表单
     submitGroupForm() {
       this.$refs.groupForm.validate((valid) => {
@@ -423,7 +539,7 @@ export default {
           if (this.isEditGroup) {
             // 编辑逻辑
             Object.assign(this.selectedGroup, this.groupForm);
-            this.$message.success('字典组更新成功');
+            this.$message.success("字典组更新成功");
           } else {
             // 新增逻辑
             const newGroup = {
@@ -432,7 +548,7 @@ export default {
               createTime: new Date().toLocaleString(),
             };
             this.dictGroups.push(newGroup);
-            this.$message.success('字典组新增成功');
+            this.$message.success("字典组新增成功");
             // 自动选中新新增的字典组
             this.selectGroup(newGroup);
           }
@@ -440,18 +556,20 @@ export default {
         }
       });
     },
-    
+
     // 提交字典项表单
     submitItemForm() {
       this.$refs.itemForm.validate((valid) => {
         if (valid) {
           if (this.isEditItem) {
             // 编辑逻辑
-            const index = this.dictItems.findIndex(item => item.itemCode === this.itemForm.itemCode);
+            const index = this.dictItems.findIndex(
+              (item) => item.itemCode === this.itemForm.itemCode,
+            );
             if (index > -1) {
               Object.assign(this.dictItems[index], this.itemForm);
             }
-            this.$message.success('字典项更新成功');
+            this.$message.success("字典项更新成功");
           } else {
             // 新增逻辑
             const newItem = {
@@ -462,224 +580,246 @@ export default {
             if (this.selectedGroup) {
               this.selectedGroup.itemCount = this.dictItems.length;
             }
-            this.$message.success('字典项新增成功');
+            this.$message.success("字典项新增成功");
           }
           this.itemDialogVisible = false;
         }
       });
     },
-    
+
     // 重置字典组表单
     resetGroupForm() {
       this.$refs.groupForm && this.$refs.groupForm.resetFields();
       this.groupForm = {
-        dictCode: '',
-        dictName: '',
-        dictType: 'sys',
-        status: '1',
-        remark: '',
+        dictCode: "",
+        dictName: "",
+        dictType: "sys",
+        status: "1",
+        remark: "",
       };
     },
-    
+
     // 重置字典项表单
     resetItemForm() {
       this.$refs.itemForm && this.$refs.itemForm.resetFields();
       this.itemForm = {
-        itemCode: '',
-        itemName: '',
-        itemValue: '',
+        itemCode: "",
+        itemName: "",
+        itemValue: "",
         sort: 1,
-        status: '1',
-        remark: '',
+        status: "1",
+        remark: "",
       };
     },
-    
+
     // 自动生成字典编码
     autoGenerateDictCode() {
       if (!this.groupForm.dictName || this.isEditGroup) {
         return;
       }
-      
+
       // 常见中文词汇到英文的映射
       const commonWords = {
-        '用户': 'user',
-        '类型': 'type',
-        '性别': 'gender',
-        '组织': 'org',
-        '级别': 'level',
-        '状态': 'status',
-        '角色': 'role',
-        '部门': 'dept',
-        '岗位': 'position',
-        '数据': 'data',
-        '范围': 'range',
-        '配置': 'config',
-        '管理': 'management',
-        '权限': 'permission',
-        '系统': 'system',
-        '业务': 'business',
-        '考勤': 'attendance',
-        '员工': 'employee',
-        '人员': 'personnel',
-        '日志': 'log',
-        '菜单': 'menu',
-        '模块': 'module',
-        '功能': 'function',
+        用户: "user",
+        类型: "type",
+        性别: "gender",
+        组织: "org",
+        级别: "level",
+        状态: "status",
+        角色: "role",
+        部门: "dept",
+        岗位: "position",
+        数据: "data",
+        范围: "range",
+        配置: "config",
+        管理: "management",
+        权限: "permission",
+        系统: "system",
+        业务: "business",
+        考勤: "attendance",
+        员工: "employee",
+        人员: "personnel",
+        日志: "log",
+        菜单: "menu",
+        模块: "module",
+        功能: "function",
       };
-      
+
       let name = this.groupForm.dictName;
-      let code = '';
-      
+      let code = "";
+
       // 尝试匹配常见词汇
       let matched = false;
       for (let [chinese, english] of Object.entries(commonWords)) {
         if (name.includes(chinese)) {
           code = code ? `${code}_${english}` : english;
-          name = name.replace(chinese, '');
+          name = name.replace(chinese, "");
           matched = true;
         }
       }
-      
+
       // 如果没有匹配到任何词汇，使用拼音首字母
-      if (!matched || code === '') {
+      if (!matched || code === "") {
         // 简单的中文转拼音首字母（仅支持常见汉字）
         const pinyinMap = {
-          '一': 'yi', '二': 'er', '三': 'san', '四': 'si', '五': 'wu',
-          '六': 'liu', '七': 'qi', '八': 'ba', '九': 'jiu', '十': 'shi',
+          一: "yi",
+          二: "er",
+          三: "san",
+          四: "si",
+          五: "wu",
+          六: "liu",
+          七: "qi",
+          八: "ba",
+          九: "jiu",
+          十: "shi",
         };
-        
+
         // 如果包含中文，使用拼音首字母组合
         const chineseChars = name.match(/[\u4e00-\u9fa5]/g);
         if (chineseChars) {
-          const pinyinFirst = chineseChars.map(char => {
-            return pinyinMap[char] || char.charCodeAt(0).toString(36);
-          }).join('');
+          const pinyinFirst = chineseChars
+            .map((char) => {
+              return pinyinMap[char] || char.charCodeAt(0).toString(36);
+            })
+            .join("");
           code = code ? `${code}_${pinyinFirst}` : pinyinFirst;
         } else {
           // 如果是英文，直接转小写并替换空格
-          code = name.toLowerCase().replace(/\s+/g, '_');
+          code = name.toLowerCase().replace(/\s+/g, "_");
         }
       }
-      
+
       // 清理编码：只保留字母、数字和下划线
-      code = code.replace(/[^a-zA-Z0-9_]/g, '_');
+      code = code.replace(/[^a-zA-Z0-9_]/g, "_");
       // 移除连续的下划线
-      code = code.replace(/_+/g, '_');
+      code = code.replace(/_+/g, "_");
       // 移除开头和结尾的下划线
-      code = code.replace(/^_+|_+$/g, '');
+      code = code.replace(/^_+|_+$/g, "");
       // 转为小写
       code = code.toLowerCase();
-      
+
       // 如果生成的编码为空，使用默认值
       if (!code) {
-        code = 'dict_' + Date.now().toString(36);
+        code = "dict_" + Date.now().toString(36);
       }
-      
+
       // 检查编码是否已存在，如果存在则添加数字后缀
-      const existingCodes = this.dictGroups.map(g => g.dictCode);
+      const existingCodes = this.dictGroups.map((g) => g.dictCode);
       let finalCode = code;
       let suffix = 1;
       while (existingCodes.includes(finalCode)) {
         finalCode = `${code}_${suffix}`;
         suffix++;
       }
-      
+
       this.groupForm.dictCode = finalCode;
     },
-    
+
     // 自动生成字典项编码
     autoGenerateItemCode() {
       if (!this.itemForm.itemName || this.isEditItem) {
         return;
       }
-      
+
       // 获取当前字典组的编码作为前缀
-      const groupPrefix = this.selectedGroup ? this.selectedGroup.dictCode : 'item';
-      
+      const groupPrefix = this.selectedGroup
+        ? this.selectedGroup.dictCode
+        : "item";
+
       // 常见中文词汇到英文的映射
       const commonWords = {
-        '管理员': 'admin',
-        '普通': 'normal',
-        '用户': 'user',
-        '访客': 'guest',
-        '男': 'male',
-        '女': 'female',
-        '省级': 'province',
-        '市级': 'city',
-        '县级': 'county',
-        '单位': 'unit',
-        '启用': 'enable',
-        '禁用': 'disable',
-        '是': 'yes',
-        '否': 'no',
-        '成功': 'success',
-        '失败': 'fail',
-        '通过': 'pass',
-        '拒绝': 'reject',
-        '待审核': 'pending',
-        '已审核': 'approved',
+        管理员: "admin",
+        普通: "normal",
+        用户: "user",
+        访客: "guest",
+        男: "male",
+        女: "female",
+        省级: "province",
+        市级: "city",
+        县级: "county",
+        单位: "unit",
+        启用: "enable",
+        禁用: "disable",
+        是: "yes",
+        否: "no",
+        成功: "success",
+        失败: "fail",
+        通过: "pass",
+        拒绝: "reject",
+        待审核: "pending",
+        已审核: "approved",
       };
-      
+
       let name = this.itemForm.itemName;
-      let suffix = '';
-      
+      let suffix = "";
+
       // 尝试匹配常见词汇
       let matched = false;
       for (let [chinese, english] of Object.entries(commonWords)) {
         if (name.includes(chinese)) {
           suffix = suffix ? `${suffix}_${english}` : english;
-          name = name.replace(chinese, '');
+          name = name.replace(chinese, "");
           matched = true;
         }
       }
-      
+
       // 如果没有匹配到任何词汇，使用拼音
-      if (!matched || suffix === '') {
+      if (!matched || suffix === "") {
         // 简单的中文转拼音（仅支持常见汉字）
         const pinyinMap = {
-          '一': 'yi', '二': 'er', '三': 'san', '四': 'si', '五': 'wu',
-          '六': 'liu', '七': 'qi', '八': 'ba', '九': 'jiu', '十': 'shi',
+          一: "yi",
+          二: "er",
+          三: "san",
+          四: "si",
+          五: "wu",
+          六: "liu",
+          七: "qi",
+          八: "ba",
+          九: "jiu",
+          十: "shi",
         };
-        
+
         // 如果包含中文，使用拼音
         const chineseChars = name.match(/[\u4e00-\u9fa5]/g);
         if (chineseChars) {
-          const pinyinStr = chineseChars.map(char => {
-            return pinyinMap[char] || char.charCodeAt(0).toString(36);
-          }).join('');
+          const pinyinStr = chineseChars
+            .map((char) => {
+              return pinyinMap[char] || char.charCodeAt(0).toString(36);
+            })
+            .join("");
           suffix = suffix ? `${suffix}_${pinyinStr}` : pinyinStr;
         } else {
           // 如果是英文，直接转小写并替换空格
-          suffix = name.toLowerCase().replace(/\s+/g, '_');
+          suffix = name.toLowerCase().replace(/\s+/g, "_");
         }
       }
-      
+
       // 组合编码：字典组编码_字典项编码
       let code = suffix ? `${groupPrefix}_${suffix}` : groupPrefix;
-      
+
       // 清理编码：只保留字母、数字和下划线
-      code = code.replace(/[^a-zA-Z0-9_]/g, '_');
+      code = code.replace(/[^a-zA-Z0-9_]/g, "_");
       // 移除连续的下划线
-      code = code.replace(/_+/g, '_');
+      code = code.replace(/_+/g, "_");
       // 移除开头和结尾的下划线
-      code = code.replace(/^_+|_+$/g, '');
+      code = code.replace(/^_+|_+$/g, "");
       // 转为小写
       code = code.toLowerCase();
-      
+
       // 如果生成的编码为空，使用时间戳
       if (!code) {
         code = `${groupPrefix}_${Date.now().toString(36)}`;
       }
-      
+
       // 检查编码是否已存在，如果存在则添加数字后缀
-      const existingCodes = this.dictItems.map(item => item.itemCode);
+      const existingCodes = this.dictItems.map((item) => item.itemCode);
       let finalCode = code;
       let numSuffix = 1;
       while (existingCodes.includes(finalCode)) {
         finalCode = `${code}_${numSuffix}`;
         numSuffix++;
       }
-      
+
       this.itemForm.itemCode = finalCode;
     },
   },
