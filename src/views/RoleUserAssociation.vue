@@ -335,6 +335,7 @@ function enrichUser(user, orgTree) {
   return {
     ...user,
     orgUnit: ROOT_UNIT,
+    deptPath: findParentDeptName(orgTree, user.orgId, user.deptPath),
     orgFullPath: buildOrgFullPath(orgTree, user.orgId, user.deptPath),
   };
 }
