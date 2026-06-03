@@ -718,6 +718,82 @@ export function getRolePermissionDetail(roleId) {
   return cloneDeep(role.permissionDetail);
 }
 
+// 从模块权限分配中获取角色的权限配置（只读展示）
+export function getRolePermissionConfig(roleId) {
+  const { getAppRoles, DEFAULT_SELECTED_APP_ID } = require("./modulePermissionAllocation");
+  const roles = getAppRoles(DEFAULT_SELECTED_APP_ID);
+  const role = roles.find(r => r.id === roleId);
+  
+  if (!role) {
+    return { pageIds: [], operations: {}, dataScope: "all" };
+  }
+  
+  // 根据角色名称返回对应的权限配置
+  const rolePermissions = {
+    // 业务管理员：无感数据配置（数据接入管理、无感数据配置、无感数据自定义）+ 无感基础数据管理（数据清洗）
+    "ar-city": [
+      "mod-sensing-config",      // 无感数据配置
+      "mod-data-access",         // 数据接入管理
+      "mod-data-config",         // 无感数据配置
+      "mod-data-custom",         // 无感数据自定义
+      "mod-sensing-basic",       // 无感基础数据管理
+      "mod-sensing-clean",       // 数据清洗
+    ],
+    // 单位负责人：员工基本信息台账、考勤管理台账、组织机构管理
+    "ar-county": [
+      "mod-staff-basic",         // 员工基本信息台账
+      "mod-staff-attendance",    // 考勤管理台账
+      "mod-org-management",      // 组织机构管理
+    ],
+    // 审核人员：角色管理、功能模块权限分配、权限控制与分配、组织机构管理、日志管理
+    "ar-province": [
+      "mod-role-mgmt",           // 角色管理
+      "mod-module-perm",         // 功能模块权限分配
+      "mod-perm-control",        // 权限控制与分配
+      "mod-org-management",      // 组织机构管理
+      "mod-login-log-mgmt",      // 日志管理
+    ],
+    // 看板查看用户：员工基本信息台账、考勤管理台账、考勤评估台账、数据导出功能
+    "ar-viewer": [
+      "mod-staff-basic",         // 员工基本信息台账
+      "mod-staff-attendance",    // 考勤管理台账
+      "mod-staff-assessment",    // 考勤评估台账
+      "mod-data-export",         // 数据导出功能
+    ],
+    // 普通员工：员工基本信息台账
+    "ar-employee": [
+      "mod-staff-basic",         // 员工基本信息台账
+    ],
+  };
+  
+  // 获取该角色的页面权限ID列表
+  const pageIds = rolePermissions[roleId] || [];
+  const operations = {};
+  
+  // 为每个已授权模块添加查看权限
+  pageIds.forEach(moduleId => {
+    operations[moduleId] = ['view'];
+  });
+  
+  // 为每个角色设置默认数据范围
+  const roleDataScopeMap = {
+    "ar-city": "CURRENT_ORG_CHILD",       // 业务管理员：当前组织及下级
+    "ar-county": "CURRENT_ORG_CHILD",     // 单位负责人：当前组织及下级
+    "ar-province": "ALL",                  // 审核人员：全省/全系统数据
+    "ar-viewer": "CURRENT_ORG_CHILD",     // 看板查看用户：当前组织及下级
+    "ar-employee": "SELF"                  // 普通员工：只展示当前登录人的数据
+  };
+  
+  // 优先使用保存的配置，如果没有则使用默认值
+  const dataScope = role.permissionDetail?.dataScope || roleDataScopeMap[roleId] || "CURRENT_ORG_CHILD";
+  
+  return {
+    pageIds,
+    operations,
+    dataScope
+  };
+}
+
 export function updateRolePermissionDetail(roleId, detail) {
   return updateRole(roleId, { permissionDetail: detail });
 }
