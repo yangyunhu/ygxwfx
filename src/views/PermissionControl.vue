@@ -79,20 +79,28 @@
             展示角色可访问的数据范围，配置由功能模块权限分配统一管理。
           </p>
           <div class="data-scope-list">
-            <div 
-              v-for="option in roleDataScopeOptions" 
+            <div
+              v-for="option in roleDataScopeOptions"
               :key="option.value"
               class="scope-option"
               :class="{ 'is-selected': detail.dataScope === option.value }"
             >
               <div class="scope-radio">
                 <div class="radio-outer">
-                  <div class="radio-inner" v-if="detail.dataScope === option.value"></div>
+                  <div
+                    class="radio-inner"
+                    v-if="detail.dataScope === option.value"
+                  ></div>
                 </div>
               </div>
               <div class="scope-info">
                 <div class="scope-name">{{ option.label }}</div>
-                <div class="scope-desc" v-if="getScopeDescription(option.value)">{{ getScopeDescription(option.value) }}</div>
+                <div
+                  class="scope-desc"
+                  v-if="getScopeDescription(option.value)"
+                >
+                  {{ getScopeDescription(option.value) }}
+                </div>
               </div>
             </div>
           </div>
@@ -202,12 +210,12 @@ export default {
     },
     getScopeDescription(value) {
       const descriptions = {
-        'CURRENT_ORG_CHILD': '仅可查看当前组织及下级组织数据',
-        'ASSIGNED_ORG_CHILD': '仅可查看指定组织及下级组织数据',
-        'ALL': '可查看系统全部组织与人员数据',
-        'SELF': '仅可查看与本人相关的数据'
+        CURRENT_ORG_CHILD: "仅可查看当前组织及下级组织数据",
+        ASSIGNED_ORG_CHILD: "仅可查看指定组织及下级组织数据",
+        ALL: "可查看系统全部组织与人员数据",
+        SELF: "仅可查看与本人相关的数据",
       };
-      return descriptions[value] || '';
+      return descriptions[value] || "";
     },
     toggleOperation(moduleId, opKey, checked) {
       if (!this.detail.operations[moduleId]) {
