@@ -33,6 +33,7 @@ import DataRepairRecords from '../views/DataRepairRecords.vue';
 import AbnormalDataDisposal from '../views/AbnormalDataDisposal.vue';
 import DataExportFunction from '../views/DataExportFunction.vue';
 import ExportRecordQuery from '../views/ExportRecordQuery.vue';
+import DataDictionary from '../views/DataDictionary.vue';
 
 Vue.use(Router);
 
@@ -217,6 +218,11 @@ export default new Router({
       path: '/export-record-query',
       name: 'ExportRecordQuery',
       component: ExportRecordQuery
+    },
+    {
+      path: '/data-dictionary',
+      name: 'DataDictionary',
+      component: DataDictionary
     },
     {
       path: '/',

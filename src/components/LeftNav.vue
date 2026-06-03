@@ -264,6 +264,16 @@
             </el-menu-item>
           </el-submenu>
         </el-submenu>
+        <el-submenu index="4-7">
+          <template slot="title">
+            <i class="el-icon-folder-opened"></i>
+            <span>数据字典</span>
+          </template>
+          <el-menu-item index="/data-dictionary">
+            <i class="el-icon-document"></i>
+            <span>数据字典</span>
+          </el-menu-item>
+        </el-submenu>
       </el-submenu>
     </el-menu>
     <button
