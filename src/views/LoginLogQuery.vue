@@ -27,37 +27,10 @@
             </el-form-item>
           </el-col>
           <el-col :xs="24" :sm="12" :md="8">
-            <el-form-item label="用户名">
-              <el-input
-                v-model="query.username"
-                placeholder="用户名或姓名"
-                clearable
-                @keyup.enter.native="handleSearch"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8">
-            <el-form-item label="登录终端">
-              <el-select v-model="query.terminal" placeholder="全部终端" clearable style="width: 100%">
-                <el-option v-for="t in terminalOptions" :key="t" :label="t" :value="t" />
-              </el-select>
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8">
-            <el-form-item label="登录IP">
-              <el-input
-                v-model="query.ip"
-                placeholder="IP 地址"
-                clearable
-                @keyup.enter.native="handleSearch"
-              />
-            </el-form-item>
-          </el-col>
-          <el-col :xs="24" :sm="12" :md="8">
             <el-form-item label="用户账号">
               <el-input
                 v-model="query.account"
-                placeholder="邮箱账号"
+                placeholder="用户账号"
                 clearable
                 @keyup.enter.native="handleSearch"
               />
@@ -74,7 +47,7 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <div class="query-form-actions">
+        <div class="query-form-actions" style="justify-content: flex-start;">
           <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
           <el-button icon="el-icon-refresh-left" @click="handleReset">重置</el-button>
         </div>
@@ -117,7 +90,6 @@ import {
   exportLoginLogsCsv,
   formatSearchCriteria,
   createEmptyLogQuery,
-  TERMINAL_OPTIONS,
 } from "../utils/loginLog";
 
 export default {
@@ -130,7 +102,6 @@ export default {
       resultList: [],
       searched: false,
       searchLabel: "",
-      terminalOptions: TERMINAL_OPTIONS,
       query: createEmptyLogQuery(),
       page: 1,
       pageSize: 20,

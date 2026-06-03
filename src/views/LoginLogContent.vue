@@ -19,9 +19,7 @@
           :data="pagedList"
           :page="page"
           :page-size="pageSize"
-          :show-actions="true"
           empty-text="暂无登录日志"
-          @detail="openDetail"
         />
       </div>
       <login-log-pager
@@ -31,15 +29,12 @@
         :page-sizes="[10, 20, 30]"
       />
     </section>
-
-    <login-log-detail-dialog :visible.sync="showDetail" :row="detailRow" />
   </div>
 </template>
 
 <script>
 import LoginLogRetentionAlert from "../components/LoginLogRetentionAlert.vue";
 import LoginLogTable from "../components/LoginLogTable.vue";
-import LoginLogDetailDialog from "../components/LoginLogDetailDialog.vue";
 import LoginLogPager from "../components/LoginLogPager.vue";
 import {
   loadLoginLogs,
@@ -49,14 +44,12 @@ import {
 
 export default {
   name: "LoginLogContent",
-  components: { LoginLogRetentionAlert, LoginLogTable, LoginLogDetailDialog, LoginLogPager },
+  components: { LoginLogRetentionAlert, LoginLogTable, LoginLogPager },
   data() {
     return {
       logs: [],
       page: 1,
       pageSize: 20,
-      showDetail: false,
-      detailRow: null,
     };
   },
   computed: {
@@ -70,10 +63,6 @@ export default {
   methods: {
     reload() {
       this.logs = loadLoginLogs();
-    },
-    openDetail(row) {
-      this.detailRow = row;
-      this.showDetail = true;
     },
     exportLogs() {
       exportLoginLogsCsv(this.logs, "登录日志内容.csv", {

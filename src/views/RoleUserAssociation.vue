@@ -1,18 +1,6 @@
 <template>
   <div class="role-user-page">
     <section class="role-user-panel">
-      <div class="page-tabs">
-        <div
-          v-for="tab in tabs"
-          :key="tab.key"
-          class="page-tab"
-          :class="{ active: activeTab === tab.key }"
-          @click="handleTabClick(tab)"
-        >
-          {{ tab.label }}
-        </div>
-      </div>
-
       <div class="search-bar">
         <el-input
           v-model="queryKeyword"
@@ -419,13 +407,6 @@ export default {
   name: "RoleUserAssociation",
   data() {
     return {
-      tabs: [
-        { key: "assign", label: "角色分配" },
-        { key: "unit", label: "修改人员单位" },
-        { key: "plan-unit", label: "周计划修改人员单位" },
-        { key: "plan-org", label: "周计划修改人员机构" },
-      ],
-      activeTab: "assign",
       roles: [],
       users: [],
       orgTree: [],
@@ -526,13 +507,6 @@ export default {
     handleSearch() {
       this.filterKeyword = this.queryKeyword;
       this.currentPage = 1;
-    },
-    handleTabClick(tab) {
-      if (tab.key !== "assign") {
-        this.$message.info("当前演示仅开放「角色分配」");
-        return;
-      }
-      this.activeTab = tab.key;
     },
     changePageSize(size) {
       this.pageSize = size;
@@ -781,39 +755,6 @@ export default {
   background: #fff;
   border: 1px solid #e4e7ed;
   padding: 0 16px 12px;
-}
-
-.page-tabs {
-  display: flex;
-  align-items: center;
-  gap: 28px;
-  border-bottom: 1px solid #e4e7ed;
-  margin: 0 -16px 14px;
-  padding: 0 20px;
-}
-
-.page-tab {
-  position: relative;
-  padding: 14px 0 12px;
-  font-size: 14px;
-  color: #606266;
-  cursor: pointer;
-  user-select: none;
-}
-
-.page-tab.active {
-  color: #409eff;
-  font-weight: 600;
-}
-
-.page-tab.active::after {
-  content: "";
-  position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 0;
-  height: 2px;
-  background: #409eff;
 }
 
 .search-bar {

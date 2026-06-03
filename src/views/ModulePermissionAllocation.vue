@@ -259,10 +259,6 @@
         </div>
         <div class="personnel-actions">
           <el-button size="small" @click="handlePersonnelSearch">查询</el-button>
-          <el-button size="small" @click="handleImportPersonnel">导入人员</el-button>
-          <el-button size="small" @click="handleExportPersonnel">导出人员</el-button>
-          <el-button size="small" @click="handleDownloadTemplate">下载模板</el-button>
-          <el-button size="small" @click="handleAddPersonnel">添加关联人员</el-button>
           <el-button size="small" :disabled="!selectedPersonnel.length" @click="batchDeletePersonnel">
             删除关联人员
           </el-button>
@@ -699,18 +695,6 @@ export default {
           this.$message.success("删除成功");
         })
         .catch(() => {});
-    },
-    handleImportPersonnel() {
-      this.$message.info("导入人员功能演示环境暂未接入");
-    },
-    handleExportPersonnel() {
-      this.$message.info("导出人员功能演示环境暂未接入");
-    },
-    handleDownloadTemplate() {
-      this.$message.info("模板下载功能演示环境暂未接入");
-    },
-    handleAddPersonnel() {
-      this.$message.info("请通过「角色与用户关联」页面维护人员绑定");
     },
   },
 };
