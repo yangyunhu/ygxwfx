@@ -78,7 +78,7 @@
     <el-dialog
       title="关联人员信息"
       :visible.sync="showLinkedDialog"
-      width="920px"
+      width="1400px"
       top="10vh"
       append-to-body
       custom-class="linked-users-dialog"
@@ -127,7 +127,8 @@
         </el-table-column>
         <el-table-column prop="name" label="用户名" width="120" show-overflow-tooltip />
         <el-table-column prop="orgUnit" label="所属单位" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="orgFullPath" label="所属组织全路径" min-width="320" show-overflow-tooltip />
+        <el-table-column prop="deptPath" label="部门" min-width="180" show-overflow-tooltip />
+        <el-table-column prop="orgFullPath" label="所属组织全路径" min-width="280" show-overflow-tooltip />
       </el-table>
 
       <div class="linked-pager">
@@ -158,15 +159,19 @@
     <el-dialog
       title="选择人员"
       :visible.sync="showAddDialog"
-      width="960px"
-      top="8vh"
+      width="1200px"
+      top="5vh"
       append-to-body
       custom-class="pick-user-dialog"
       :close-on-click-modal="false"
       @closed="closeAddDialog"
     >
       <div class="pick-user-layout">
+        <!-- 左侧：组织树 -->
         <section class="pick-user-left">
+          <div class="pick-panel-header">
+            <span class="pick-panel-title">组织结构</span>
+          </div>
           <div class="pick-user-filter">
             <span class="pick-filter-label">组织结构</span>
             <el-select
@@ -202,26 +207,60 @@
               node-key="id"
               default-expand-all
               :expand-on-click-node="false"
+              @node-click="handleOrgNodeClick"
             >
               <span slot-scope="{ node, data }" class="picker-tree-node">
                 <i :class="data.nodeType === 'user' ? 'el-icon-user' : 'el-icon-share'" class="picker-node-icon" />
-                <el-checkbox
-                  v-if="data.nodeType === 'user'"
-                  :value="isUserPicked(data.user)"
-                  class="picker-user-check"
-                  @input="(checked) => togglePickUser(data.user, checked)"
-                  @click.native.stop
-                />
                 <span class="picker-node-label" :title="node.label">{{ node.label }}</span>
               </span>
             </el-tree>
-            <div v-if="!displayPickerTree.length" class="pick-user-empty">暂无可选人员</div>
+            <div v-if="!displayPickerTree.length" class="pick-user-empty">暂无可选组织</div>
           </div>
         </section>
 
+        <!-- 中间：人员列表 -->
+        <section class="pick-user-center">
+          <div class="pick-panel-header">
+            <span class="pick-panel-title">人员列表</span>
+            <span class="pick-person-count">共 {{ currentOrgUsers.length }} 人</span>
+          </div>
+          <div class="pick-user-search">
+            <el-input
+              v-model="personSearchKeyword"
+              placeholder="搜索人员姓名、ID"
+              size="small"
+              clearable
+              prefix-icon="el-icon-search"
+              @input="handlePersonSearch"
+            />
+          </div>
+          <div class="pick-user-list">
+            <div
+              v-for="user in filteredPersonList"
+              :key="user.id"
+              class="pick-person-item"
+              :class="{ selected: isUserPicked(user) }"
+              @click="togglePickUser(user, !isUserPicked(user))"
+            >
+              <el-checkbox
+                :value="isUserPicked(user)"
+                class="pick-person-check"
+                @input="(checked) => togglePickUser(user, checked)"
+                @click.native.stop
+              />
+              <span class="pick-person-icon">👤</span>
+              <div class="pick-person-info">
+                <div class="pick-person-name">{{ user.name }}</div>
+              </div>
+            </div>
+            <div v-if="!filteredPersonList.length" class="pick-user-empty">暂无人员数据</div>
+          </div>
+        </section>
+
+        <!-- 右侧：已选人员 -->
         <section class="pick-user-right">
-          <div class="pick-selected-head">
-            <span class="pick-selected-count">已选：{{ selectedPickUsers.length }}</span>
+          <div class="pick-panel-header">
+            <span class="pick-panel-title">已选：<span class="pick-count-highlight">{{ selectedPickUsers.length }}</span></span>
             <el-button
               type="text"
               class="pick-clear-btn"
@@ -237,8 +276,10 @@
               :key="user.id"
               class="pick-selected-item"
             >
-              <span class="pick-selected-name">{{ user.name }}</span>
-              <span class="pick-selected-dept">{{ formatPickUserDept(user) }}</span>
+              <span class="pick-person-icon">👤</span>
+              <div class="pick-selected-info">
+                <div class="pick-selected-name">{{ user.name }}</div>
+              </div>
               <i class="el-icon-close pick-selected-remove" @click="removePickedUser(user)" />
             </div>
             <div v-if="!selectedPickUsers.length" class="pick-selected-empty">请从左侧选择人员</div>
@@ -406,6 +447,8 @@ export default {
       addSearchFilter: "",
       selectedPickUsers: [],
       pickerTreeProps: { label: "name", children: "children" },
+      personSearchKeyword: "", // 人员搜索关键字
+      currentOrgUsers: [], // 当前组织的人员列表
     };
   },
   computed: {
@@ -453,10 +496,21 @@ export default {
       return this.candidateUsers.filter((user) => matchUserKeyword(user, kw));
     },
     displayPickerTree() {
-      const subtree = getOrgSubtree(this.orgTree, this.addOrgScope);
-      const orgBranch = cloneOrgBranch(subtree);
-      const tree = attachUsersToTree(orgBranch, this.filteredPickUsers, this.orgTree);
-      return pruneEmptyOrgNodes(tree);
+      // 左侧组织树：始终显示完整的组织结构，不根据选中节点过滤
+      // 只过滤掉人员节点，保留纯组织层级
+      const orgBranch = cloneOrgBranch(this.orgTree);
+      return orgBranch;
+    },
+    // 中间人员列表：根据选中的组织加载人员
+    filteredPersonList() {
+      const kw = this.personSearchKeyword.trim().toLowerCase();
+      return this.currentOrgUsers.filter((user) => {
+        if (!kw) return true;
+        return (
+          (user.name || "").toLowerCase().includes(kw) ||
+          (user.username || "").toLowerCase().includes(kw)
+        );
+      });
     },
   },
   mounted() {
@@ -543,15 +597,138 @@ export default {
       this.addSearchKeyword = "";
       this.addSearchFilter = "";
       this.selectedPickUsers = [];
+      this.personSearchKeyword = "";
       this.showAddDialog = true;
+      
+      // 初始化加载根组织的人员
+      this.$nextTick(() => {
+        this.loadOrgUsers(this.addOrgScope);
+      });
     },
     closeAddDialog() {
       this.addSearchKeyword = "";
       this.addSearchFilter = "";
       this.selectedPickUsers = [];
     },
-    handleAddOrgChange() {
+    handleAddOrgChange(orgId) {
       this.addSearchFilter = this.addSearchKeyword;
+      // 只加载人员，不改变组织树显示
+      this.loadOrgUsers(orgId);
+    },
+    // 加载组织下的人员
+    loadOrgUsers(orgId) {
+      if (!orgId) {
+        this.currentOrgUsers = [];
+        console.log('loadOrgUsers: orgId 为空');
+        return;
+      }
+      
+      console.log('loadOrgUsers 被调用，orgId:', orgId);
+      console.log('currentRole:', this.currentRole);
+      
+      // 如果有 currentRole，从 candidateUsers 中筛选
+      if (this.currentRole) {
+        console.log('从 candidateUsers 筛选');
+        this.currentOrgUsers = this.candidateUsers.filter((user) => user.orgId === orgId);
+        console.log('candidateUsers 筛选结果:', this.currentOrgUsers.length);
+        
+        // 如果 candidateUsers 中没有数据，使用模拟数据作为后备
+        if (this.currentOrgUsers.length === 0) {
+          console.log('candidateUsers 为空，使用模拟数据');
+          this.currentOrgUsers = this.generateMockUsers(orgId);
+        }
+      } else {
+        // 如果没有 currentRole（直接打开弹窗），生成模拟数据
+        console.log('生成模拟数据');
+        this.currentOrgUsers = this.generateMockUsers(orgId);
+      }
+      
+      console.log('加载后的人员数量:', this.currentOrgUsers.length);
+      console.log('人员列表:', this.currentOrgUsers);
+    },
+    // 生成模拟用户数据
+    generateMockUsers(orgId) {
+      const mockUsers = [
+        // 领导班子 (101) - 8人
+        { id: `mock-1`, username: 'admin', name: '管理员', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-2`, username: 'user001', name: '张建国', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-3`, username: 'user002', name: '李明华', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-4`, username: 'user003', name: '王伟强', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-5`, username: 'user004', name: '刘志强', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-6`, username: 'user005', name: '陈晓东', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-7`, username: 'user006', name: '黄建华', orgId: 101, parentDeptName: '领导班子' },
+        { id: `mock-8`, username: 'user007', name: '周永明', orgId: 101, parentDeptName: '领导班子' },
+        
+        // 南方电网公司出资企业专职董事监事 (102) - 6人
+        { id: `mock-9`, username: 'user008', name: '赵文斌', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
+        { id: `mock-10`, username: 'user009', name: '钱学军', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
+        { id: `mock-11`, username: 'user010', name: '孙立平', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
+        { id: `mock-12`, username: 'user011', name: '李国庆', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
+        { id: `mock-13`, username: 'user012', name: '周德明', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
+        { id: `mock-14`, username: 'user013', name: '吴正华', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
+        
+        // 免职未退休领导人员 (103) - 5人
+        { id: `mock-15`, username: 'user014', name: '郑国强', orgId: 103, parentDeptName: '免职未退休领导人员' },
+        { id: `mock-16`, username: 'user015', name: '王德胜', orgId: 103, parentDeptName: '免职未退休领导人员' },
+        { id: `mock-17`, username: 'user016', name: '李建新', orgId: 103, parentDeptName: '免职未退休领导人员' },
+        { id: `mock-18`, username: 'user017', name: '张明远', orgId: 103, parentDeptName: '免职未退休领导人员' },
+        { id: `mock-19`, username: 'user018', name: '刘永胜', orgId: 103, parentDeptName: '免职未退休领导人员' },
+        
+        // 云南电网公司出资企业专职董事监事 (104) - 6人
+        { id: `mock-20`, username: 'user019', name: '陈志强', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
+        { id: `mock-21`, username: 'user020', name: '黄建国', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
+        { id: `mock-22`, username: 'user021', name: '周文军', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
+        { id: `mock-23`, username: 'user022', name: '吴立民', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
+        { id: `mock-24`, username: 'user023', name: '徐德明', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
+        { id: `mock-25`, username: 'user024', name: '孙正华', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
+        
+        // 管理类职员 (105) - 10人
+        { id: `mock-26`, username: 'user025', name: '马超', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-27`, username: 'user026', name: '黄蓉', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-28`, username: 'user027', name: '林峰', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-29`, username: 'user028', name: '何静', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-30`, username: 'user029', name: '罗文', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-31`, username: 'user030', name: '梁明', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-32`, username: 'user031', name: '宋佳', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-33`, username: 'user032', name: '唐国强', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-34`, username: 'user033', name: '韩雪', orgId: 105, parentDeptName: '管理类职员' },
+        { id: `mock-35`, username: 'user034', name: '冯磊', orgId: 105, parentDeptName: '管理类职员' },
+        
+        // 其他部门人员 (后续部门)
+        { id: `mock-36`, username: 'user035', name: '曹文', orgId: 108, parentDeptName: '办公室' },
+        { id: `mock-37`, username: 'user036', name: '邓华', orgId: 108, parentDeptName: '办公室' },
+        { id: `mock-38`, username: 'user037', name: '许明', orgId: 110, parentDeptName: '人力资源部' },
+        { id: `mock-39`, username: 'user038', name: '傅强', orgId: 110, parentDeptName: '人力资源部' },
+        { id: `mock-40`, username: 'user039', name: '沈丽', orgId: 113, parentDeptName: '计划与财务部' },
+        { id: `mock-41`, username: 'user040', name: '曾伟', orgId: 115, parentDeptName: '数字化部' },
+        { id: `mock-42`, username: 'user041', name: '彭军', orgId: 118, parentDeptName: '新兴与国际业务部' },
+        { id: `mock-43`, username: 'user042', name: '吕芳', orgId: 120, parentDeptName: '系统运行部' },
+        { id: `mock-44`, username: 'user043', name: '苏敏', orgId: 122, parentDeptName: '安全监管部' },
+        { id: `mock-45`, username: 'user044', name: '卢建', orgId: 125, parentDeptName: '党建工作部' },
+      ];
+      
+      // 根据 orgId 筛选，如果是根节点（1），返回所有用户
+      if (orgId === 1) {
+        return mockUsers;
+      }
+      
+      // 返回该组织及其子组织的人员
+      return mockUsers.filter(user => {
+        // 简化处理：如果 orgId 匹配或父部门包含该组织
+        return user.orgId === orgId;
+      });
+    },
+    // 处理人员搜索
+    handlePersonSearch() {
+      // 搜索时不需要额外处理，computed 会自动过滤
+    },
+    // 点击组织节点
+    handleOrgNodeClick(nodeData) {
+      // 只要是组织节点就加载人员（不包含用户ID的节点）
+      if (nodeData.id && !String(nodeData.id).startsWith('pick-')) {
+        console.log('点击组织节点:', nodeData.name, 'ID:', nodeData.id);
+        this.loadOrgUsers(nodeData.id);
+      }
     },
     handleAddSearch() {
       this.addSearchFilter = this.addSearchKeyword;
@@ -750,17 +927,111 @@ export default {
 
 .pick-user-layout {
   display: flex;
-  gap: 0;
-  min-height: 420px;
-  border: 1px solid #e4e7ed;
+  gap: 12px;
+  height: 500px;
+  overflow: hidden;
 }
 
 .pick-user-left {
-  flex: 1;
-  min-width: 0;
-  border-right: 1px solid #e4e7ed;
+  width: 300px;
+  flex-shrink: 0;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+}
+
+.pick-user-center {
+  flex: 1;
+  min-width: 0;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  background: #fff;
+}
+
+.pick-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebeef5;
+  background: #fff;
+}
+
+.pick-panel-title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.pick-person-count {
+  font-size: 13px;
+  color: #909399;
+}
+
+.pick-count-highlight {
+  color: #409eff;
+  font-weight: 600;
+  margin-left: 4px;
+}
+
+.pick-user-list {
+  flex: 1;
+  overflow: auto;
+  padding: 8px 12px;
+}
+
+.pick-person-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 12px;
+  margin-bottom: 4px;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+  cursor: pointer;
+  transition: all 0.2s;
+  background: #fff;
+}
+
+.pick-person-item:hover {
+  border-color: #c6e2ff;
+  background: #ecf5ff;
+}
+
+.pick-person-item.selected {
+  background: #ecf5ff;
+  border-color: #409eff;
+}
+
+.pick-person-check {
+  flex-shrink: 0;
+}
+
+.pick-person-check >>> .el-checkbox__label {
+  display: none;
+}
+
+.pick-person-icon {
+  flex-shrink: 0;
+  font-size: 18px;
+  color: #909399;
+}
+
+.pick-person-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.pick-person-name {
+  font-size: 13px;
+  color: #303133;
+  font-weight: 500;
 }
 
 .pick-user-filter {
@@ -834,36 +1105,20 @@ export default {
 }
 
 .pick-user-right {
-  width: 280px;
+  width: 300px;
   flex-shrink: 0;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
   display: flex;
   flex-direction: column;
-  background: #fafafa;
-}
-
-.pick-selected-head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 12px;
-  border-bottom: 1px solid #ebeef5;
+  overflow: hidden;
   background: #fff;
-}
-
-.pick-selected-count {
-  font-size: 13px;
-  color: #303133;
-}
-
-.pick-clear-btn {
-  padding: 0;
-  font-size: 13px;
 }
 
 .pick-selected-list {
   flex: 1;
   overflow: auto;
-  padding: 8px 0;
+  padding: 12px;
 }
 
 .pick-selected-item {
@@ -871,31 +1126,25 @@ export default {
   align-items: center;
   gap: 8px;
   padding: 8px 12px;
-  font-size: 13px;
-  color: #303133;
-  background: #fff;
-  border-bottom: 1px solid #f0f2f5;
+  margin-bottom: 4px;
+  background: #f5f7fa;
+  border-radius: 4px;
+  transition: all 0.2s;
 }
 
 .pick-selected-item:hover {
-  background: #f5f7fa;
+  background: #ecf5ff;
+}
+
+.pick-selected-info {
+  flex: 1;
+  min-width: 0;
 }
 
 .pick-selected-name {
-  flex-shrink: 0;
-  max-width: 80px;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.pick-selected-dept {
-  flex: 1;
-  min-width: 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  color: #909399;
+  font-size: 13px;
+  color: #303133;
+  font-weight: 500;
 }
 
 .pick-selected-remove {
@@ -919,18 +1168,23 @@ export default {
 
 <style>
 .pick-user-dialog .el-dialog__header {
-  padding: 12px 16px;
+  padding: 16px 20px;
   border-bottom: 1px solid #ebeef5;
+  background: linear-gradient(135deg, #f5f7fa 0%, #c3cfe2 100%);
 }
 
 .pick-user-dialog .el-dialog__title {
-  font-size: 14px;
+  font-size: 16px;
   font-weight: 600;
   color: #303133;
 }
 
 .pick-user-dialog .el-dialog__body {
   padding: 16px;
+  height: 600px;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .pick-user-dialog .el-dialog__footer {
