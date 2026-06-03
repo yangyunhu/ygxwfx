@@ -16,9 +16,25 @@
       fixed="left"
       :index="indexMethod"
     />
-    <el-table-column prop="deptName" label="部门名称" min-width="110" show-overflow-tooltip fixed="left" />
-    <el-table-column prop="account" label="用户账号" min-width="150" show-overflow-tooltip />
-    <el-table-column prop="maskedName" label="用户名" width="80" align="center" />
+    <el-table-column
+      prop="deptName"
+      label="部门名称"
+      min-width="110"
+      show-overflow-tooltip
+      fixed="left"
+    />
+    <el-table-column
+      prop="account"
+      label="用户账号"
+      min-width="150"
+      show-overflow-tooltip
+    />
+    <el-table-column
+      prop="maskedName"
+      label="用户名"
+      width="80"
+      align="center"
+    />
     <el-table-column label="访问时间" align="center">
       <el-table-column prop="loginTime" label="进入时间" width="160" />
       <el-table-column prop="logoutTime" label="退出时间" width="160">

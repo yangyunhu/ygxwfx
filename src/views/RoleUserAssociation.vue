@@ -10,7 +10,11 @@
           class="search-input"
           @keyup.enter.native="handleSearch"
         >
-          <el-button slot="append" icon="el-icon-search" @click="handleSearch" />
+          <el-button
+            slot="append"
+            icon="el-icon-search"
+            @click="handleSearch"
+          />
         </el-input>
       </div>
 
@@ -23,16 +27,31 @@
         highlight-current-row
       >
         <el-table-column prop="sort" label="角色ID" width="90" align="center" />
-        <el-table-column prop="name" label="角色名称" min-width="220" show-overflow-tooltip />
+        <el-table-column
+          prop="name"
+          label="角色名称"
+          min-width="220"
+          show-overflow-tooltip
+        />
         <el-table-column prop="orgId" label="机构ID" width="120" align="center">
           <template slot-scope="{ row }">{{ row.orgId || "" }}</template>
         </el-table-column>
-        <el-table-column prop="remark" label="备注" min-width="260" show-overflow-tooltip>
+        <el-table-column
+          prop="remark"
+          label="备注"
+          min-width="260"
+          show-overflow-tooltip
+        >
           <template slot-scope="{ row }">{{ row.remark || "" }}</template>
         </el-table-column>
         <el-table-column label="操作" width="130" align="center" fixed="right">
           <template slot-scope="{ row }">
-            <el-button type="text" size="small" class="action-link" @click="openLinkedUsers(row)">
+            <el-button
+              type="text"
+              size="small"
+              class="action-link"
+              @click="openLinkedUsers(row)"
+            >
               查看关联人员
             </el-button>
           </template>
@@ -82,10 +101,18 @@
           class="linked-search"
           @keyup.enter.native="handleLinkedSearch"
         >
-          <el-button slot="append" icon="el-icon-search" @click="handleLinkedSearch" />
+          <el-button
+            slot="append"
+            icon="el-icon-search"
+            @click="handleLinkedSearch"
+          />
         </el-input>
         <div class="linked-actions">
-          <el-button type="text" class="linked-action-btn" @click="openAddDialog">
+          <el-button
+            type="text"
+            class="linked-action-btn"
+            @click="openAddDialog"
+          >
             <i class="el-icon-plus" /> 添加关联人员
           </el-button>
           <el-button
@@ -109,14 +136,41 @@
         row-key="id"
         @selection-change="handleLinkedSelectionChange"
       >
-        <el-table-column type="selection" width="48" align="center" reserve-selection />
+        <el-table-column
+          type="selection"
+          width="48"
+          align="center"
+          reserve-selection
+        />
         <el-table-column label="序号" width="70" align="center">
-          <template slot-scope="{ $index }">{{ linkedIndexMethod($index) }}</template>
+          <template slot-scope="{ $index }">{{
+            linkedIndexMethod($index)
+          }}</template>
         </el-table-column>
-        <el-table-column prop="name" label="用户名" width="120" show-overflow-tooltip />
-        <el-table-column prop="orgUnit" label="所属单位" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="deptPath" label="部门" min-width="180" show-overflow-tooltip />
-        <el-table-column prop="orgFullPath" label="所属组织全路径" min-width="280" show-overflow-tooltip />
+        <el-table-column
+          prop="name"
+          label="用户名"
+          width="120"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="orgUnit"
+          label="所属单位"
+          min-width="180"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="deptPath"
+          label="部门"
+          min-width="180"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="orgFullPath"
+          label="所属组织全路径"
+          min-width="280"
+          show-overflow-tooltip
+        />
       </el-table>
 
       <div class="linked-pager">
@@ -198,11 +252,20 @@
               @node-click="handleOrgNodeClick"
             >
               <span slot-scope="{ node, data }" class="picker-tree-node">
-                <i :class="data.nodeType === 'user' ? 'el-icon-user' : 'el-icon-share'" class="picker-node-icon" />
-                <span class="picker-node-label" :title="node.label">{{ node.label }}</span>
+                <i
+                  :class="
+                    data.nodeType === 'user' ? 'el-icon-user' : 'el-icon-share'
+                  "
+                  class="picker-node-icon"
+                />
+                <span class="picker-node-label" :title="node.label">{{
+                  node.label
+                }}</span>
               </span>
             </el-tree>
-            <div v-if="!displayPickerTree.length" class="pick-user-empty">暂无可选组织</div>
+            <div v-if="!displayPickerTree.length" class="pick-user-empty">
+              暂无可选组织
+            </div>
           </div>
         </section>
 
@@ -210,7 +273,9 @@
         <section class="pick-user-center">
           <div class="pick-panel-header">
             <span class="pick-panel-title">人员列表</span>
-            <span class="pick-person-count">共 {{ currentOrgUsers.length }} 人</span>
+            <span class="pick-person-count"
+              >共 {{ currentOrgUsers.length }} 人</span
+            >
           </div>
           <div class="pick-user-search">
             <el-input
@@ -241,14 +306,20 @@
                 <div class="pick-person-name">{{ user.name }}</div>
               </div>
             </div>
-            <div v-if="!filteredPersonList.length" class="pick-user-empty">暂无人员数据</div>
+            <div v-if="!filteredPersonList.length" class="pick-user-empty">
+              暂无人员数据
+            </div>
           </div>
         </section>
 
         <!-- 右侧：已选人员 -->
         <section class="pick-user-right">
           <div class="pick-panel-header">
-            <span class="pick-panel-title">已选：<span class="pick-count-highlight">{{ selectedPickUsers.length }}</span></span>
+            <span class="pick-panel-title"
+              >已选：<span class="pick-count-highlight">{{
+                selectedPickUsers.length
+              }}</span></span
+            >
             <el-button
               type="text"
               class="pick-clear-btn"
@@ -268,16 +339,25 @@
               <div class="pick-selected-info">
                 <div class="pick-selected-name">{{ user.name }}</div>
               </div>
-              <i class="el-icon-close pick-selected-remove" @click="removePickedUser(user)" />
+              <i
+                class="el-icon-close pick-selected-remove"
+                @click="removePickedUser(user)"
+              />
             </div>
-            <div v-if="!selectedPickUsers.length" class="pick-selected-empty">请从左侧选择人员</div>
+            <div v-if="!selectedPickUsers.length" class="pick-selected-empty">
+              请从左侧选择人员
+            </div>
           </div>
         </section>
       </div>
 
       <span slot="footer" class="linked-dialog-footer">
         <el-button @click="showAddDialog = false">取消</el-button>
-        <el-button type="primary" :disabled="!selectedPickUsers.length" @click="confirmAddUsers">
+        <el-button
+          type="primary"
+          :disabled="!selectedPickUsers.length"
+          @click="confirmAddUsers"
+        >
           确定
         </el-button>
       </span>
@@ -440,14 +520,18 @@ export default {
     },
     pagedRoles() {
       const start = (this.currentPage - 1) * this.pageSize;
-      return this.filteredRoles.slice(start, start + this.pageSize).map((r) => ({
-        ...r,
-        orgId: r.orgId || "",
-      }));
+      return this.filteredRoles
+        .slice(start, start + this.pageSize)
+        .map((r) => ({
+          ...r,
+          orgId: r.orgId || "",
+        }));
     },
     linkedUsers() {
       if (!this.currentRole) return [];
-      return getUsersByRole(this.currentRole.id).map((u) => enrichUser(u, this.orgTree));
+      return getUsersByRole(this.currentRole.id).map((u) =>
+        enrichUser(u, this.orgTree),
+      );
     },
     dialogUserList() {
       const kw = this.linkedFilterKeyword.trim().toLowerCase();
@@ -552,12 +636,18 @@ export default {
     },
     batchRemove() {
       if (!this.selectedLinked.length) return;
-      this.$confirm(`确定删除 ${this.selectedLinked.length} 名关联人员？`, "删除关联人员", {
-        type: "warning",
-      })
+      this.$confirm(
+        `确定删除 ${this.selectedLinked.length} 名关联人员？`,
+        "删除关联人员",
+        {
+          type: "warning",
+        },
+      )
         .then(() => {
           this.selectedLinked.forEach((user) => {
-            const nextRoleIds = (user.roleIds || []).filter((id) => id !== this.currentRole.id);
+            const nextRoleIds = (user.roleIds || []).filter(
+              (id) => id !== this.currentRole.id,
+            );
             updateUserRoles(user.id, nextRoleIds);
           });
           this.reload();
@@ -568,13 +658,15 @@ export default {
         .catch(() => {});
     },
     openAddDialog() {
-      this.addOrgScope = this.pickerOrgOptions[0] ? this.pickerOrgOptions[0].id : 1;
+      this.addOrgScope = this.pickerOrgOptions[0]
+        ? this.pickerOrgOptions[0].id
+        : 1;
       this.addSearchKeyword = "";
       this.addSearchFilter = "";
       this.selectedPickUsers = [];
       this.personSearchKeyword = "";
       this.showAddDialog = true;
-      
+
       // 初始化加载根组织的人员
       this.$nextTick(() => {
         this.loadOrgUsers(this.addOrgScope);
@@ -594,101 +686,373 @@ export default {
     loadOrgUsers(orgId) {
       if (!orgId) {
         this.currentOrgUsers = [];
-        console.log('loadOrgUsers: orgId 为空');
+        console.log("loadOrgUsers: orgId 为空");
         return;
       }
-      
-      console.log('loadOrgUsers 被调用，orgId:', orgId);
-      console.log('currentRole:', this.currentRole);
-      
+
+      console.log("loadOrgUsers 被调用，orgId:", orgId);
+      console.log("currentRole:", this.currentRole);
+
       // 如果有 currentRole，从 candidateUsers 中筛选
       if (this.currentRole) {
-        console.log('从 candidateUsers 筛选');
-        this.currentOrgUsers = this.candidateUsers.filter((user) => user.orgId === orgId);
-        console.log('candidateUsers 筛选结果:', this.currentOrgUsers.length);
-        
+        console.log("从 candidateUsers 筛选");
+        this.currentOrgUsers = this.candidateUsers.filter(
+          (user) => user.orgId === orgId,
+        );
+        console.log("candidateUsers 筛选结果:", this.currentOrgUsers.length);
+
         // 如果 candidateUsers 中没有数据，使用模拟数据作为后备
         if (this.currentOrgUsers.length === 0) {
-          console.log('candidateUsers 为空，使用模拟数据');
+          console.log("candidateUsers 为空，使用模拟数据");
           this.currentOrgUsers = this.generateMockUsers(orgId);
         }
       } else {
         // 如果没有 currentRole（直接打开弹窗），生成模拟数据
-        console.log('生成模拟数据');
+        console.log("生成模拟数据");
         this.currentOrgUsers = this.generateMockUsers(orgId);
       }
-      
-      console.log('加载后的人员数量:', this.currentOrgUsers.length);
-      console.log('人员列表:', this.currentOrgUsers);
+
+      console.log("加载后的人员数量:", this.currentOrgUsers.length);
+      console.log("人员列表:", this.currentOrgUsers);
     },
     // 生成模拟用户数据
     generateMockUsers(orgId) {
       const mockUsers = [
         // 领导班子 (101) - 8人
-        { id: `mock-1`, username: 'admin', name: '管理员', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-2`, username: 'user001', name: '张建国', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-3`, username: 'user002', name: '李明华', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-4`, username: 'user003', name: '王伟强', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-5`, username: 'user004', name: '刘志强', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-6`, username: 'user005', name: '陈晓东', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-7`, username: 'user006', name: '黄建华', orgId: 101, parentDeptName: '领导班子' },
-        { id: `mock-8`, username: 'user007', name: '周永明', orgId: 101, parentDeptName: '领导班子' },
-        
+        {
+          id: `mock-1`,
+          username: "admin",
+          name: "管理员",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-2`,
+          username: "user001",
+          name: "张建国",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-3`,
+          username: "user002",
+          name: "李明华",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-4`,
+          username: "user003",
+          name: "王伟强",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-5`,
+          username: "user004",
+          name: "刘志强",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-6`,
+          username: "user005",
+          name: "陈晓东",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-7`,
+          username: "user006",
+          name: "黄建华",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+        {
+          id: `mock-8`,
+          username: "user007",
+          name: "周永明",
+          orgId: 101,
+          parentDeptName: "领导班子",
+        },
+
         // 南方电网公司出资企业专职董事监事 (102) - 6人
-        { id: `mock-9`, username: 'user008', name: '赵文斌', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
-        { id: `mock-10`, username: 'user009', name: '钱学军', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
-        { id: `mock-11`, username: 'user010', name: '孙立平', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
-        { id: `mock-12`, username: 'user011', name: '李国庆', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
-        { id: `mock-13`, username: 'user012', name: '周德明', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
-        { id: `mock-14`, username: 'user013', name: '吴正华', orgId: 102, parentDeptName: '南方电网公司出资企业专职董事监事' },
-        
+        {
+          id: `mock-9`,
+          username: "user008",
+          name: "赵文斌",
+          orgId: 102,
+          parentDeptName: "南方电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-10`,
+          username: "user009",
+          name: "钱学军",
+          orgId: 102,
+          parentDeptName: "南方电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-11`,
+          username: "user010",
+          name: "孙立平",
+          orgId: 102,
+          parentDeptName: "南方电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-12`,
+          username: "user011",
+          name: "李国庆",
+          orgId: 102,
+          parentDeptName: "南方电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-13`,
+          username: "user012",
+          name: "周德明",
+          orgId: 102,
+          parentDeptName: "南方电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-14`,
+          username: "user013",
+          name: "吴正华",
+          orgId: 102,
+          parentDeptName: "南方电网公司出资企业专职董事监事",
+        },
+
         // 免职未退休领导人员 (103) - 5人
-        { id: `mock-15`, username: 'user014', name: '郑国强', orgId: 103, parentDeptName: '免职未退休领导人员' },
-        { id: `mock-16`, username: 'user015', name: '王德胜', orgId: 103, parentDeptName: '免职未退休领导人员' },
-        { id: `mock-17`, username: 'user016', name: '李建新', orgId: 103, parentDeptName: '免职未退休领导人员' },
-        { id: `mock-18`, username: 'user017', name: '张明远', orgId: 103, parentDeptName: '免职未退休领导人员' },
-        { id: `mock-19`, username: 'user018', name: '刘永胜', orgId: 103, parentDeptName: '免职未退休领导人员' },
-        
+        {
+          id: `mock-15`,
+          username: "user014",
+          name: "郑国强",
+          orgId: 103,
+          parentDeptName: "免职未退休领导人员",
+        },
+        {
+          id: `mock-16`,
+          username: "user015",
+          name: "王德胜",
+          orgId: 103,
+          parentDeptName: "免职未退休领导人员",
+        },
+        {
+          id: `mock-17`,
+          username: "user016",
+          name: "李建新",
+          orgId: 103,
+          parentDeptName: "免职未退休领导人员",
+        },
+        {
+          id: `mock-18`,
+          username: "user017",
+          name: "张明远",
+          orgId: 103,
+          parentDeptName: "免职未退休领导人员",
+        },
+        {
+          id: `mock-19`,
+          username: "user018",
+          name: "刘永胜",
+          orgId: 103,
+          parentDeptName: "免职未退休领导人员",
+        },
+
         // 云南电网公司出资企业专职董事监事 (104) - 6人
-        { id: `mock-20`, username: 'user019', name: '陈志强', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
-        { id: `mock-21`, username: 'user020', name: '黄建国', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
-        { id: `mock-22`, username: 'user021', name: '周文军', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
-        { id: `mock-23`, username: 'user022', name: '吴立民', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
-        { id: `mock-24`, username: 'user023', name: '徐德明', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
-        { id: `mock-25`, username: 'user024', name: '孙正华', orgId: 104, parentDeptName: '云南电网公司出资企业专职董事监事' },
-        
+        {
+          id: `mock-20`,
+          username: "user019",
+          name: "陈志强",
+          orgId: 104,
+          parentDeptName: "云南电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-21`,
+          username: "user020",
+          name: "黄建国",
+          orgId: 104,
+          parentDeptName: "云南电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-22`,
+          username: "user021",
+          name: "周文军",
+          orgId: 104,
+          parentDeptName: "云南电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-23`,
+          username: "user022",
+          name: "吴立民",
+          orgId: 104,
+          parentDeptName: "云南电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-24`,
+          username: "user023",
+          name: "徐德明",
+          orgId: 104,
+          parentDeptName: "云南电网公司出资企业专职董事监事",
+        },
+        {
+          id: `mock-25`,
+          username: "user024",
+          name: "孙正华",
+          orgId: 104,
+          parentDeptName: "云南电网公司出资企业专职董事监事",
+        },
+
         // 管理类职员 (105) - 10人
-        { id: `mock-26`, username: 'user025', name: '马超', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-27`, username: 'user026', name: '黄蓉', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-28`, username: 'user027', name: '林峰', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-29`, username: 'user028', name: '何静', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-30`, username: 'user029', name: '罗文', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-31`, username: 'user030', name: '梁明', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-32`, username: 'user031', name: '宋佳', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-33`, username: 'user032', name: '唐国强', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-34`, username: 'user033', name: '韩雪', orgId: 105, parentDeptName: '管理类职员' },
-        { id: `mock-35`, username: 'user034', name: '冯磊', orgId: 105, parentDeptName: '管理类职员' },
-        
+        {
+          id: `mock-26`,
+          username: "user025",
+          name: "马超",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-27`,
+          username: "user026",
+          name: "黄蓉",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-28`,
+          username: "user027",
+          name: "林峰",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-29`,
+          username: "user028",
+          name: "何静",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-30`,
+          username: "user029",
+          name: "罗文",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-31`,
+          username: "user030",
+          name: "梁明",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-32`,
+          username: "user031",
+          name: "宋佳",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-33`,
+          username: "user032",
+          name: "唐国强",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-34`,
+          username: "user033",
+          name: "韩雪",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+        {
+          id: `mock-35`,
+          username: "user034",
+          name: "冯磊",
+          orgId: 105,
+          parentDeptName: "管理类职员",
+        },
+
         // 其他部门人员 (后续部门)
-        { id: `mock-36`, username: 'user035', name: '曹文', orgId: 108, parentDeptName: '办公室' },
-        { id: `mock-37`, username: 'user036', name: '邓华', orgId: 108, parentDeptName: '办公室' },
-        { id: `mock-38`, username: 'user037', name: '许明', orgId: 110, parentDeptName: '人力资源部' },
-        { id: `mock-39`, username: 'user038', name: '傅强', orgId: 110, parentDeptName: '人力资源部' },
-        { id: `mock-40`, username: 'user039', name: '沈丽', orgId: 113, parentDeptName: '计划与财务部' },
-        { id: `mock-41`, username: 'user040', name: '曾伟', orgId: 115, parentDeptName: '数字化部' },
-        { id: `mock-42`, username: 'user041', name: '彭军', orgId: 118, parentDeptName: '新兴与国际业务部' },
-        { id: `mock-43`, username: 'user042', name: '吕芳', orgId: 120, parentDeptName: '系统运行部' },
-        { id: `mock-44`, username: 'user043', name: '苏敏', orgId: 122, parentDeptName: '安全监管部' },
-        { id: `mock-45`, username: 'user044', name: '卢建', orgId: 125, parentDeptName: '党建工作部' },
+        {
+          id: `mock-36`,
+          username: "user035",
+          name: "曹文",
+          orgId: 108,
+          parentDeptName: "办公室",
+        },
+        {
+          id: `mock-37`,
+          username: "user036",
+          name: "邓华",
+          orgId: 108,
+          parentDeptName: "办公室",
+        },
+        {
+          id: `mock-38`,
+          username: "user037",
+          name: "许明",
+          orgId: 110,
+          parentDeptName: "人力资源部",
+        },
+        {
+          id: `mock-39`,
+          username: "user038",
+          name: "傅强",
+          orgId: 110,
+          parentDeptName: "人力资源部",
+        },
+        {
+          id: `mock-40`,
+          username: "user039",
+          name: "沈丽",
+          orgId: 113,
+          parentDeptName: "计划与财务部",
+        },
+        {
+          id: `mock-41`,
+          username: "user040",
+          name: "曾伟",
+          orgId: 115,
+          parentDeptName: "数字化部",
+        },
+        {
+          id: `mock-42`,
+          username: "user041",
+          name: "彭军",
+          orgId: 118,
+          parentDeptName: "新兴与国际业务部",
+        },
+        {
+          id: `mock-43`,
+          username: "user042",
+          name: "吕芳",
+          orgId: 120,
+          parentDeptName: "系统运行部",
+        },
+        {
+          id: `mock-44`,
+          username: "user043",
+          name: "苏敏",
+          orgId: 122,
+          parentDeptName: "安全监管部",
+        },
+        {
+          id: `mock-45`,
+          username: "user044",
+          name: "卢建",
+          orgId: 125,
+          parentDeptName: "党建工作部",
+        },
       ];
-      
+
       // 根据 orgId 筛选，如果是根节点（1），返回所有用户
       if (orgId === 1) {
         return mockUsers;
       }
-      
+
       // 返回该组织及其子组织的人员
-      return mockUsers.filter(user => {
+      return mockUsers.filter((user) => {
         // 简化处理：如果 orgId 匹配或父部门包含该组织
         return user.orgId === orgId;
       });
@@ -700,8 +1064,8 @@ export default {
     // 点击组织节点
     handleOrgNodeClick(nodeData) {
       // 只要是组织节点就加载人员（不包含用户ID的节点）
-      if (nodeData.id && !String(nodeData.id).startsWith('pick-')) {
-        console.log('点击组织节点:', nodeData.name, 'ID:', nodeData.id);
+      if (nodeData.id && !String(nodeData.id).startsWith("pick-")) {
+        console.log("点击组织节点:", nodeData.name, "ID:", nodeData.id);
         this.loadOrgUsers(nodeData.id);
       }
     },
@@ -715,11 +1079,15 @@ export default {
       if (checked) {
         if (!this.isUserPicked(user)) this.selectedPickUsers.push(user);
       } else {
-        this.selectedPickUsers = this.selectedPickUsers.filter((item) => item.id !== user.id);
+        this.selectedPickUsers = this.selectedPickUsers.filter(
+          (item) => item.id !== user.id,
+        );
       }
     },
     removePickedUser(user) {
-      this.selectedPickUsers = this.selectedPickUsers.filter((item) => item.id !== user.id);
+      this.selectedPickUsers = this.selectedPickUsers.filter(
+        (item) => item.id !== user.id,
+      );
     },
     clearAllPicked() {
       this.selectedPickUsers = [];
@@ -732,7 +1100,9 @@ export default {
       if (!this.currentRole || !this.selectedPickUsers.length) return;
       const count = this.selectedPickUsers.length;
       this.selectedPickUsers.forEach((user) => {
-        const nextRoleIds = Array.from(new Set([...(user.roleIds || []), this.currentRole.id]));
+        const nextRoleIds = Array.from(
+          new Set([...(user.roleIds || []), this.currentRole.id]),
+        );
         updateUserRoles(user.id, nextRoleIds);
       });
       this.reload();

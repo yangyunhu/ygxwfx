@@ -25,7 +25,9 @@
           >
             <span slot-scope="{ node, data }" class="app-tree-node">
               <i :class="data.icon || 'el-icon-folder-opened'" />
-              <span class="app-tree-label" :title="node.label">{{ node.label }}</span>
+              <span class="app-tree-label" :title="node.label">{{
+                node.label
+              }}</span>
             </span>
           </el-tree>
         </div>
@@ -43,8 +45,15 @@
           />
           <div class="main-actions">
             <el-button size="small" @click="openCreateRole">新增角色</el-button>
-            <el-button size="small" :disabled="!selectedRows.length" @click="batchDeleteRoles">删除角色</el-button>
-            <el-button size="small" @click="handleImportRoles">导入角色</el-button>
+            <el-button
+              size="small"
+              :disabled="!selectedRows.length"
+              @click="batchDeleteRoles"
+              >删除角色</el-button
+            >
+            <el-button size="small" @click="handleImportRoles"
+              >导入角色</el-button
+            >
           </div>
         </div>
 
@@ -59,24 +68,72 @@
           @selection-change="handleSelectionChange"
         >
           <el-table-column type="selection" width="48" align="center" />
-          <el-table-column prop="name" label="角色名称" min-width="140" show-overflow-tooltip>
+          <el-table-column
+            prop="name"
+            label="角色名称"
+            min-width="140"
+            show-overflow-tooltip
+          >
             <template slot-scope="{ row }">
-              <el-button type="text" class="role-name-link" @click="openPermissionDialog(row)">
+              <el-button
+                type="text"
+                class="role-name-link"
+                @click="openPermissionDialog(row)"
+              >
                 {{ row.name }}
               </el-button>
             </template>
           </el-table-column>
-          <el-table-column prop="description" label="描述" min-width="120" show-overflow-tooltip>
-            <template slot-scope="{ row }">{{ row.description || "" }}</template>
+          <el-table-column
+            prop="description"
+            label="描述"
+            min-width="120"
+            show-overflow-tooltip
+          >
+            <template slot-scope="{ row }">{{
+              row.description || ""
+            }}</template>
           </el-table-column>
-          <el-table-column prop="appName" label="所属系统应用" min-width="160" show-overflow-tooltip />
-          <el-table-column prop="creator" label="创建人" width="120" show-overflow-tooltip />
-          <el-table-column prop="createDate" label="创建日期" width="120" align="center" />
-          <el-table-column label="操作" width="110" align="center" fixed="right">
+          <el-table-column
+            prop="appName"
+            label="所属系统应用"
+            min-width="160"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="creator"
+            label="创建人"
+            width="120"
+            show-overflow-tooltip
+          />
+          <el-table-column
+            prop="createDate"
+            label="创建日期"
+            width="120"
+            align="center"
+          />
+          <el-table-column
+            label="操作"
+            width="110"
+            align="center"
+            fixed="right"
+          >
             <template slot-scope="{ row }">
-              <i class="op-icon op-setting el-icon-setting" title="功能配置" @click="openPermissionDialog(row)" />
-              <i class="op-icon op-delete el-icon-close" title="删除" @click="deleteSingleRole(row)" />
-              <i class="op-icon op-perm el-icon-document" title="关联人员" @click="openRolePersonnelDialog(row)" />
+              <i
+                class="op-icon op-setting el-icon-setting"
+                title="功能配置"
+                @click="openPermissionDialog(row)"
+              />
+              <i
+                class="op-icon op-delete el-icon-close"
+                title="删除"
+                @click="deleteSingleRole(row)"
+              />
+              <i
+                class="op-icon op-perm el-icon-document"
+                title="关联人员"
+                @click="openRolePersonnelDialog(row)"
+              />
             </template>
           </el-table-column>
         </el-table>
@@ -123,7 +180,14 @@
         </div>
       </div>
 
-      <el-form ref="roleForm" :model="roleForm" :rules="roleRules" label-width="96px" size="small" class="app-role-form">
+      <el-form
+        ref="roleForm"
+        :model="roleForm"
+        :rules="roleRules"
+        label-width="96px"
+        size="small"
+        class="app-role-form"
+      >
         <el-form-item label="角色名称:" prop="name" required>
           <el-input v-model="roleForm.name" maxlength="50" />
         </el-form-item>
@@ -136,7 +200,8 @@
             resize="none"
           />
           <div class="desc-counter">
-            (您还能输入<span class="desc-remain">{{ descRemain }}</span>个字符)
+            (您还能输入<span class="desc-remain">{{ descRemain }}</span
+            >个字符)
           </div>
         </el-form-item>
       </el-form>
@@ -168,7 +233,9 @@
             />
           </div>
           <div class="role-perm-filter">
-            <el-checkbox v-model="onlyAuthorizedApps">只显示已授权应用</el-checkbox>
+            <el-checkbox v-model="onlyAuthorizedApps"
+              >只显示已授权应用</el-checkbox
+            >
           </div>
           <div class="role-perm-app-tree">
             <el-tree
@@ -194,9 +261,15 @@
           <div class="role-perm-right-toolbar">
             <span />
             <div class="role-perm-right-actions">
-              <el-button size="small" @click="exportPermJson">导出JSON文件</el-button>
-              <el-button size="small" type="primary" @click="savePermConfig">保存</el-button>
-              <el-button size="small" @click="showPermissionDialog = false">关闭</el-button>
+              <el-button size="small" @click="exportPermJson"
+                >导出JSON文件</el-button
+              >
+              <el-button size="small" type="primary" @click="savePermConfig"
+                >保存</el-button
+              >
+              <el-button size="small" @click="showPermissionDialog = false"
+                >关闭</el-button
+              >
             </div>
           </div>
           <div class="resource-table-head">资源名称</div>
@@ -212,7 +285,9 @@
               :expand-on-click-node="false"
               @check="handleResourceCheck"
             />
-            <div v-else class="resource-empty">请在左侧选择「员工行为分析」资源配置</div>
+            <div v-else class="resource-empty">
+              请在左侧选择「员工行为分析」资源配置
+            </div>
           </div>
         </main>
       </div>
@@ -253,13 +328,23 @@
               readonly
               class="personnel-org-input"
             >
-              <el-button slot="append" icon="el-icon-share" @click="showOrgPicker = true" />
+              <el-button
+                slot="append"
+                icon="el-icon-share"
+                @click="showOrgPicker = true"
+              />
             </el-input>
           </div>
         </div>
         <div class="personnel-actions">
-          <el-button size="small" @click="handlePersonnelSearch">查询</el-button>
-          <el-button size="small" :disabled="!selectedPersonnel.length" @click="batchDeletePersonnel">
+          <el-button size="small" @click="handlePersonnelSearch"
+            >查询</el-button
+          >
+          <el-button
+            size="small"
+            :disabled="!selectedPersonnel.length"
+            @click="batchDeletePersonnel"
+          >
             删除关联人员
           </el-button>
         </div>
@@ -277,21 +362,53 @@
         @selection-change="handlePersonnelSelection"
       >
         <el-table-column type="selection" width="48" align="center" />
-        <el-table-column prop="name" label="姓名" width="90" show-overflow-tooltip />
-        <el-table-column prop="account" label="账号" min-width="200" show-overflow-tooltip />
-        <el-table-column prop="registerDate" label="注册日期" width="110" align="center">
+        <el-table-column
+          prop="name"
+          label="姓名"
+          width="90"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="account"
+          label="账号"
+          min-width="200"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="registerDate"
+          label="注册日期"
+          width="110"
+          align="center"
+        >
           <template slot-scope="{ row }">{{ row.registerDate || "" }}</template>
         </el-table-column>
-        <el-table-column prop="createDate" label="创建日期" width="110" align="center" />
-        <el-table-column prop="orgFullPath" label="所属组织全路径" min-width="320" show-overflow-tooltip />
-        <el-table-column prop="expiryDate" label="到期日期" width="110" align="center">
+        <el-table-column
+          prop="createDate"
+          label="创建日期"
+          width="110"
+          align="center"
+        />
+        <el-table-column
+          prop="orgFullPath"
+          label="所属组织全路径"
+          min-width="320"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="expiryDate"
+          label="到期日期"
+          width="110"
+          align="center"
+        >
           <template slot-scope="{ row }">{{ row.expiryDate || "" }}</template>
         </el-table-column>
       </el-table>
 
       <div class="personnel-pager">
         <div class="pager-left">
-          <span class="pager-total">共{{ filteredPersonnel.length }}条记录</span>
+          <span class="pager-total"
+            >共{{ filteredPersonnel.length }}条记录</span
+          >
           <span class="pager-label">每页显示</span>
           <span
             v-for="size in personnelPageSizeOptions"
@@ -329,7 +446,9 @@
       />
       <span slot="footer">
         <el-button size="small" @click="clearOrgFilter">清空</el-button>
-        <el-button size="small" type="primary" @click="showOrgPicker = false">确定</el-button>
+        <el-button size="small" type="primary" @click="showOrgPicker = false"
+          >确定</el-button
+        >
       </span>
     </el-dialog>
   </div>
@@ -413,11 +532,21 @@ export default {
   },
   computed: {
     displayPermAppTree() {
-      const filtered = filterApplicationTree(this.permAppTree, this.permAppKeyword);
-      return filterAuthorizedAppTree(filtered, this.onlyAuthorizedApps, this.getEnabledLeafIds());
+      const filtered = filterApplicationTree(
+        this.permAppTree,
+        this.permAppKeyword,
+      );
+      return filterAuthorizedAppTree(
+        filtered,
+        this.onlyAuthorizedApps,
+        this.getEnabledLeafIds(),
+      );
     },
     canShowResourceTree() {
-      return this.selectedPermNavId === "nav-ygxwfx-func" || this.selectedPermNavId === DEFAULT_SELECTED_APP_ID;
+      return (
+        this.selectedPermNavId === "nav-ygxwfx-func" ||
+        this.selectedPermNavId === DEFAULT_SELECTED_APP_ID
+      );
     },
     currentResourceTree() {
       return this.canShowResourceTree ? this.resourceTree : [];
@@ -463,7 +592,10 @@ export default {
     },
     pagedPersonnel() {
       const start = (this.personnelCurrentPage - 1) * this.personnelPageSize;
-      return this.filteredPersonnel.slice(start, start + this.personnelPageSize);
+      return this.filteredPersonnel.slice(
+        start,
+        start + this.personnelPageSize,
+      );
     },
   },
   mounted() {
@@ -471,7 +603,8 @@ export default {
     this.reloadRoles();
     this.allocation = getModuleAllocation();
     this.$nextTick(() => {
-      if (this.$refs.appTree) this.$refs.appTree.setCurrentKey(this.selectedAppId);
+      if (this.$refs.appTree)
+        this.$refs.appTree.setCurrentKey(this.selectedAppId);
     });
   },
   methods: {
@@ -524,7 +657,11 @@ export default {
           if (this.roleFormMode === "create") {
             createAppRole(this.selectedAppId, this.roleForm);
           } else {
-            updateAppRole(this.selectedAppId, this.editingRoleId, this.roleForm);
+            updateAppRole(
+              this.selectedAppId,
+              this.editingRoleId,
+              this.roleForm,
+            );
           }
           this.reloadRoles();
           this.showRoleForm = false;
@@ -535,7 +672,9 @@ export default {
       });
     },
     deleteSingleRole(row) {
-      this.$confirm(`确定删除角色「${row.name}」？`, "删除角色", { type: "warning" })
+      this.$confirm(`确定删除角色「${row.name}」？`, "删除角色", {
+        type: "warning",
+      })
         .then(() => {
           deleteAppRole(this.selectedAppId, row.id);
           this.reloadRoles();
@@ -545,11 +684,15 @@ export default {
     },
     batchDeleteRoles() {
       if (!this.selectedRows.length) return;
-      this.$confirm(`确定删除选中的 ${this.selectedRows.length} 个角色？`, "删除角色", { type: "warning" })
+      this.$confirm(
+        `确定删除选中的 ${this.selectedRows.length} 个角色？`,
+        "删除角色",
+        { type: "warning" },
+      )
         .then(() => {
           deleteAppRoles(
             this.selectedAppId,
-            this.selectedRows.map((r) => r.id)
+            this.selectedRows.map((r) => r.id),
           );
           this.reloadRoles();
           this.selectedRows = [];
@@ -583,7 +726,8 @@ export default {
     onPermDialogOpened() {
       this.syncResourceTreeChecked();
       this.$nextTick(() => {
-        if (this.$refs.permAppTree) this.$refs.permAppTree.setCurrentKey(this.selectedPermNavId);
+        if (this.$refs.permAppTree)
+          this.$refs.permAppTree.setCurrentKey(this.selectedPermNavId);
       });
     },
     onPermDialogClosed() {
@@ -593,7 +737,9 @@ export default {
     },
     handlePermNavClick(data) {
       if (data.isResource || data.id === DEFAULT_SELECTED_APP_ID) {
-        this.selectedPermNavId = data.isResource ? data.id : DEFAULT_SELECTED_APP_ID;
+        this.selectedPermNavId = data.isResource
+          ? data.id
+          : DEFAULT_SELECTED_APP_ID;
         this.$nextTick(() => this.syncResourceTreeChecked());
       }
     },
@@ -634,7 +780,9 @@ export default {
         permissions: this.allocation[this.permissionRoleKey] || {},
         exportedAt: new Date().toISOString(),
       };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+      const blob = new Blob([JSON.stringify(payload, null, 2)], {
+        type: "application/json",
+      });
       const url = URL.createObjectURL(blob);
       const link = document.createElement("a");
       link.href = url;
@@ -682,15 +830,22 @@ export default {
     },
     batchDeletePersonnel() {
       if (!this.personnelRole || !this.selectedPersonnel.length) return;
-      this.$confirm(`确定删除选中的 ${this.selectedPersonnel.length} 名关联人员？`, "删除关联人员", {
-        type: "warning",
-      })
+      this.$confirm(
+        `确定删除选中的 ${this.selectedPersonnel.length} 名关联人员？`,
+        "删除关联人员",
+        {
+          type: "warning",
+        },
+      )
         .then(() => {
           deleteRolePersonnel(
             this.personnelRole.id,
-            this.selectedPersonnel.map((p) => p.id)
+            this.selectedPersonnel.map((p) => p.id),
           );
-          this.personnelList = getRolePersonnel(this.personnelRole.id, this.personnelRole.name);
+          this.personnelList = getRolePersonnel(
+            this.personnelRole.id,
+            this.personnelRole.name,
+          );
           this.selectedPersonnel = [];
           this.$message.success("删除成功");
         })
@@ -1101,7 +1256,9 @@ export default {
   padding-right: 8px;
 }
 
-.app-role-form .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label:before {
+.app-role-form
+  .el-form-item.is-required:not(.is-no-asterisk)
+  > .el-form-item__label:before {
   color: #f56c6c;
   margin-right: 2px;
 }

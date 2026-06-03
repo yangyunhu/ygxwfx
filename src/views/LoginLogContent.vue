@@ -3,16 +3,22 @@
     <div class="page-head">
       <div>
         <h2 class="page-title">日志内容</h2>
-        <p class="page-desc">记录并展示用户登录详细信息，包括部门、账号、访问时间、浏览器及终端环境等。</p>
+        <p class="page-desc">
+          记录并展示用户登录详细信息，包括部门、账号、访问时间、浏览器及终端环境等。
+        </p>
       </div>
-      <el-button size="small" icon="el-icon-download" @click="exportLogs">导出</el-button>
+      <el-button size="small" icon="el-icon-download" @click="exportLogs"
+        >导出</el-button
+      >
     </div>
 
     <login-log-retention-alert />
 
     <section class="config-card login-log-card">
       <div class="card-toolbar">
-        <span class="toolbar-meta">日志总数 <strong>{{ logs.length }}</strong></span>
+        <span class="toolbar-meta"
+          >日志总数 <strong>{{ logs.length }}</strong></span
+        >
       </div>
       <div class="table-scroll">
         <login-log-table

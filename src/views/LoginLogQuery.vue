@@ -3,15 +3,30 @@
     <div class="page-head">
       <div>
         <h2 class="page-title">查询功能</h2>
-        <p class="page-desc">系统支持按时间段、用户名、登录终端、登录 IP 地址等多种条件组合查询登录日志。</p>
+        <p class="page-desc">
+          系统支持按时间段、用户名、登录终端、登录 IP
+          地址等多种条件组合查询登录日志。
+        </p>
       </div>
-      <el-button size="small" icon="el-icon-download" :disabled="!resultList.length" @click="exportResult">导出结果</el-button>
+      <el-button
+        size="small"
+        icon="el-icon-download"
+        :disabled="!resultList.length"
+        @click="exportResult"
+        >导出结果</el-button
+      >
     </div>
 
     <login-log-retention-alert />
 
     <section class="config-card query-bar-card">
-      <el-form :model="query" label-width="88px" size="small" class="query-form" @submit.native.prevent="handleSearch">
+      <el-form
+        :model="query"
+        label-width="88px"
+        size="small"
+        class="query-form"
+        @submit.native.prevent="handleSearch"
+      >
         <el-row :gutter="16">
           <el-col :xs="24" :sm="12" :md="8">
             <el-form-item label="时间段">
@@ -47,14 +62,20 @@
             </el-form-item>
           </el-col>
         </el-row>
-        <div class="query-form-actions" style="justify-content: flex-start;">
-          <el-button type="primary" icon="el-icon-search" @click="handleSearch">查询</el-button>
-          <el-button icon="el-icon-refresh-left" @click="handleReset">重置</el-button>
+        <div class="query-form-actions" style="justify-content: flex-start">
+          <el-button type="primary" icon="el-icon-search" @click="handleSearch"
+            >查询</el-button
+          >
+          <el-button icon="el-icon-refresh-left" @click="handleReset"
+            >重置</el-button
+          >
         </div>
       </el-form>
       <div v-if="searched" class="query-summary">
         查询结果 <strong>{{ resultList.length }}</strong> 条
-        <span v-if="searchLabel" class="query-label">（{{ searchLabel }}）</span>
+        <span v-if="searchLabel" class="query-label"
+          >（{{ searchLabel }}）</span
+        >
       </div>
     </section>
 
@@ -64,7 +85,9 @@
           :data="pagedList"
           :page="page"
           :page-size="pageSize"
-          :empty-text="searched ? '未查询到符合条件的日志' : '请设置条件后点击查询'"
+          :empty-text="
+            searched ? '未查询到符合条件的日志' : '请设置条件后点击查询'
+          "
         />
       </div>
       <login-log-pager
