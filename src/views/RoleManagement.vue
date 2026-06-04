@@ -41,6 +41,7 @@
         <el-table-column label="序号" width="60" align="center">
           <template slot-scope="{ $index }">{{ indexMethod($index) }}</template>
         </el-table-column>
+        <el-table-column prop="code" label="角色编码" width="150" show-overflow-tooltip />
         <el-table-column prop="name" label="角色名称" min-width="160" show-overflow-tooltip />
         <el-table-column label="状态" width="100" align="center">
           <template slot-scope="{ row }">
@@ -53,6 +54,12 @@
           </template>
         </el-table-column>
         <el-table-column prop="dataScopeLabel" label="角色数据范围" min-width="220" show-overflow-tooltip />
+        <el-table-column label="关联组织机构" min-width="200" show-overflow-tooltip>
+          <template slot-scope="{ row }">
+            <span v-if="row.orgIds && row.orgIds.length > 0">{{ getOrgNamesByIds(row.orgIds) }}</span>
+            <span v-else style="color: #909399;">—</span>
+          </template>
+        </el-table-column>
         <el-table-column prop="createTime" label="创建时间" width="150" align="center" />
         <el-table-column label="操作" width="120" align="center" fixed="right">
           <template slot-scope="{ row }">
@@ -87,13 +94,39 @@
         <el-form-item label="角色名称" prop="name" required>
           <el-input v-model="form.name" />
         </el-form-item>
+        <el-form-item label="角色编码" prop="code" required>
+          <el-input v-model="form.code" placeholder="请输入角色编码，仅允许英文字母和下划线" :disabled="formMode === 'edit'" />
+          <div class="form-tip">格式：仅允许英文字母和下划线，例如：ROLE_ADMIN</div>
+        </el-form-item>
         <el-form-item label="数据范围" prop="dataScopeType" required>
-          <el-select v-model="form.dataScopeType" placeholder="请选择" style="width: 100%">
+          <el-select v-model="form.dataScopeType" placeholder="请选择" style="width: 100%" @change="handleDataScopeChange">
             <el-option v-for="item in dataScopeOptions" :key="item.value" :label="item.label" :value="item.value">
               <div class="data-scope-option">
                 <span class="data-scope-label">{{ item.label }}</span>
                 <span v-if="item.desc" class="data-scope-desc">{{ item.desc }}</span>
               </div>
+            </el-option>
+          </el-select>
+        </el-form-item>
+        <el-form-item v-if="showOrgSelector" label="关联组织" prop="orgIds" required>
+          <el-select
+            v-model="form.orgIds"
+            multiple
+            filterable
+            remote
+            placeholder="请输入组织名称搜索，支持多选"
+            :remote-method="searchOrg"
+            :loading="orgLoading"
+            style="width: 100%"
+          >
+            <el-option
+              v-for="org in orgOptions"
+              :key="org.id"
+              :label="org.name"
+              :value="org.id"
+            >
+              <span style="float: left">{{ org.name }}</span>
+              <span style="float: right; color: #8492a6; font-size: 12px">{{ org.fullName }}</span>
             </el-option>
           </el-select>
         </el-form-item>
@@ -115,6 +148,7 @@ import {
   ROLE_DATA_SCOPE_OPTIONS,
   getRoleDataScopeLabel,
 } from "../utils/permissionManagement";
+import { loadOrgTree } from "../utils/orgManagement";
 
 export default {
   name: "RoleManagement",
@@ -134,13 +168,35 @@ export default {
       editingId: null,
       form: {
         name: "",
+        code: "",
         dataScopeType: "ALL",
+        orgIds: [],
       },
       rules: {
         name: [{ required: true, message: "请输入角色名称", trigger: "blur" }],
+        code: [
+          { required: true, message: "请输入角色编码", trigger: "blur" },
+          {
+            validator: (rule, value, callback) => {
+              if (!value) {
+                callback(new Error("请输入角色编码"));
+              } else if (!/^[A-Za-z_]+$/.test(value)) {
+                callback(new Error("角色编码只能包含英文字母和下划线"));
+              } else {
+                callback();
+              }
+            },
+            trigger: "blur",
+          },
+        ],
         dataScopeType: [{ required: true, message: "请选择数据范围", trigger: "change" }],
       },
       editingRow: null,
+      showOrgSelector: false,
+      orgOptions: [],
+      orgLoading: false,
+      allOrgList: [],
+      orgMap: {}, // 组织ID到名称的映射
     };
   },
   computed: {
@@ -165,10 +221,37 @@ export default {
   },
   mounted() {
     this.reload();
+    this.loadOrgMap();
   },
   methods: {
     reload() {
       this.roles = getRoles();
+    },
+    loadOrgMap() {
+      try {
+        const tree = loadOrgTree();
+        this.orgMap = this.buildOrgMap(tree);
+      } catch (e) {
+        console.warn('加载组织映射失败', e);
+      }
+    },
+    buildOrgMap(tree) {
+      const map = {};
+      const traverse = (nodes) => {
+        nodes.forEach((node) => {
+          map[node.id] = node.name;
+          if (node.children && node.children.length > 0) {
+            traverse(node.children);
+          }
+        });
+      };
+      traverse(tree);
+      return map;
+    },
+    getOrgNamesByIds(orgIds) {
+      if (!orgIds || orgIds.length === 0) return '—';
+      const names = orgIds.map(id => this.orgMap[id] || id).filter(name => name);
+      return names.join('、');
     },
     indexMethod(index) {
       return (this.currentPage - 1) * this.pageSize + index + 1;
@@ -204,8 +287,11 @@ export default {
       this.editingRow = null;
       this.form = {
         name: "",
+        code: "",
         dataScopeType: "ALL",
+        orgIds: [],
       };
+      this.showOrgSelector = false;
       this.showForm = true;
     },
     openEdit(row) {
@@ -214,11 +300,17 @@ export default {
       this.editingRow = row;
       this.form = {
         name: row.name,
+        code: row.code || "",
         dataScopeType: row.dataScopeType || "ALL",
+        orgIds: row.orgIds ? [...row.orgIds] : [],
       };
       if (this.form.dataScopeType === "REPORTER") this.form.dataScopeType = "SELF";
       if (this.form.dataScopeType === "CURRENT_ORG") this.form.dataScopeType = "CURRENT_ORG_CHILD";
       if (this.form.dataScopeType === "LOCAL_ORG_HQ") this.form.dataScopeType = "ASSIGNED_ORG_CHILD";
+      this.showOrgSelector = this.form.dataScopeType === "ASSIGNED_ORG_CHILD";
+      if (this.showOrgSelector && this.form.orgIds.length > 0) {
+        this.loadAllOrgs();
+      }
       this.showForm = true;
     },
     resetForm() {
@@ -227,22 +319,29 @@ export default {
     submitForm() {
       this.$refs.roleForm.validate((ok) => {
         if (!ok) return;
+        
+        // 如果选择了指定组织及下级，必须选择组织
+        if (this.form.dataScopeType === "ASSIGNED_ORG_CHILD" && (!this.form.orgIds || this.form.orgIds.length === 0)) {
+          this.$message.warning("请至少选择一个关联组织");
+          return;
+        }
+        
         const payload = {
           name: this.form.name,
+          code: this.form.code,
           dataScopeType: this.form.dataScopeType,
           dataScopeLabel: getRoleDataScopeLabel(this.form.dataScopeType),
+          orgIds: this.form.orgIds && this.form.orgIds.length > 0 ? [...this.form.orgIds] : null,
         };
         try {
           if (this.formMode === "create") {
             createRole({
               ...payload,
-              code: `ROLE_${Date.now()}`,
               enabled: true,
             });
           } else {
             updateRole(this.editingId, {
               ...payload,
-              code: this.editingRow?.code,
               enabled: this.editingRow?.enabled !== false,
               remark: this.editingRow?.remark || "",
             });
@@ -263,6 +362,56 @@ export default {
           this.$message.success("已删除");
         })
         .catch(() => {});
+    },
+    handleDataScopeChange(value) {
+      // 当选择"指定组织及下级"时显示组织选择器
+      this.showOrgSelector = value === "ASSIGNED_ORG_CHILD";
+      if (!this.showOrgSelector) {
+        this.form.orgIds = [];
+      } else {
+        this.loadAllOrgs();
+      }
+    },
+    loadAllOrgs() {
+      this.orgLoading = true;
+      try {
+        const tree = loadOrgTree();
+        this.allOrgList = this.flattenOrgTree(tree);
+        this.orgOptions = this.allOrgList;
+      } catch (e) {
+        this.$message.warning("加载组织数据失败");
+      } finally {
+        this.orgLoading = false;
+      }
+    },
+    flattenOrgTree(tree, parentName = "") {
+      let result = [];
+      tree.forEach((node) => {
+        const fullName = parentName ? `${parentName} / ${node.name}` : node.name;
+        result.push({
+          id: node.id,
+          name: node.name,
+          fullName: fullName,
+        });
+        if (node.children && node.children.length > 0) {
+          result = result.concat(this.flattenOrgTree(node.children, fullName));
+        }
+      });
+      return result;
+    },
+    searchOrg(query) {
+      if (query !== "") {
+        this.orgLoading = true;
+        setTimeout(() => {
+          this.orgLoading = false;
+          this.orgOptions = this.allOrgList.filter((org) => {
+            return org.name.toLowerCase().includes(query.toLowerCase()) ||
+                   org.fullName.toLowerCase().includes(query.toLowerCase());
+          });
+        }, 200);
+      } else {
+        this.orgOptions = this.allOrgList;
+      }
     },
   },
 };
@@ -420,5 +569,12 @@ export default {
 
 .role-edit-dialog .el-dialog__footer .el-button {
   min-width: 72px;
+}
+
+.form-tip {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
 }
 </style>
