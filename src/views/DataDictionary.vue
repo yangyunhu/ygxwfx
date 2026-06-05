@@ -54,49 +54,23 @@
       <div class="dict-content">
         <div class="content-header">
           <div class="content-title">
-            <span v-if="selectedGroup">
-              {{ selectedGroup.dictName }}
-              <span
-                :class="
-                  selectedGroup.dictType === 'sys'
-                    ? 'system-built-in-tag'
-                    : 'user-defined-tag'
-                "
-              >
-                ({{
-                  selectedGroup.dictType === "sys" ? "系统内置" : "非系统内置"
-                }})
-              </span>
-            </span>
+            <span v-if="selectedGroup">{{ selectedGroup.dictName }}</span>
             <span v-else class="placeholder">请选择字典组</span>
           </div>
           <div v-if="selectedGroup" class="content-actions">
-            <el-button
-              size="small"
-              icon="el-icon-plus"
-              :disabled="isSystemBuiltIn"
-              @click="handleAddItem"
+            <el-button size="small" icon="el-icon-plus" @click="handleAddItem"
               >新增字典项</el-button
             >
           </div>
         </div>
 
         <div v-if="selectedGroup" class="content-table">
-          <!-- 系统内置字典组提示 -->
-          <el-alert
-            v-if="isSystemBuiltIn"
-            title="系统内置字典组仅支持查看，不支持编辑、新增、删除操作"
-            type="info"
-            :closable="false"
-            show-icon
-            style="margin-bottom: 16px"
-          />
           <el-table :data="dictItems" border size="small" v-loading="loading">
             <el-table-column prop="itemCode" label="字典项编码" width="150" />
             <el-table-column
               prop="itemName"
               label="字典项名称"
-              min-width="150"
+              width="150"
             />
             <el-table-column prop="itemValue" label="字典值" width="120" />
             <el-table-column
@@ -121,22 +95,36 @@
               </template>
             </el-table-column>
             <el-table-column
+              prop="itemType"
+              label="字典项类型"
+              width="130"
+              align="center"
+            >
+              <template slot-scope="{ row }">
+                <el-tag
+                  :type="row.itemType === 'sys' ? 'warning' : 'info'"
+                  size="small"
+                >
+                  {{ row.itemType === "sys" ? "系统内置" : "非系统内置" }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column
               prop="remark"
               label="备注"
-              min-width="180"
+              width="200"
               show-overflow-tooltip
             />
             <el-table-column
               label="操作"
               width="150"
               align="center"
-              fixed="right"
             >
               <template slot-scope="{ row }">
                 <el-button
                   type="text"
                   size="small"
-                  :disabled="isSystemBuiltIn"
+                  :disabled="row.itemType === 'sys'"
                   @click="handleEditItem(row)"
                   >编辑</el-button
                 >
@@ -144,7 +132,7 @@
                   type="text"
                   size="small"
                   style="color: #f56c6c"
-                  :disabled="isSystemBuiltIn"
+                  :disabled="row.itemType === 'sys'"
                   @click="handleDeleteItem(row)"
                   >删除</el-button
                 >
@@ -204,16 +192,6 @@
             格式：仅允许英文字母和下划线，例如：user_type
           </div>
         </el-form-item>
-        <el-form-item label="字典组类型" prop="dictType">
-          <el-select
-            v-model="groupForm.dictType"
-            placeholder="请选择字典组类型"
-            style="width: 100%"
-          >
-            <el-option label="系统内置" value="sys" />
-            <el-option label="非系统内置" value="biz" />
-          </el-select>
-        </el-form-item>
         <el-form-item label="状态" prop="status">
           <el-radio-group v-model="groupForm.status">
             <el-radio label="1">启用</el-radio>
@@ -267,6 +245,17 @@
         <el-form-item label="字典值" prop="itemValue">
           <el-input v-model="itemForm.itemValue" placeholder="请输入字典值" />
         </el-form-item>
+        <el-form-item label="字典项类型" prop="itemType">
+          <el-select
+            v-model="itemForm.itemType"
+            placeholder="请选择字典项类型"
+            style="width: 100%"
+            :disabled="isEditItem"
+          >
+            <el-option label="系统内置字典项" value="sys" />
+            <el-option label="非系统内置字典项" value="biz" />
+          </el-select>
+        </el-form-item>
         <el-form-item label="排序" prop="sort">
           <el-input-number
             v-model="itemForm.sort"
@@ -316,7 +305,6 @@ export default {
       groupForm: {
         dictCode: "",
         dictName: "",
-        dictType: "sys",
         status: "1",
         remark: "",
       },
@@ -332,9 +320,6 @@ export default {
         dictName: [
           { required: true, message: "请输入字典名称", trigger: "blur" },
         ],
-        dictType: [
-          { required: true, message: "请选择字典类型", trigger: "change" },
-        ],
       },
 
       // 字典项表单
@@ -344,6 +329,7 @@ export default {
         itemCode: "",
         itemName: "",
         itemValue: "",
+        itemType: "biz",
         sort: 1,
         status: "1",
         remark: "",
@@ -363,6 +349,9 @@ export default {
         itemValue: [
           { required: true, message: "请输入字典值", trigger: "blur" },
         ],
+        itemType: [
+          { required: true, message: "请选择字典项类型", trigger: "change" },
+        ],
       },
     };
   },
@@ -372,10 +361,6 @@ export default {
     },
     itemFormTitle() {
       return this.isEditItem ? "编辑字典项" : "新增字典项";
-    },
-    // 判断当前选中的字典组是否为系统内置
-    isSystemBuiltIn() {
-      return this.selectedGroup && this.selectedGroup.dictType === "sys";
     },
   },
   mounted() {
@@ -391,7 +376,6 @@ export default {
           {
             dictCode: "user_type",
             dictName: "用户类型",
-            dictType: "sys",
             status: "1",
             remark: "系统用户类型字典",
             createTime: "2024-01-01 10:00:00",
@@ -400,7 +384,6 @@ export default {
           {
             dictCode: "gender",
             dictName: "性别",
-            dictType: "sys",
             status: "1",
             remark: "用户性别字典",
             createTime: "2024-01-02 10:00:00",
@@ -409,7 +392,6 @@ export default {
           {
             dictCode: "org_level",
             dictName: "组织级别",
-            dictType: "sys",
             status: "1",
             remark: "组织机构级别字典",
             createTime: "2024-01-03 10:00:00",
@@ -443,6 +425,7 @@ export default {
               itemCode: "user_type_admin",
               itemName: "管理员",
               itemValue: "1",
+              itemType: "sys",
               sort: 1,
               status: "1",
               remark: "系统管理员",
@@ -451,6 +434,7 @@ export default {
               itemCode: "user_type_normal",
               itemName: "普通用户",
               itemValue: "2",
+              itemType: "sys",
               sort: 2,
               status: "1",
               remark: "普通用户",
@@ -459,6 +443,7 @@ export default {
               itemCode: "user_type_guest",
               itemName: "访客",
               itemValue: "3",
+              itemType: "biz",
               sort: 3,
               status: "0",
               remark: "临时访客",
@@ -469,6 +454,7 @@ export default {
               itemCode: "gender_male",
               itemName: "男",
               itemValue: "1",
+              itemType: "sys",
               sort: 1,
               status: "1",
               remark: "男性",
@@ -477,6 +463,7 @@ export default {
               itemCode: "gender_female",
               itemName: "女",
               itemValue: "2",
+              itemType: "sys",
               sort: 2,
               status: "1",
               remark: "女性",
@@ -487,6 +474,7 @@ export default {
               itemCode: "org_level_province",
               itemName: "省级",
               itemValue: "1",
+              itemType: "sys",
               sort: 1,
               status: "1",
               remark: "省级组织",
@@ -495,6 +483,7 @@ export default {
               itemCode: "org_level_city",
               itemName: "市级",
               itemValue: "2",
+              itemType: "sys",
               sort: 2,
               status: "1",
               remark: "市级组织",
@@ -503,6 +492,7 @@ export default {
               itemCode: "org_level_county",
               itemName: "县级",
               itemValue: "3",
+              itemType: "sys",
               sort: 3,
               status: "1",
               remark: "县级组织",
@@ -511,6 +501,7 @@ export default {
               itemCode: "org_level_unit",
               itemName: "单位级",
               itemValue: "4",
+              itemType: "sys",
               sort: 4,
               status: "1",
               remark: "单位级组织",
@@ -535,17 +526,13 @@ export default {
     },
     // 新增字典项
     handleAddItem() {
-      if (this.isSystemBuiltIn) {
-        this.$message.warning("系统内置字典组不允许新增字典项");
-        return;
-      }
       this.isEditItem = false;
       this.itemDialogVisible = true;
     },
     // 编辑字典项
     handleEditItem(row) {
-      if (this.isSystemBuiltIn) {
-        this.$message.warning("系统内置字典组不允许编辑字典项");
+      if (row.itemType === "sys") {
+        this.$message.warning("系统内置字典项不允许编辑");
         return;
       }
       this.isEditItem = true;
@@ -554,8 +541,8 @@ export default {
     },
     // 删除字典项
     handleDeleteItem(row) {
-      if (this.isSystemBuiltIn) {
-        this.$message.warning("系统内置字典组不允许删除字典项");
+      if (row.itemType === "sys") {
+        this.$message.warning("系统内置字典项不允许删除");
         return;
       }
       this.$confirm(`确定要删除字典项"${row.itemName}"吗？`, "提示", {
@@ -630,7 +617,6 @@ export default {
       this.groupForm = {
         dictCode: "",
         dictName: "",
-        dictType: "sys",
         status: "1",
         remark: "",
       };
@@ -643,6 +629,7 @@ export default {
         itemCode: "",
         itemName: "",
         itemValue: "",
+        itemType: "biz",
         sort: 1,
         status: "1",
         remark: "",
@@ -790,13 +777,34 @@ export default {
 
 .content-table {
   flex: 1;
-  overflow-y: auto;
+  overflow: auto;
   padding: 16px;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.content-table ::v-deep .el-table {
+  flex: 1;
+  overflow-x: auto;
+  min-width: 1100px;
+}
+
+.content-table ::v-deep .el-table__body-wrapper {
+  overflow-x: auto !important;
+  overflow-y: auto !important;
 }
 
 .pagination-wrapper {
   margin-top: 16px;
+  padding: 16px;
   text-align: right;
+}
+
+/* 系统内置字典项的操作按钮禁用样式 */
+.content-table ::v-deep .el-button.is-disabled {
+  color: #c0c4cc !important;
+  cursor: not-allowed;
 }
 
 .empty-content {
@@ -814,26 +822,18 @@ export default {
   color: #909399;
   line-height: 1.5;
 }
-
-/* 系统内置字典组的操作按钮禁用样式 */
-.content-table ::v-deep .el-button.is-disabled {
-  color: #c0c4cc !important;
-  cursor: not-allowed;
-}
-
-/* 系统内置标识样式 */
-.system-built-in-tag {
+</style>
+.form-tip {
+  margin-top: 4px;
+  font-size: 12px;
   color: #909399;
-  font-size: 12px;
-  margin-left: 8px;
-  font-weight: normal;
+  line-height: 1.5;
 }
-
-/* 非系统内置标识样式 */
-.user-defined-tag {
-  color: #67c23a;
+</style>
+.form-tip {
+  margin-top: 4px;
   font-size: 12px;
-  margin-left: 8px;
-  font-weight: normal;
+  color: #909399;
+  line-height: 1.5;
 }
 </style>
