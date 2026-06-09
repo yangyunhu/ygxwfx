@@ -33,9 +33,17 @@
             展示角色可访问的功能页面（菜单），配置由功能模块权限分配统一管理。
           </p>
           <div class="page-list">
-            <div v-if="pageLeaves.length === 0" class="empty-tip">该角色尚未分配页面权限</div>
+            <div v-if="pageLeaves.length === 0" class="empty-tip">
+              该角色尚未分配页面权限
+            </div>
             <ul v-else class="page-leaf-list">
-              <li v-for="leaf in pageLeaves" :key="leaf.id" class="page-leaf-item">{{ leaf.name }}</li>
+              <li
+                v-for="leaf in pageLeaves"
+                :key="leaf.id"
+                class="page-leaf-item"
+              >
+                {{ leaf.name }}
+              </li>
             </ul>
           </div>
         </el-tab-pane>

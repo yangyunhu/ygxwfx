@@ -23,7 +23,6 @@
               @click="batchDeleteRoles"
               >删除角色</el-button
             >
-            
           </div>
         </div>
 
@@ -159,8 +158,18 @@
         class="app-role-form"
       >
         <el-form-item label="角色名称:" prop="name" required>
-          <el-select v-model="roleForm.name" placeholder="请选择角色类型" filterable clearable>
-            <el-option v-for="opt in roleNameOptions" :key="opt" :label="opt" :value="opt" />
+          <el-select
+            v-model="roleForm.name"
+            placeholder="请选择角色类型"
+            filterable
+            clearable
+          >
+            <el-option
+              v-for="opt in roleNameOptions"
+              :key="opt"
+              :label="opt"
+              :value="opt"
+            />
           </el-select>
         </el-form-item>
         <el-form-item label="描述:" prop="description" class="desc-form-item">
@@ -198,19 +207,26 @@
           <div class="role-perm-right-toolbar">
             <span />
             <div class="role-perm-right-actions">
-                <el-button size="small" type="primary" @click="savePermConfig"
-                  >保存</el-button
-                >
-                <el-button size="small" @click="showPermissionDialog = false"
-                  >关闭</el-button
-                >
-              </div>
+              <el-button size="small" type="primary" @click="savePermConfig"
+                >保存</el-button
+              >
+              <el-button size="small" @click="showPermissionDialog = false"
+                >关闭</el-button
+              >
+            </div>
           </div>
           <div class="resource-table-head">资源名称</div>
           <div class="resource-tree-wrap">
             <div v-if="canShowResourceTree" class="resource-list">
-              <el-checkbox-group v-model="checkedResourceIds" @change="handleResourceCheck">
-                <div v-for="item in currentResourceLeaves" :key="item.id" class="resource-item">
+              <el-checkbox-group
+                v-model="checkedResourceIds"
+                @change="handleResourceCheck"
+              >
+                <div
+                  v-for="item in currentResourceLeaves"
+                  :key="item.id"
+                  class="resource-item"
+                >
                   <el-checkbox :label="item.id">{{ item.name }}</el-checkbox>
                 </div>
               </el-checkbox-group>
