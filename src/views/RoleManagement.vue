@@ -16,16 +16,35 @@
           </div>
           <div class="filter-item">
             <span class="filter-label">角色状态：</span>
-            <el-select v-model="queryStatus" placeholder="请选择" size="small" clearable class="filter-select">
+            <el-select
+              v-model="queryStatus"
+              placeholder="请选择"
+              size="small"
+              clearable
+              class="filter-select"
+            >
               <el-option label="启用" value="enabled" />
               <el-option label="停用" value="disabled" />
             </el-select>
           </div>
         </div>
         <div class="role-actions">
-          <el-button type="primary" size="small" icon="el-icon-plus" @click="openCreate">新增</el-button>
-          <el-button size="small" icon="el-icon-search" @click="handleSearch">查询</el-button>
-          <el-button size="small" icon="el-icon-refresh-left" @click="handleReset">重置</el-button>
+          <el-button
+            type="primary"
+            size="small"
+            icon="el-icon-plus"
+            @click="openCreate"
+            >新增</el-button
+          >
+          <el-button size="small" icon="el-icon-search" @click="handleSearch"
+            >查询</el-button
+          >
+          <el-button
+            size="small"
+            icon="el-icon-refresh-left"
+            @click="handleReset"
+            >重置</el-button
+          >
         </div>
       </div>
 
@@ -41,8 +60,18 @@
         <el-table-column label="序号" width="60" align="center">
           <template slot-scope="{ $index }">{{ indexMethod($index) }}</template>
         </el-table-column>
-        <el-table-column prop="code" label="角色编码" width="150" show-overflow-tooltip />
-        <el-table-column prop="name" label="角色名称" min-width="160" show-overflow-tooltip />
+        <el-table-column
+          prop="code"
+          label="角色编码"
+          width="150"
+          show-overflow-tooltip
+        />
+        <el-table-column
+          prop="name"
+          label="角色名称"
+          min-width="160"
+          show-overflow-tooltip
+        />
         <el-table-column label="状态" width="100" align="center">
           <template slot-scope="{ row }">
             <el-switch
@@ -53,18 +82,54 @@
             />
           </template>
         </el-table-column>
-        <el-table-column prop="dataScopeLabel" label="角色数据范围" min-width="220" show-overflow-tooltip />
-        <el-table-column label="关联组织机构" min-width="200" show-overflow-tooltip>
+        <el-table-column
+          prop="dataScopeLabel"
+          label="角色数据范围"
+          min-width="220"
+          show-overflow-tooltip
+        />
+        <el-table-column label="父级角色" width="150" show-overflow-tooltip>
           <template slot-scope="{ row }">
-            <span v-if="row.orgIds && row.orgIds.length > 0">{{ getOrgNamesByIds(row.orgIds) }}</span>
-            <span v-else style="color: #909399;">—</span>
+            <span v-if="row.parentId">{{
+              getParentRoleName(row.parentId)
+            }}</span>
+            <span v-else style="color: #909399">—</span>
           </template>
         </el-table-column>
-        <el-table-column prop="createTime" label="创建时间" width="150" align="center" />
+        <el-table-column
+          label="关联组织机构"
+          min-width="200"
+          show-overflow-tooltip
+        >
+          <template slot-scope="{ row }">
+            <span v-if="row.orgIds && row.orgIds.length > 0">{{
+              getOrgNamesByIds(row.orgIds)
+            }}</span>
+            <span v-else style="color: #909399">—</span>
+          </template>
+        </el-table-column>
+        <el-table-column
+          prop="createTime"
+          label="创建时间"
+          width="150"
+          align="center"
+        />
         <el-table-column label="操作" width="120" align="center" fixed="right">
           <template slot-scope="{ row }">
-            <el-button type="text" size="small" class="action-link" @click="openEdit(row)">编辑</el-button>
-            <el-button type="text" size="small" class="action-link danger-link" @click="handleDelete(row)">删除</el-button>
+            <el-button
+              type="text"
+              size="small"
+              class="action-link"
+              @click="openEdit(row)"
+              >编辑</el-button
+            >
+            <el-button
+              type="text"
+              size="small"
+              class="action-link danger-link"
+              @click="handleDelete(row)"
+              >删除</el-button
+            >
           </template>
         </el-table-column>
       </el-table>
@@ -90,25 +155,70 @@
       :close-on-click-modal="false"
       @closed="resetForm"
     >
-      <el-form ref="roleForm" :model="form" :rules="rules" label-width="88px" size="small" class="role-edit-form">
+      <el-form
+        ref="roleForm"
+        :model="form"
+        :rules="rules"
+        label-width="88px"
+        size="small"
+        class="role-edit-form"
+      >
         <el-form-item label="角色名称" prop="name" required>
           <el-input v-model="form.name" />
         </el-form-item>
         <el-form-item label="角色编码" prop="code" required>
-          <el-input v-model="form.code" placeholder="请输入角色编码，仅允许英文字母和下划线" :disabled="formMode === 'edit'" />
-          <div class="form-tip">格式：仅允许英文字母和下划线，例如：ROLE_ADMIN</div>
+          <el-input
+            v-model="form.code"
+            placeholder="请输入角色编码，仅允许英文字母和下划线"
+            :disabled="formMode === 'edit'"
+          />
+          <div class="form-tip">
+            格式：仅允许英文字母和下划线，例如：ROLE_ADMIN
+          </div>
         </el-form-item>
         <el-form-item label="数据范围" prop="dataScopeType" required>
-          <el-select v-model="form.dataScopeType" placeholder="请选择" style="width: 100%" @change="handleDataScopeChange">
-            <el-option v-for="item in dataScopeOptions" :key="item.value" :label="item.label" :value="item.value">
+          <el-select
+            v-model="form.dataScopeType"
+            placeholder="请选择"
+            style="width: 100%"
+            @change="handleDataScopeChange"
+          >
+            <el-option
+              v-for="item in dataScopeOptions"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            >
               <div class="data-scope-option">
                 <span class="data-scope-label">{{ item.label }}</span>
-                <span v-if="item.desc" class="data-scope-desc">{{ item.desc }}</span>
+                <span v-if="item.desc" class="data-scope-desc">{{
+                  item.desc
+                }}</span>
               </div>
             </el-option>
           </el-select>
         </el-form-item>
-        <el-form-item v-if="showOrgSelector" label="关联组织" prop="orgIds" required>
+        <el-form-item label="父级角色" prop="parentId">
+          <el-select
+            v-model="form.parentId"
+            placeholder="请选择父级角色（可选）"
+            style="width: 100%"
+            clearable
+          >
+            <el-option
+              v-for="role in parentRoleOptions"
+              :key="role.id"
+              :label="role.name"
+              :value="role.id"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item
+          v-if="showOrgSelector"
+          label="关联组织"
+          prop="orgIds"
+          required
+        >
           <el-select
             v-model="form.orgIds"
             multiple
@@ -126,7 +236,9 @@
               :value="org.id"
             >
               <span style="float: left">{{ org.name }}</span>
-              <span style="float: right; color: #8492a6; font-size: 12px">{{ org.fullName }}</span>
+              <span style="float: right; color: #8492a6; font-size: 12px">{{
+                org.fullName
+              }}</span>
             </el-option>
           </el-select>
         </el-form-item>
@@ -171,6 +283,7 @@ export default {
         code: "",
         dataScopeType: "ALL",
         orgIds: [],
+        parentId: null,
       },
       rules: {
         name: [{ required: true, message: "请输入角色名称", trigger: "blur" }],
@@ -189,7 +302,9 @@ export default {
             trigger: "blur",
           },
         ],
-        dataScopeType: [{ required: true, message: "请选择数据范围", trigger: "change" }],
+        dataScopeType: [
+          { required: true, message: "请选择数据范围", trigger: "change" },
+        ],
       },
       editingRow: null,
       showOrgSelector: false,
@@ -203,7 +318,10 @@ export default {
     filteredRoles() {
       const kw = this.filterName.trim().toLowerCase();
       return this.roles.filter((r) => {
-        const matchName = !kw || r.name.toLowerCase().includes(kw) || (r.code || "").toLowerCase().includes(kw);
+        const matchName =
+          !kw ||
+          r.name.toLowerCase().includes(kw) ||
+          (r.code || "").toLowerCase().includes(kw);
         const matchStatus =
           !this.filterStatus ||
           (this.filterStatus === "enabled" && r.enabled) ||
@@ -217,6 +335,13 @@ export default {
     },
     formTitle() {
       return this.formMode === "create" ? "新增角色页面" : "编辑角色页面";
+    },
+    parentRoleOptions() {
+      // 过滤掉当前正在编辑的角色，避免选择自己作为父级
+      if (this.formMode === "edit" && this.editingId) {
+        return this.roles.filter((r) => r.id !== this.editingId);
+      }
+      return this.roles;
     },
   },
   mounted() {
@@ -232,7 +357,7 @@ export default {
         const tree = loadOrgTree();
         this.orgMap = this.buildOrgMap(tree);
       } catch (e) {
-        console.warn('加载组织映射失败', e);
+        console.warn("加载组织映射失败", e);
       }
     },
     buildOrgMap(tree) {
@@ -249,9 +374,16 @@ export default {
       return map;
     },
     getOrgNamesByIds(orgIds) {
-      if (!orgIds || orgIds.length === 0) return '—';
-      const names = orgIds.map(id => this.orgMap[id] || id).filter(name => name);
-      return names.join('、');
+      if (!orgIds || orgIds.length === 0) return "—";
+      const names = orgIds
+        .map((id) => this.orgMap[id] || id)
+        .filter((name) => name);
+      return names.join("、");
+    },
+    getParentRoleName(parentId) {
+      if (!parentId) return "—";
+      const parentRole = this.roles.find((r) => r.id === parentId);
+      return parentRole ? parentRole.name : "—";
     },
     indexMethod(index) {
       return (this.currentPage - 1) * this.pageSize + index + 1;
@@ -274,7 +406,8 @@ export default {
     handleStatusChange(row, enabled) {
       try {
         updateRole(row.id, { enabled });
-        row.dataScopeLabel = row.dataScopeLabel || getRoleDataScopeLabel(row.dataScopeType);
+        row.dataScopeLabel =
+          row.dataScopeLabel || getRoleDataScopeLabel(row.dataScopeType);
         this.$message.success(enabled ? "已启用" : "已停用");
       } catch (e) {
         row.enabled = !enabled;
@@ -290,6 +423,7 @@ export default {
         code: "",
         dataScopeType: "ALL",
         orgIds: [],
+        parentId: null,
       };
       this.showOrgSelector = false;
       this.showForm = true;
@@ -303,10 +437,14 @@ export default {
         code: row.code || "",
         dataScopeType: row.dataScopeType || "ALL",
         orgIds: row.orgIds ? [...row.orgIds] : [],
+        parentId: row.parentId || null,
       };
-      if (this.form.dataScopeType === "REPORTER") this.form.dataScopeType = "SELF";
-      if (this.form.dataScopeType === "CURRENT_ORG") this.form.dataScopeType = "CURRENT_ORG_CHILD";
-      if (this.form.dataScopeType === "LOCAL_ORG_HQ") this.form.dataScopeType = "ASSIGNED_ORG_CHILD";
+      if (this.form.dataScopeType === "REPORTER")
+        this.form.dataScopeType = "SELF";
+      if (this.form.dataScopeType === "CURRENT_ORG")
+        this.form.dataScopeType = "CURRENT_ORG_CHILD";
+      if (this.form.dataScopeType === "LOCAL_ORG_HQ")
+        this.form.dataScopeType = "ASSIGNED_ORG_CHILD";
       this.showOrgSelector = this.form.dataScopeType === "ASSIGNED_ORG_CHILD";
       if (this.showOrgSelector && this.form.orgIds.length > 0) {
         this.loadAllOrgs();
@@ -319,19 +457,26 @@ export default {
     submitForm() {
       this.$refs.roleForm.validate((ok) => {
         if (!ok) return;
-        
+
         // 如果选择了指定组织及下级，必须选择组织
-        if (this.form.dataScopeType === "ASSIGNED_ORG_CHILD" && (!this.form.orgIds || this.form.orgIds.length === 0)) {
+        if (
+          this.form.dataScopeType === "ASSIGNED_ORG_CHILD" &&
+          (!this.form.orgIds || this.form.orgIds.length === 0)
+        ) {
           this.$message.warning("请至少选择一个关联组织");
           return;
         }
-        
+
         const payload = {
           name: this.form.name,
           code: this.form.code,
           dataScopeType: this.form.dataScopeType,
           dataScopeLabel: getRoleDataScopeLabel(this.form.dataScopeType),
-          orgIds: this.form.orgIds && this.form.orgIds.length > 0 ? [...this.form.orgIds] : null,
+          orgIds:
+            this.form.orgIds && this.form.orgIds.length > 0
+              ? [...this.form.orgIds]
+              : null,
+          parentId: this.form.parentId || null,
         };
         try {
           if (this.formMode === "create") {
@@ -355,7 +500,9 @@ export default {
       });
     },
     handleDelete(row) {
-      this.$confirm(`确定删除角色「${row.name}」？`, "删除角色", { type: "warning" })
+      this.$confirm(`确定删除角色「${row.name}」？`, "删除角色", {
+        type: "warning",
+      })
         .then(() => {
           deleteRole(row.id);
           this.reload();
@@ -387,7 +534,9 @@ export default {
     flattenOrgTree(tree, parentName = "") {
       let result = [];
       tree.forEach((node) => {
-        const fullName = parentName ? `${parentName} / ${node.name}` : node.name;
+        const fullName = parentName
+          ? `${parentName} / ${node.name}`
+          : node.name;
         result.push({
           id: node.id,
           name: node.name,
@@ -405,8 +554,10 @@ export default {
         setTimeout(() => {
           this.orgLoading = false;
           this.orgOptions = this.allOrgList.filter((org) => {
-            return org.name.toLowerCase().includes(query.toLowerCase()) ||
-                   org.fullName.toLowerCase().includes(query.toLowerCase());
+            return (
+              org.name.toLowerCase().includes(query.toLowerCase()) ||
+              org.fullName.toLowerCase().includes(query.toLowerCase())
+            );
           });
         }, 200);
       } else {
@@ -550,7 +701,9 @@ export default {
   font-weight: 400;
 }
 
-.role-edit-dialog .el-form-item.is-required:not(.is-no-asterisk) > .el-form-item__label:before {
+.role-edit-dialog
+  .el-form-item.is-required:not(.is-no-asterisk)
+  > .el-form-item__label:before {
   color: #f56c6c;
   margin-right: 2px;
 }
