@@ -1,39 +1,11 @@
 <template>
   <div class="module-perm-page">
     <div class="module-perm-layout">
-      <aside class="app-sidebar">
-        <div class="sidebar-search">
-          <el-input
-            v-model="appTreeKeyword"
-            placeholder="请输入系统应用名称关键字查询"
-            size="small"
-            clearable
-            prefix-icon="el-icon-search"
-          />
-        </div>
-        <div class="sidebar-tree">
-          <el-tree
-            ref="appTree"
-            :data="displayAppTree"
-            :props="treeProps"
-            node-key="id"
-            highlight-current
-            default-expand-all
-            :expand-on-click-node="false"
-            :current-node-key="selectedAppId"
-            @node-click="handleAppClick"
-          >
-            <span slot-scope="{ node, data }" class="app-tree-node">
-              <i :class="data.icon || 'el-icon-folder-opened'" />
-              <span class="app-tree-label" :title="node.label">{{
-                node.label
-              }}</span>
-            </span>
-          </el-tree>
-        </div>
-      </aside>
-
       <main class="app-main">
+        <div class="page-info">
+          <span class="page-info-label">当前系统应用：</span>
+          <span class="page-info-value">{{ currentAppName }}</span>
+        </div>
         <div class="main-toolbar">
           <el-input
             v-model="roleQueryKeyword"
@@ -51,9 +23,7 @@
               @click="batchDeleteRoles"
               >删除角色</el-button
             >
-            <el-button size="small" @click="handleImportRoles"
-              >导入角色</el-button
-            >
+            
           </div>
         </div>
 
@@ -189,7 +159,9 @@
         class="app-role-form"
       >
         <el-form-item label="角色名称:" prop="name" required>
-          <el-input v-model="roleForm.name" maxlength="50" />
+          <el-select v-model="roleForm.name" placeholder="请选择角色类型" filterable clearable>
+            <el-option v-for="opt in roleNameOptions" :key="opt" :label="opt" :value="opt" />
+          </el-select>
         </el-form-item>
         <el-form-item label="描述:" prop="description" class="desc-form-item">
           <el-input
@@ -222,71 +194,29 @@
       </div>
 
       <div class="role-perm-dialog-layout">
-        <aside class="role-perm-left">
-          <div class="role-perm-search">
-            <el-input
-              v-model="permAppKeyword"
-              placeholder="请输入系统应用名称关键字查询"
-              size="small"
-              clearable
-              prefix-icon="el-icon-search"
-            />
-          </div>
-          <div class="role-perm-filter">
-            <el-checkbox v-model="onlyAuthorizedApps"
-              >只显示已授权应用</el-checkbox
-            >
-          </div>
-          <div class="role-perm-app-tree">
-            <el-tree
-              ref="permAppTree"
-              :data="displayPermAppTree"
-              :props="treeProps"
-              node-key="id"
-              highlight-current
-              default-expand-all
-              :expand-on-click-node="false"
-              :current-node-key="selectedPermNavId"
-              @node-click="handlePermNavClick"
-            >
-              <span slot-scope="{ node, data }" class="perm-app-tree-node">
-                <i :class="data.icon || 'el-icon-folder-opened'" />
-                <span :title="node.label">{{ node.label }}</span>
-              </span>
-            </el-tree>
-          </div>
-        </aside>
-
-        <main class="role-perm-right">
+        <main class="role-perm-right full-width">
           <div class="role-perm-right-toolbar">
             <span />
             <div class="role-perm-right-actions">
-              <el-button size="small" @click="exportPermJson"
-                >导出JSON文件</el-button
-              >
-              <el-button size="small" type="primary" @click="savePermConfig"
-                >保存</el-button
-              >
-              <el-button size="small" @click="showPermissionDialog = false"
-                >关闭</el-button
-              >
-            </div>
+                <el-button size="small" type="primary" @click="savePermConfig"
+                  >保存</el-button
+                >
+                <el-button size="small" @click="showPermissionDialog = false"
+                  >关闭</el-button
+                >
+              </div>
           </div>
           <div class="resource-table-head">资源名称</div>
           <div class="resource-tree-wrap">
-            <el-tree
-              v-if="canShowResourceTree"
-              ref="resourceTree"
-              :data="currentResourceTree"
-              :props="treeProps"
-              node-key="id"
-              show-checkbox
-              default-expand-all
-              :expand-on-click-node="false"
-              @check="handleResourceCheck"
-            />
+            <div v-if="canShowResourceTree" class="resource-list">
+              <el-checkbox-group v-model="checkedResourceIds" @change="handleResourceCheck">
+                <div v-for="item in currentResourceLeaves" :key="item.id" class="resource-item">
+                  <el-checkbox :label="item.id">{{ item.name }}</el-checkbox>
+                </div>
+              </el-checkbox-group>
+            </div>
             <div v-else class="resource-empty">
-              请在左侧选择「员工行为分析」资源配置
+              请先选择角色，右侧显示对应资源列表
             </div>
           </div>
         </main>
@@ -501,6 +431,13 @@ export default {
         name: "",
         description: "",
       },
+      roleNameOptions: [
+        "业务管理员",
+        "单位负责人",
+        "审核人员",
+        "看板查看用户",
+        "普通员工",
+      ],
       descMaxLength: 250,
       roleRules: {
         name: [{ required: true, message: "请输入角色名称", trigger: "blur" }],
@@ -514,6 +451,7 @@ export default {
       selectedPermNavId: "nav-ygxwfx-func",
       permAppTree: PERMISSION_DIALOG_APP_TREE,
       resourceTree: PROJECT_FUNCTION_TREE,
+      checkedResourceIds: [],
       syncingResourceTree: false,
       showPersonnelDialog: false,
       personnelRole: null,
@@ -550,6 +488,24 @@ export default {
     },
     currentResourceTree() {
       return this.canShowResourceTree ? this.resourceTree : [];
+    },
+    currentResourceList() {
+      const list = [];
+      function walk(nodes, level = 0) {
+        (nodes || []).forEach((node) => {
+          if (node.children && node.children.length) {
+            list.push({ id: node.id, name: node.name, level, isGroup: true });
+            walk(node.children, level + 1);
+          } else {
+            list.push({ id: node.id, name: node.name, level, isGroup: false });
+          }
+        });
+      }
+      walk(this.resourceTree || []);
+      return list;
+    },
+    currentResourceLeaves() {
+      return this.currentResourceList.filter((i) => !i.isGroup);
     },
     displayAppTree() {
       return filterApplicationTree(this.appTree, this.appTreeKeyword);
@@ -701,7 +657,7 @@ export default {
         .catch(() => {});
     },
     handleImportRoles() {
-      this.$message.info("导入角色功能演示环境暂未接入");
+      // handleImportRoles removed
     },
     openPermissionDialog(row) {
       this.permissionRole = row;
@@ -712,6 +668,7 @@ export default {
       this.onlyAuthorizedApps = false;
       this.selectedPermNavId = "nav-ygxwfx-func";
       this.showPermissionDialog = true;
+      this.$nextTick(() => this.syncResourceListChecked());
     },
     ensureDefaultPermissions(row) {
       const key = this.permissionRoleKey;
@@ -724,7 +681,7 @@ export default {
       this.allocation = getModuleAllocation();
     },
     onPermDialogOpened() {
-      this.syncResourceTreeChecked();
+      this.syncResourceListChecked();
       this.$nextTick(() => {
         if (this.$refs.permAppTree)
           this.$refs.permAppTree.setCurrentKey(this.selectedPermNavId);
@@ -740,7 +697,7 @@ export default {
         this.selectedPermNavId = data.isResource
           ? data.id
           : DEFAULT_SELECTED_APP_ID;
-        this.$nextTick(() => this.syncResourceTreeChecked());
+        this.$nextTick(() => this.syncResourceListChecked());
       }
     },
     getEnabledLeafIds() {
@@ -749,20 +706,12 @@ export default {
       const map = this.allocation[key] || {};
       return getAllProjectFunctionIds().filter((id) => map[id]);
     },
-    syncResourceTreeChecked() {
-      if (!this.$refs.resourceTree || !this.canShowResourceTree) return;
-      this.syncingResourceTree = true;
-      const checked = this.getEnabledLeafIds();
-      this.$refs.resourceTree.setCheckedKeys(checked);
-      this.$nextTick(() => {
-        this.syncingResourceTree = false;
-      });
+    syncResourceListChecked() {
+      this.checkedResourceIds = this.getEnabledLeafIds();
     },
     handleResourceCheck() {
-      if (this.syncingResourceTree || !this.permissionRoleKey) return;
-      const tree = this.$refs.resourceTree;
-      if (!tree) return;
-      const checked = new Set(tree.getCheckedKeys());
+      if (!this.permissionRoleKey) return;
+      const checked = new Set(this.checkedResourceIds || []);
       getAllProjectFunctionIds().forEach((id) => {
         updateModuleAllocation(this.permissionRoleKey, id, checked.has(id));
       });
@@ -771,26 +720,7 @@ export default {
     savePermConfig() {
       this.$message.success("权限配置已保存");
     },
-    exportPermJson() {
-      if (!this.permissionRole) return;
-      const payload = {
-        roleId: this.permissionRole.id,
-        roleName: this.permissionRole.name,
-        appName: this.permissionRole.appName,
-        permissions: this.allocation[this.permissionRoleKey] || {},
-        exportedAt: new Date().toISOString(),
-      };
-      const blob = new Blob([JSON.stringify(payload, null, 2)], {
-        type: "application/json",
-      });
-      const url = URL.createObjectURL(blob);
-      const link = document.createElement("a");
-      link.href = url;
-      link.download = `${this.permissionRole.name}-权限配置.json`;
-      link.click();
-      URL.revokeObjectURL(url);
-      this.$message.success("JSON 文件已导出");
-    },
+    // exportPermJson removed
     openRolePersonnelDialog(row) {
       this.personnelRole = row;
       this.personnelList = getRolePersonnel(row.id, row.name);
@@ -917,6 +847,21 @@ export default {
   flex-direction: column;
 }
 
+.page-info {
+  margin-bottom: 12px;
+  color: #606266;
+  font-size: 13px;
+}
+
+.page-info-label {
+  margin-right: 6px;
+}
+
+.page-info-value {
+  color: #409eff;
+  font-weight: 600;
+}
+
 .main-toolbar {
   display: flex;
   align-items: center;
@@ -949,6 +894,23 @@ export default {
 .role-name-link {
   padding: 0;
   color: #409eff;
+}
+
+/* 调整新增/编辑角色表单的标签与控件对齐 */
+.app-role-form .el-form-item {
+  display: flex;
+  align-items: center;
+}
+.app-role-form .el-form-item__label {
+  text-align: left;
+  padding: 0 12px 0 0;
+}
+/* 描述为多行时将标签顶部对齐 */
+.app-role-form .el-form-item.desc-form-item {
+  align-items: flex-start;
+}
+.app-role-form .el-form-item.desc-form-item .el-form-item__label {
+  padding-top: 6px;
 }
 
 .op-icon {
@@ -1015,30 +977,13 @@ export default {
   border: 1px solid #e4e7ed;
 }
 
-.role-perm-left {
-  width: 280px;
-  flex-shrink: 0;
-  border-right: 1px solid #e4e7ed;
+.role-perm-right.full-width {
+  flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   background: #fff;
-}
-
-.role-perm-search {
-  padding: 10px 12px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.role-perm-filter {
-  padding: 8px 12px;
-  border-bottom: 1px solid #ebeef5;
-  font-size: 13px;
-}
-
-.role-perm-app-tree {
-  flex: 1;
-  overflow: auto;
-  padding: 8px 6px 12px;
+  width: 100%;
 }
 
 .perm-app-tree-node {
@@ -1089,6 +1034,24 @@ export default {
   flex: 1;
   overflow: auto;
   padding: 10px 14px 14px;
+}
+
+.resource-list {
+  padding: 6px 8px;
+}
+
+.resource-item {
+  padding: 6px 8px 6px 0;
+}
+
+.resource-group {
+  padding: 8px 6px;
+}
+
+.resource-group-label {
+  color: #606266;
+  font-size: 13px;
+  font-weight: 600;
 }
 
 .resource-empty {

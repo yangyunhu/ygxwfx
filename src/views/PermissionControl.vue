@@ -32,14 +32,12 @@
           <p class="tab-tip">
             展示角色可访问的功能页面（菜单），配置由功能模块权限分配统一管理。
           </p>
-          <el-tree
-            ref="pageTree"
-            :data="filteredModuleTree"
-            node-key="id"
-            default-expand-all
-            :props="{ label: 'label', children: 'children' }"
-            disabled
-          />
+          <div class="page-list">
+            <div v-if="pageLeaves.length === 0" class="empty-tip">该角色尚未分配页面权限</div>
+            <ul v-else class="page-leaf-list">
+              <li v-for="leaf in pageLeaves" :key="leaf.id" class="page-leaf-item">{{ leaf.name }}</li>
+            </ul>
+          </div>
         </el-tab-pane>
 
         <el-tab-pane label="操作权限" name="operation">
@@ -176,6 +174,11 @@ export default {
         .filter((m) => (this.detail.pageIds || []).includes(m.id))
         .map((m) => ({ moduleId: m.id, moduleName: m.name }));
     },
+    pageLeaves() {
+      return getAllModuleLeaves()
+        .filter((m) => (this.detail.pageIds || []).includes(m.id))
+        .map((m) => ({ id: m.id, name: m.name }));
+    },
     currentDataScopeLabel() {
       const scope = this.detail.dataScope;
       const scopeMap = {
@@ -199,10 +202,7 @@ export default {
     loadDetail() {
       // 从模块权限分配中获取角色的权限配置
       this.detail = getRolePermissionConfig(this.selectedRoleId);
-      this.$nextTick(() => {
-        if (this.$refs.pageTree)
-          this.$refs.pageTree.setCheckedKeys(this.detail.pageIds || []);
-      });
+      // 页面展示无需树组件的选中同步
     },
     hasOperation(moduleId, opKey) {
       const ops = this.detail.operations[moduleId] || [];
@@ -330,5 +330,24 @@ export default {
   font-size: 12px;
   color: #909399;
   line-height: 1.6;
+}
+</style>
+<style scoped>
+.page-list {
+  min-height: 120px;
+}
+.empty-tip {
+  color: #909399;
+  padding: 12px 0;
+}
+.page-leaf-list {
+  list-style: none;
+  padding: 8px 0 24px 0;
+  margin: 0;
+}
+.page-leaf-item {
+  padding: 8px 16px;
+  color: #606266;
+  border-bottom: 1px solid #f3f6f8;
 }
 </style>
