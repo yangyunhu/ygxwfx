@@ -67,11 +67,6 @@
         <el-table-column prop="moduleGroup" label="模块分组" width="120" show-overflow-tooltip />
         <el-table-column prop="moduleName" label="业务模块" min-width="150" show-overflow-tooltip />
         <el-table-column prop="operator" label="操作人" width="90" />
-        <el-table-column label="操作" width="80" align="center" fixed="right">
-          <template slot-scope="{ row }">
-            <el-button type="text" size="small" @click="openDetail(row)">详情</el-button>
-          </template>
-        </el-table-column>
       </el-table>
       <div class="pager">
         <el-pagination
