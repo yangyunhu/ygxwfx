@@ -15,20 +15,11 @@
             class="role-search"
             @keyup.enter.native="handleRoleSearch"
           />
-          <div class="main-actions">
-            <el-button size="small" @click="openCreateRole">新增角色</el-button>
-            <el-button
-              size="small"
-              :disabled="!selectedRows.length"
-              @click="batchDeleteRoles"
-              >删除角色</el-button
-            >
-          </div>
         </div>
 
         <el-table
           ref="roleTable"
-          :data="pagedRoles"
+          :data="filteredRoles"
           border
           size="small"
           class="role-table"
@@ -94,11 +85,6 @@
                 @click="openPermissionDialog(row)"
               />
               <i
-                class="op-icon op-delete el-icon-close"
-                title="删除"
-                @click="deleteSingleRole(row)"
-              />
-              <i
                 class="op-icon op-perm el-icon-document"
                 title="关联人员"
                 @click="openRolePersonnelDialog(row)"
@@ -106,35 +92,13 @@
             </template>
           </el-table-column>
         </el-table>
-
-        <div class="main-pager">
-          <div class="pager-left">
-            <span class="pager-total">共{{ filteredRoles.length }}条记录</span>
-            <span class="pager-label">每页显示</span>
-            <span
-              v-for="size in pageSizeOptions"
-              :key="size"
-              class="page-size-item"
-              :class="{ active: pageSize === size }"
-              @click="changePageSize(size)"
-            >
-              {{ size }}
-            </span>
-          </div>
-          <el-pagination
-            small
-            layout="prev, pager, next, jumper"
-            :total="filteredRoles.length"
-            :current-page.sync="currentPage"
-            :page-size="pageSize"
-          />
-        </div>
       </main>
     </div>
 
     <el-dialog
       :visible.sync="showRoleForm"
-      width="520px"
+      width="680px"
+      top="8vh"
       append-to-body
       custom-class="app-role-form-dialog"
       :close-on-click-modal="false"
@@ -144,8 +108,9 @@
       <div slot="title" class="app-role-dialog-header">
         <span class="app-role-dialog-title">{{ roleFormTitle }}</span>
         <div class="app-role-dialog-actions">
-          <el-button size="small" @click="submitRoleForm">保存</el-button>
-          <el-button size="small" @click="showRoleForm = false">关闭</el-button>
+          <el-button size="small" type="primary" @click="submitRoleForm"
+            >保存</el-button
+          >
         </div>
       </div>
 
@@ -153,7 +118,7 @@
         ref="roleForm"
         :model="roleForm"
         :rules="roleRules"
-        label-width="96px"
+        label-width="140px"
         size="small"
         class="app-role-form"
       >
@@ -163,6 +128,7 @@
             placeholder="请选择角色类型"
             filterable
             clearable
+            style="width: 100%"
           >
             <el-option
               v-for="opt in roleNameOptions"
@@ -176,9 +142,10 @@
           <el-input
             v-model="roleForm.description"
             type="textarea"
-            :rows="5"
+            :rows="6"
             :maxlength="descMaxLength"
             resize="none"
+            style="width: 100%"
           />
           <div class="desc-counter">
             (您还能输入<span class="desc-remain">{{ descRemain }}</span
@@ -643,17 +610,6 @@ export default {
         }
       });
     },
-    deleteSingleRole(row) {
-      this.$confirm(`确定删除角色「${row.name}」？`, "删除角色", {
-        type: "warning",
-      })
-        .then(() => {
-          deleteAppRole(this.selectedAppId, row.id);
-          this.reloadRoles();
-          this.$message.success("已删除");
-        })
-        .catch(() => {});
-    },
     batchDeleteRoles() {
       if (!this.selectedRows.length) return;
       this.$confirm(
@@ -914,7 +870,8 @@ export default {
 
 /* 调整新增/编辑角色表单的标签与控件对齐 */
 .app-role-form .el-form-item {
-  display: flex;
+  display: grid;
+  grid-template-columns: 140px minmax(360px, 1fr);
   align-items: center;
 }
 .app-role-form .el-form-item__label {
@@ -923,40 +880,121 @@ export default {
 }
 /* 描述为多行时将标签顶部对齐 */
 .app-role-form .el-form-item.desc-form-item {
-  align-items: flex-start;
+  align-items: start;
 }
 .app-role-form .el-form-item.desc-form-item .el-form-item__label {
   padding-top: 6px;
 }
 
-.op-icon {
-  font-size: 16px;
-  cursor: pointer;
-  margin: 0 4px;
-  vertical-align: middle;
+/* 弹窗自定义样式美化 */
+.app-role-form-dialog .el-dialog__header {
+  padding: 14px 20px;
+  border-bottom: 1px solid #eef1f6;
 }
-
-.op-setting {
-  color: #e6a23c;
-}
-
-.op-delete {
-  color: #f56c6c;
-  font-weight: bold;
-}
-
-.op-perm {
-  color: #67c23a;
-}
-
-.main-pager {
+.app-role-dialog-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  flex-wrap: wrap;
-  gap: 12px;
-  margin-top: 12px;
-  padding-top: 8px;
+}
+.app-role-dialog-title {
+  font-size: 16px;
+  font-weight: 700;
+  color: #303133;
+}
+.app-role-dialog-actions .el-button--primary {
+  background-color: #409eff;
+  border-color: #409eff;
+}
+.app-role-form-dialog .el-dialog__body {
+  padding: 16px 24px 22px;
+}
+.app-role-form .el-form-item__label {
+  width: auto;
+  text-align: right;
+  padding-right: 16px;
+}
+.app-role-form .el-form-item__content {
+  width: 360px;
+}
+.app-role-form .el-input--textarea {
+  width: 100%;
+}
+.app-role-form .el-input--textarea textarea {
+  min-height: 140px;
+}
+.app-role-form .desc-counter {
+  grid-column: 2 / 3;
+  margin-top: 8px;
+  color: #909399;
+  white-space: nowrap;
+}
+.app-role-form .desc-form-item .el-form-item__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.app-role-form .el-input--textarea {
+  width: 100%;
+}
+.app-role-form .el-textarea__inner,
+.app-role-form textarea {
+  width: 100% !important;
+  min-height: 140px;
+  box-sizing: border-box;
+}
+.app-role-form .desc-form-item .el-form-item__content {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+}
+.app-role-form .desc-counter {
+  margin-top: 8px;
+  color: #909399;
+}
+.app-role-form .desc-form-item .el-input--textarea,
+.app-role-form .desc-form-item .el-textarea__inner,
+.app-role-form .desc-form-item textarea {
+  width: 360px !important;
+  box-sizing: border-box;
+}
+.app-role-form .el-form-item__content > .el-select,
+.app-role-form .el-form-item__content > .el-input {
+  width: 100%;
+}
+
+/* 强制表单使用两列网格，确保标签与控件左对齐、宽度一致 */
+.app-role-form .el-form-item {
+  display: grid !important;
+  grid-template-columns: 140px 360px !important;
+  grid-column-gap: 12px !important;
+  align-items: center !important;
+}
+.app-role-form .el-form-item__label {
+  grid-column: 1 / 2 !important;
+  justify-self: end !important;
+  align-self: center !important;
+  text-align: right !important;
+  padding: 0 !important;
+}
+.app-role-form .el-form-item__content {
+  grid-column: 2 / 3 !important;
+}
+.app-role-form .el-form-item.desc-form-item .el-form-item__label {
+  align-self: start !important;
+  padding-top: 8px !important;
+}
+.app-role-form .el-form-item__content > .el-select,
+.app-role-form .el-form-item__content > .el-input {
+  width: 100% !important;
+}
+
+/* 强制表单宽度并左对齐，防止表单在弹窗中居中 */
+.app-role-form {
+  width: 520px !important;
+  margin: 0 !important;
+}
+.app-role-form .el-form-item__content > .el-select {
+  display: block !important;
 }
 
 .pager-left {
