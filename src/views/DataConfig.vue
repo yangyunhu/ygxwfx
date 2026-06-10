@@ -34,11 +34,23 @@
                     @node-click="handleOrgNodeClick"
                   >
                     <span class="custom-tree-node" slot-scope="{ node, data }">
-                      <span style="display: flex; align-items: center; flex: 1;">
-                        <i :class="data.type === 'team' ? 'el-icon-user node-icon' : 'el-icon-office-building node-icon'"></i>
+                      <span style="display: flex; align-items: center; flex: 1">
+                        <i
+                          :class="
+                            data.type === 'team'
+                              ? 'el-icon-user node-icon'
+                              : 'el-icon-office-building node-icon'
+                          "
+                        ></i>
                         <span class="node-label">{{ node.label }}</span>
                       </span>
-                      <el-tag v-if="data.configured" type="success" size="mini" style="margin-left: 8px; flex-shrink: 0;">已配置</el-tag>
+                      <el-tag
+                        v-if="data.configured"
+                        type="success"
+                        size="mini"
+                        style="margin-left: 8px; flex-shrink: 0"
+                        >已配置</el-tag
+                      >
                     </span>
                   </el-tree>
                 </div>
@@ -55,60 +67,138 @@
                 <div v-else class="config-content">
                   <div class="org-info">
                     <el-descriptions :column="1" border size="small">
-                      <el-descriptions-item label="组织机构名称">{{ selectedOrg.name }}</el-descriptions-item>
+                      <el-descriptions-item label="组织机构名称">{{
+                        selectedOrg.name
+                      }}</el-descriptions-item>
                       <el-descriptions-item label="组织机构类型">
-                        {{ selectedOrg.type === 'dept' ? '部门' : selectedOrg.type === 'team' ? '班组' : '单位' }}
+                        {{
+                          selectedOrg.type === "dept"
+                            ? "部门"
+                            : selectedOrg.type === "team"
+                            ? "班组"
+                            : "单位"
+                        }}
                       </el-descriptions-item>
-                      <el-descriptions-item v-if="selectedOrg.code" label="组织机构编码">{{ selectedOrg.code }}</el-descriptions-item>
+                      <el-descriptions-item
+                        v-if="selectedOrg.code"
+                        label="组织机构编码"
+                        >{{ selectedOrg.code }}</el-descriptions-item
+                      >
                     </el-descriptions>
                   </div>
 
                   <div class="source-config-section">
                     <div class="section-title">
                       <span>关联的无感数据源</span>
-                      <el-button type="primary" size="small" @click="openAddSourceDialog">
+                      <el-button
+                        type="primary"
+                        size="small"
+                        @click="openAddSourceDialog"
+                      >
                         <i class="el-icon-plus"></i> 添加数据源
                       </el-button>
                     </div>
-                    
+
                     <!-- 线下接入数据源按钮区域 -->
-                    <div v-if="offlineSources.length > 0" class="offline-sources-toolbar">
+                    <div
+                      v-if="offlineSources.length > 0"
+                      class="offline-sources-toolbar"
+                    >
                       <div class="toolbar-label">线下接入数据:</div>
                       <div class="toolbar-buttons">
-                        <el-button 
-                          v-for="source in offlineSources" 
+                        <el-button
+                          v-for="source in offlineSources"
                           :key="source.id"
-                          type="primary" 
+                          type="primary"
                           size="small"
                           @click="openOfflineDataUpload(source)"
                         >
-                          <i class="el-icon-upload2"></i> {{ source.sourceName }}
+                          <i class="el-icon-upload2"></i>
+                          {{ source.sourceName }}
                         </el-button>
                       </div>
                     </div>
-                    
-                    <el-table :data="orgConfigSources" border stripe size="small">
-                      <el-table-column type="index" label="序号" width="60" align="center"></el-table-column>
-                      <el-table-column prop="sourceName" label="数据源名称" min-width="180"></el-table-column>
-                      <el-table-column prop="sourceType" label="数据来源" width="120" align="center">
+
+                    <el-table
+                      :data="orgConfigSources"
+                      border
+                      stripe
+                      size="small"
+                    >
+                      <el-table-column
+                        type="index"
+                        label="序号"
+                        width="60"
+                        align="center"
+                      ></el-table-column>
+                      <el-table-column
+                        prop="sourceName"
+                        label="数据源名称"
+                        min-width="180"
+                      ></el-table-column>
+                      <el-table-column
+                        prop="sourceType"
+                        label="数据来源"
+                        width="120"
+                        align="center"
+                      >
                         <template slot-scope="scope">
-                          <el-tag :type="scope.row.sourceType === 'online' ? 'primary' : 'info'" size="small">
-                            {{ scope.row.sourceType === 'online' ? '线上接入' : '线下导入' }}
+                          <el-tag
+                            :type="
+                              scope.row.sourceType === 'online'
+                                ? 'primary'
+                                : 'info'
+                            "
+                            size="small"
+                          >
+                            {{
+                              scope.row.sourceType === "online"
+                                ? "线上接入"
+                                : "线下导入"
+                            }}
                           </el-tag>
                         </template>
                       </el-table-column>
-                      <el-table-column prop="syncFreq" label="同步频率" width="140" align="center"></el-table-column>
-                      <el-table-column prop="status" label="接入状态" width="100" align="center">
+                      <el-table-column
+                        prop="syncFreq"
+                        label="同步频率"
+                        width="140"
+                        align="center"
+                      ></el-table-column>
+                      <el-table-column
+                        prop="status"
+                        label="接入状态"
+                        width="100"
+                        align="center"
+                      >
                         <template slot-scope="scope">
-                          <el-tag :type="scope.row.status === 'sync' ? 'success' : 'info'" size="small">
-                            {{ scope.row.status === 'sync' ? '已接入' : '待接入' }}
+                          <el-tag
+                            :type="
+                              scope.row.status === 'sync' ? 'success' : 'info'
+                            "
+                            size="small"
+                          >
+                            {{
+                              scope.row.status === "sync" ? "已接入" : "待接入"
+                            }}
                           </el-tag>
                         </template>
                       </el-table-column>
                       <el-table-column label="操作" width="120" align="center">
                         <template slot-scope="scope">
-                          <el-button type="text" size="small" @click="editOrgSourceConfig(scope.row)">编辑</el-button>
-                          <el-button type="text" size="small" @click="removeOrgSourceConfig(scope.$index)" style="color: #f56c6c;">移除</el-button>
+                          <el-button
+                            type="text"
+                            size="small"
+                            @click="editOrgSourceConfig(scope.row)"
+                            >编辑</el-button
+                          >
+                          <el-button
+                            type="text"
+                            size="small"
+                            @click="removeOrgSourceConfig(scope.$index)"
+                            style="color: #f56c6c"
+                            >移除</el-button
+                          >
                         </template>
                       </el-table-column>
                     </el-table>
@@ -126,22 +216,53 @@
               <div class="config-form">
                 <el-form :model="majorForm" label-width="140px">
                   <el-form-item label="选择专业分类">
-                    <el-select v-model="majorForm.majorId" placeholder="请选择专业分类" style="width: 400px;">
-                      <el-option v-for="major in majorCategories" :key="major.id" :label="major.path" :value="major.id"></el-option>
+                    <el-select
+                      v-model="majorForm.majorId"
+                      placeholder="请选择专业分类"
+                      style="width: 400px"
+                    >
+                      <el-option
+                        v-for="major in majorCategories"
+                        :key="major.id"
+                        :label="major.path"
+                        :value="major.id"
+                      ></el-option>
                     </el-select>
                   </el-form-item>
                   <el-form-item label="移动端数据源">
-                    <el-select v-model="majorForm.mobileSources" multiple placeholder="请选择移动端数据源" style="width: 100%;">
-                      <el-option v-for="source in SENSING_ACCESS_SOURCES" :key="source.code" :label="source.name" :value="source.code"></el-option>
+                    <el-select
+                      v-model="majorForm.mobileSources"
+                      multiple
+                      placeholder="请选择移动端数据源"
+                      style="width: 100%"
+                    >
+                      <el-option
+                        v-for="source in SENSING_ACCESS_SOURCES"
+                        :key="source.code"
+                        :label="source.name"
+                        :value="source.code"
+                      ></el-option>
                     </el-select>
                   </el-form-item>
                   <el-form-item label="Web端数据源">
-                    <el-select v-model="majorForm.webSources" multiple placeholder="请选择Web端数据源" style="width: 100%;">
-                      <el-option v-for="source in SENSING_ACCESS_SOURCES" :key="source.code" :label="source.name" :value="source.code"></el-option>
+                    <el-select
+                      v-model="majorForm.webSources"
+                      multiple
+                      placeholder="请选择Web端数据源"
+                      style="width: 100%"
+                    >
+                      <el-option
+                        v-for="source in SENSING_ACCESS_SOURCES"
+                        :key="source.code"
+                        :label="source.name"
+                        :value="source.code"
+                      ></el-option>
                     </el-select>
                   </el-form-item>
                   <el-form-item>
-                    <el-button type="primary" @click="saveMajorConfig">保存配置</el-button>
+                    <el-button type="primary" @click="saveMajorConfig"
+                      >保存配置</el-button
+                    >
                     <el-button @click="resetMajorForm">重置</el-button>
                   </el-form-item>
                 </el-form>
@@ -151,26 +272,56 @@
             <div class="config-list-section">
               <div class="section-title">已配置的专业分类列表</div>
               <el-table :data="majorConfigList" border stripe>
-                <el-table-column type="index" label="序号" width="60" align="center"></el-table-column>
-                <el-table-column prop="majorPath" label="专业分类路径" min-width="250"></el-table-column>
+                <el-table-column
+                  type="index"
+                  label="序号"
+                  width="60"
+                  align="center"
+                ></el-table-column>
+                <el-table-column
+                  prop="majorPath"
+                  label="专业分类路径"
+                  min-width="250"
+                ></el-table-column>
                 <el-table-column label="移动端数据源" min-width="300">
                   <template slot-scope="scope">
-                    <el-tag v-for="code in scope.row.mobileSources" :key="code" size="small" style="margin-right: 4px; margin-bottom: 4px;">
+                    <el-tag
+                      v-for="code in scope.row.mobileSources"
+                      :key="code"
+                      size="small"
+                      style="margin-right: 4px; margin-bottom: 4px"
+                    >
                       {{ getSourceName(code) }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="Web端数据源" min-width="300">
                   <template slot-scope="scope">
-                    <el-tag v-for="code in scope.row.webSources" :key="code" size="small" style="margin-right: 4px; margin-bottom: 4px;">
+                    <el-tag
+                      v-for="code in scope.row.webSources"
+                      :key="code"
+                      size="small"
+                      style="margin-right: 4px; margin-bottom: 4px"
+                    >
                       {{ getSourceName(code) }}
                     </el-tag>
                   </template>
                 </el-table-column>
                 <el-table-column label="操作" width="120" align="center">
                   <template slot-scope="scope">
-                    <el-button type="text" size="small" @click="editMajorConfig(scope.row)">编辑</el-button>
-                    <el-button type="text" size="small" @click="deleteMajorConfig(scope.$index)" style="color: #f56c6c;">删除</el-button>
+                    <el-button
+                      type="text"
+                      size="small"
+                      @click="editMajorConfig(scope.row)"
+                      >编辑</el-button
+                    >
+                    <el-button
+                      type="text"
+                      size="small"
+                      @click="deleteMajorConfig(scope.$index)"
+                      style="color: #f56c6c"
+                      >删除</el-button
+                    >
                   </template>
                 </el-table-column>
               </el-table>
@@ -180,21 +331,44 @@
       </el-tabs>
     </div>
 
-    <el-dialog title="添加数据源" :visible.sync="sourceDialogVisible" width="700px">
+    <el-dialog
+      title="添加数据源"
+      :visible.sync="sourceDialogVisible"
+      width="700px"
+    >
       <el-form :model="sourceForm" label-width="120px">
         <el-form-item label="选择数据源">
-          <el-select v-model="sourceForm.sourceCode" placeholder="请选择数据源" style="width: 100%;" @change="onSourceSelect">
-            <el-option v-for="source in SENSING_ACCESS_SOURCES" :key="source.code" :label="source.name" :value="source.code" :disabled="isSourceSelected(source.code)"></el-option>
+          <el-select
+            v-model="sourceForm.sourceCode"
+            placeholder="请选择数据源"
+            style="width: 100%"
+            @change="onSourceSelect"
+          >
+            <el-option
+              v-for="source in SENSING_ACCESS_SOURCES"
+              :key="source.code"
+              :label="source.name"
+              :value="source.code"
+              :disabled="isSourceSelected(source.code)"
+            ></el-option>
           </el-select>
         </el-form-item>
         <el-form-item v-if="sourceForm.sourceCode" label="数据来源">
-          <el-select v-model="sourceForm.sourceType" placeholder="请选择数据来源" style="width: 100%;">
+          <el-select
+            v-model="sourceForm.sourceType"
+            placeholder="请选择数据来源"
+            style="width: 100%"
+          >
             <el-option label="南网数据中心接入" value="online"></el-option>
             <el-option label="单位线下自行导入" value="offline"></el-option>
           </el-select>
         </el-form-item>
         <el-form-item v-if="sourceForm.sourceCode" label="同步频率">
-          <el-select v-model="sourceForm.syncFreq" placeholder="请选择同步频率" style="width: 100%;">
+          <el-select
+            v-model="sourceForm.syncFreq"
+            placeholder="请选择同步频率"
+            style="width: 100%"
+          >
             <el-option label="实时同步" value="实时同步"></el-option>
             <el-option label="每30分钟同步" value="每30分钟同步"></el-option>
             <el-option label="每1小时同步" value="每1小时同步"></el-option>
@@ -220,18 +394,24 @@
     </el-dialog>
 
     <!-- 线下数据上传对话框 -->
-    <el-dialog :title="`线下数据上传 - ${currentOfflineSource ? currentOfflineSource.sourceName : ''}`" :visible.sync="offlineUploadDialogVisible" width="800px">
+    <el-dialog
+      :title="`线下数据上传 - ${
+        currentOfflineSource ? currentOfflineSource.sourceName : ''
+      }`"
+      :visible.sync="offlineUploadDialogVisible"
+      width="800px"
+    >
       <div class="offline-upload-content">
         <el-alert
           title="上传说明"
           type="info"
           :closable="false"
           show-icon
-          style="margin-bottom: 20px;"
+          style="margin-bottom: 20px"
         >
           <template slot="default">
             <p>请按照以下步骤上传线下数据:</p>
-            <ol style="padding-left: 20px; margin: 10px 0;">
+            <ol style="padding-left: 20px; margin: 10px 0">
               <li>下载数据模板文件</li>
               <li>按照模板格式填写数据</li>
               <li>上传填写好的数据文件</li>
@@ -259,30 +439,58 @@
             drag
           >
             <i class="el-icon-upload"></i>
-            <div class="el-upload__text">将文件拖到此处,或<em>点击上传</em></div>
-            <div class="el-upload__tip" slot="tip">支持 xlsx、xls、csv 格式的文件,单个文件不超过10MB</div>
+            <div class="el-upload__text">
+              将文件拖到此处,或<em>点击上传</em>
+            </div>
+            <div class="el-upload__tip" slot="tip">
+              支持 xlsx、xls、csv 格式的文件,单个文件不超过10MB
+            </div>
           </el-upload>
         </div>
 
         <div class="upload-section">
           <h4>3. 已上传文件列表</h4>
-          <el-table :data="uploadedFiles" border stripe size="small" max-height="300">
-            <el-table-column prop="name" label="文件名" min-width="200"></el-table-column>
+          <el-table
+            :data="uploadedFiles"
+            border
+            stripe
+            size="small"
+            max-height="300"
+          >
+            <el-table-column
+              prop="name"
+              label="文件名"
+              min-width="200"
+            ></el-table-column>
             <el-table-column prop="size" label="文件大小" width="120">
               <template slot-scope="scope">
                 {{ formatFileSize(scope.row.size) }}
               </template>
             </el-table-column>
-            <el-table-column prop="status" label="状态" width="100" align="center">
+            <el-table-column
+              prop="status"
+              label="状态"
+              width="100"
+              align="center"
+            >
               <template slot-scope="scope">
-                <el-tag :type="scope.row.status === 'success' ? 'success' : 'warning'" size="small">
-                  {{ scope.row.status === 'success' ? '上传成功' : '上传中' }}
+                <el-tag
+                  :type="scope.row.status === 'success' ? 'success' : 'warning'"
+                  size="small"
+                >
+                  {{ scope.row.status === "success" ? "上传成功" : "上传中" }}
                 </el-tag>
               </template>
             </el-table-column>
             <el-table-column label="操作" width="100" align="center">
               <template slot-scope="scope">
-                <el-button type="text" size="small" @click="removeUploadedFile(scope.$index)" style="color: #f56c6c;">删除</el-button>
+                <el-button
+                  type="text"
+                  size="small"
+                  @click="removeUploadedFile(scope.$index)"
+                  style="color: #f56c6c"
+                  >删除</el-button
+                >
               </template>
             </el-table-column>
           </el-table>
@@ -290,7 +498,9 @@
       </div>
       <div slot="footer">
         <el-button @click="offlineUploadDialogVisible = false">关闭</el-button>
-        <el-button type="primary" @click="submitOfflineData">提交数据</el-button>
+        <el-button type="primary" @click="submitOfflineData"
+          >提交数据</el-button
+        >
       </div>
     </el-dialog>
   </div>
@@ -304,7 +514,7 @@ export default {
   name: "DataConfig",
   data() {
     return {
-      orgTreeData:[],
+      orgTreeData: [],
       activeTab: "org",
       orgSearch: "",
       selectedOrg: null,
@@ -314,12 +524,12 @@ export default {
         sourceCode: "",
         sourceType: "online",
         syncFreq: "每日同步",
-        status: "sync"
+        status: "sync",
       },
       majorForm: {
         majorId: "",
         mobileSources: [],
-        webSources: []
+        webSources: [],
       },
       majorConfigList: [],
       SENSING_ACCESS_SOURCES,
@@ -327,14 +537,14 @@ export default {
       offlineUploadDialogVisible: false,
       currentOfflineSource: null,
       uploadUrl: "#",
-      uploadedFiles: []
+      uploadedFiles: [],
     };
   },
   computed: {
     orgTreeProps() {
       return {
         children: "children",
-        label: "name"
+        label: "name",
       };
     },
     majorCategories() {
@@ -342,11 +552,13 @@ export default {
     },
     offlineSources() {
       // 获取所有线下接入的数据源
-      const sources = this.orgConfigSources.filter(source => source.sourceType === 'offline');
-      console.log('orgConfigSources:', this.orgConfigSources);
-      console.log('offlineSources:', sources);
+      const sources = this.orgConfigSources.filter(
+        (source) => source.sourceType === "offline",
+      );
+      console.log("orgConfigSources:", this.orgConfigSources);
+      console.log("offlineSources:", sources);
       return sources;
-    }
+    },
   },
   mounted() {
     this.initOrgTreeData();
@@ -376,11 +588,23 @@ export default {
                   code: "YX01_QY",
                   configured: false,
                   children: [
-                    { id: "team-1-1", name: "运行一班", type: "team", code: "YX01_QY01", configured: true },
-                    { id: "team-1-2", name: "运行二班", type: "team", code: "YX01_QY02", configured: false }
-                  ]
-                }
-              ]
+                    {
+                      id: "team-1-1",
+                      name: "运行一班",
+                      type: "team",
+                      code: "YX01_QY01",
+                      configured: true,
+                    },
+                    {
+                      id: "team-1-2",
+                      name: "运行二班",
+                      type: "team",
+                      code: "YX01_QY02",
+                      configured: false,
+                    },
+                  ],
+                },
+              ],
             },
             {
               id: "dept-2",
@@ -389,9 +613,21 @@ export default {
               code: "SC_JSB",
               configured: false,
               children: [
-                { id: "team-2-1", name: "检修中心", type: "team", code: "SC_JSB_JXZX", configured: false },
-                { id: "team-2-2", name: "检修一班", type: "team", code: "SC_JSB_JXYB", configured: true }
-              ]
+                {
+                  id: "team-2-1",
+                  name: "检修中心",
+                  type: "team",
+                  code: "SC_JSB_JXZX",
+                  configured: false,
+                },
+                {
+                  id: "team-2-2",
+                  name: "检修一班",
+                  type: "team",
+                  code: "SC_JSB_JXYB",
+                  configured: true,
+                },
+              ],
             },
             {
               id: "dept-3",
@@ -400,11 +636,17 @@ export default {
               code: "HR_B",
               configured: true,
               children: [
-                { id: "team-3-1", name: "干部管理科", type: "team", code: "HR_B_GBK", configured: false }
-              ]
-            }
-          ]
-        }
+                {
+                  id: "team-3-1",
+                  name: "干部管理科",
+                  type: "team",
+                  code: "HR_B_GBK",
+                  configured: false,
+                },
+              ],
+            },
+          ],
+        },
       ];
     },
     filterOrgNode(value, data) {
@@ -429,12 +671,12 @@ export default {
         sourceCode: "",
         sourceType: "online",
         syncFreq: "每日同步",
-        status: "sync"
+        status: "sync",
       };
       this.sourceDialogVisible = true;
     },
     onSourceSelect(code) {
-      const source = this.SENSING_ACCESS_SOURCES.find(s => s.code === code);
+      const source = this.SENSING_ACCESS_SOURCES.find((s) => s.code === code);
       if (source) {
         this.sourceForm.sourceType = source.category;
         this.sourceForm.syncFreq = source.defaultWeb.syncFreq;
@@ -442,10 +684,10 @@ export default {
       }
     },
     isSourceSelected(code) {
-      return this.orgConfigSources.some(s => s.sourceCode === code);
+      return this.orgConfigSources.some((s) => s.sourceCode === code);
     },
     getSourceName(code) {
-      const source = this.SENSING_ACCESS_SOURCES.find(s => s.code === code);
+      const source = this.SENSING_ACCESS_SOURCES.find((s) => s.code === code);
       return source ? source.name : code;
     },
     confirmAddSource() {
@@ -453,17 +695,19 @@ export default {
         this.$message.warning("请选择数据源");
         return;
       }
-      
-      const source = this.SENSING_ACCESS_SOURCES.find(s => s.code === this.sourceForm.sourceCode);
+
+      const source = this.SENSING_ACCESS_SOURCES.find(
+        (s) => s.code === this.sourceForm.sourceCode,
+      );
       const newConfig = {
         id: Date.now(),
         sourceCode: this.sourceForm.sourceCode,
         sourceName: source.name,
         sourceType: this.sourceForm.sourceType,
         syncFreq: this.sourceForm.syncFreq,
-        status: this.sourceForm.status
+        status: this.sourceForm.status,
       };
-      
+
       this.orgConfigSources.push(newConfig);
       this.saveOrgConfig();
       this.sourceDialogVisible = false;
@@ -474,11 +718,11 @@ export default {
         sourceCode: config.sourceCode,
         sourceType: config.sourceType,
         syncFreq: config.syncFreq,
-        status: config.status
+        status: config.status,
       };
       this.sourceDialogVisible = true;
-      
-      const index = this.orgConfigSources.findIndex(s => s.id === config.id);
+
+      const index = this.orgConfigSources.findIndex((s) => s.id === config.id);
       if (index > -1) {
         this.orgConfigSources.splice(index, 1);
       }
@@ -487,15 +731,20 @@ export default {
       this.$confirm("确定移除该数据源配置吗？", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
-        type: "warning"
-      }).then(() => {
-        this.orgConfigSources.splice(index, 1);
-        this.saveOrgConfig();
-        this.$message.success("已移除");
-      }).catch(() => {});
+        type: "warning",
+      })
+        .then(() => {
+          this.orgConfigSources.splice(index, 1);
+          this.saveOrgConfig();
+          this.$message.success("已移除");
+        })
+        .catch(() => {});
     },
     saveOrgConfig() {
-      localStorage.setItem(`org_config_${this.selectedOrg.id}`, JSON.stringify(this.orgConfigSources));
+      localStorage.setItem(
+        `org_config_${this.selectedOrg.id}`,
+        JSON.stringify(this.orgConfigSources),
+      );
       this.selectedOrg.configured = this.orgConfigSources.length > 0;
     },
     saveMajorConfig() {
@@ -503,23 +752,27 @@ export default {
         this.$message.warning("请选择专业分类");
         return;
       }
-      
-      const major = this.majorCategories.find(m => m.id === this.majorForm.majorId);
+
+      const major = this.majorCategories.find(
+        (m) => m.id === this.majorForm.majorId,
+      );
       const newConfig = {
         id: Date.now(),
         majorId: this.majorForm.majorId,
         majorPath: major.path,
         mobileSources: [...this.majorForm.mobileSources],
-        webSources: [...this.majorForm.webSources]
+        webSources: [...this.majorForm.webSources],
       };
-      
-      const existingIndex = this.majorConfigList.findIndex(c => c.majorId === this.majorForm.majorId);
+
+      const existingIndex = this.majorConfigList.findIndex(
+        (c) => c.majorId === this.majorForm.majorId,
+      );
       if (existingIndex > -1) {
         this.majorConfigList[existingIndex] = newConfig;
       } else {
         this.majorConfigList.push(newConfig);
       }
-      
+
       this.saveMajorConfigList();
       this.$message.success("配置保存成功");
     },
@@ -527,25 +780,27 @@ export default {
       this.majorForm = {
         majorId: config.majorId,
         mobileSources: [...config.mobileSources],
-        webSources: [...config.webSources]
+        webSources: [...config.webSources],
       };
     },
     deleteMajorConfig(index) {
       this.$confirm("确定删除该专业分类配置吗？", "提示", {
         confirmButtonText: "确定",
         cancelButtonText: "取消",
-        type: "warning"
-      }).then(() => {
-        this.majorConfigList.splice(index, 1);
-        this.saveMajorConfigList();
-        this.$message.success("已删除");
-      }).catch(() => {});
+        type: "warning",
+      })
+        .then(() => {
+          this.majorConfigList.splice(index, 1);
+          this.saveMajorConfigList();
+          this.$message.success("已删除");
+        })
+        .catch(() => {});
     },
     resetMajorForm() {
       this.majorForm = {
         majorId: "",
         mobileSources: [],
-        webSources: []
+        webSources: [],
       };
     },
     loadMajorConfigList() {
@@ -555,7 +810,10 @@ export default {
       }
     },
     saveMajorConfigList() {
-      localStorage.setItem("major_config_list", JSON.stringify(this.majorConfigList));
+      localStorage.setItem(
+        "major_config_list",
+        JSON.stringify(this.majorConfigList),
+      );
     },
     // 线下数据上传相关方法
     openOfflineDataUpload(source) {
@@ -573,29 +831,29 @@ export default {
         this.$message.error("文件大小不能超过10MB!");
         return false;
       }
-      
+
       // 添加到文件列表
       this.uploadedFiles.push({
         name: file.name,
         size: file.size,
-        status: 'uploading'
+        status: "uploading",
       });
-      
+
       return true;
     },
     handleUploadSuccess(response, file, fileList) {
       // 更新文件状态为成功
-      const index = this.uploadedFiles.findIndex(f => f.name === file.name);
+      const index = this.uploadedFiles.findIndex((f) => f.name === file.name);
       if (index > -1) {
-        this.uploadedFiles[index].status = 'success';
+        this.uploadedFiles[index].status = "success";
       }
       this.$message.success(`${file.name} 上传成功`);
     },
     handleUploadError(err, file, fileList) {
       // 更新文件状态为失败
-      const index = this.uploadedFiles.findIndex(f => f.name === file.name);
+      const index = this.uploadedFiles.findIndex((f) => f.name === file.name);
       if (index > -1) {
-        this.uploadedFiles[index].status = 'error';
+        this.uploadedFiles[index].status = "error";
       }
       this.$message.error(`${file.name} 上传失败`);
     },
@@ -604,11 +862,11 @@ export default {
     },
     formatFileSize(size) {
       if (size < 1024) {
-        return size + ' B';
+        return size + " B";
       } else if (size < 1024 * 1024) {
-        return (size / 1024).toFixed(2) + ' KB';
+        return (size / 1024).toFixed(2) + " KB";
       } else {
-        return (size / 1024 / 1024).toFixed(2) + ' MB';
+        return (size / 1024 / 1024).toFixed(2) + " MB";
       }
     },
     submitOfflineData() {
@@ -616,20 +874,26 @@ export default {
         this.$message.warning("请先上传数据文件");
         return;
       }
-      
+
       // 检查是否有上传成功的文件
-      const successFiles = this.uploadedFiles.filter(f => f.status === 'success');
+      const successFiles = this.uploadedFiles.filter(
+        (f) => f.status === "success",
+      );
       if (successFiles.length === 0) {
         this.$message.warning("没有上传成功的文件");
         return;
       }
-      
+
       // 模拟提交数据
-      const sourceName = this.currentOfflineSource ? this.currentOfflineSource.sourceName : '';
-      this.$message.success(`已为"${sourceName}"提交 ${successFiles.length} 个文件的数据`);
+      const sourceName = this.currentOfflineSource
+        ? this.currentOfflineSource.sourceName
+        : "";
+      this.$message.success(
+        `已为"${sourceName}"提交 ${successFiles.length} 个文件的数据`,
+      );
       this.offlineUploadDialogVisible = false;
-    }
-  }
+    },
+  },
 };
 </script>
 
