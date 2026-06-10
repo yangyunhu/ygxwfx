@@ -5,7 +5,9 @@
       <div class="page-header">
         <div class="header-left">
           <h1 class="page-title">组织机构层级管理</h1>
-          <p class="page-subtitle">功能模块权限配置与组织机构层级相结合，支持多级自定义设置，确保不同层级业务人员只能访问其权限范围内的功能模块。</p>
+          <p class="page-subtitle">
+            查看各组织机构下的人员及其拥有的角色，了解权限分配情况。
+          </p>
         </div>
       </div>
     </div>
@@ -53,127 +55,96 @@
         </div>
       </div>
 
-      <!-- 右侧配置区域 -->
+      <!-- 右侧人员和角色展示区域 -->
       <div class="main-panel">
         <div v-if="selectedOrgId" class="config-card">
           <!-- 卡片头部 -->
           <div class="card-header-row">
             <div class="card-title">
-              <i class="el-icon-settings"></i>
-              <span>机构权限配置</span>
+              <i class="el-icon-users"></i>
+              <span>机构人员管理</span>
               <span class="org-name-tag">{{ orgName }}</span>
+            </div>
+            <div class="card-stats">
+              <span class="stat-badge">
+                <i class="el-icon-user"></i>
+                <span>{{ userList.length }} 人</span>
+              </span>
             </div>
           </div>
 
           <div class="config-content">
-            <!-- 机构基本配置 -->
-            <el-card class="config-section" body-style="padding: 16px;">
+            <!-- 人员列表 -->
+            <el-card class="info-section" body-style="padding: 0;">
               <div class="section-header">
                 <i class="el-icon-user"></i>
-                <span class="section-title">基本配置</span>
+                <span class="section-title">人员列表</span>
               </div>
-              <el-form label-width="120px" size="small" class="config-form">
-                <el-row :gutter="24">
-                  <el-col :span="12">
-                    <el-form-item label="继承上级权限">
-                      <el-switch
-                        v-model="form.inherit"
-                        active-text="是"
-                        inactive-text="否"
-                        @change="saveOrgConfig"
-                      />
-                      <span class="form-hint">启用后将自动继承上级机构的权限配置</span>
-                    </el-form-item>
-                  </el-col>
-                  <el-col :span="12">
-                    <el-form-item label="数据访问范围">
-                      <el-select
-                        v-model="form.dataScope"
-                        style="width: 100%"
-                        @change="saveOrgConfig"
-                        :disabled="form.inherit"
-                      >
-                        <el-option
-                          v-for="o in dataScopeOptions"
-                          :key="o.value"
-                          :label="o.label"
-                          :value="o.value"
-                        />
-                      </el-select>
-                    </el-form-item>
-                  </el-col>
-                </el-row>
-                <el-form-item label="备注说明">
-                  <el-input
-                    v-model="form.remark"
-                    type="textarea"
-                    :rows="2"
-                    placeholder="请输入备注信息"
-                    @blur="saveOrgConfig"
-                    :disabled="form.inherit"
-                  />
-                </el-form-item>
-              </el-form>
-            </el-card>
-
-            <!-- 功能模块授权 -->
-            <el-card class="config-section" body-style="padding: 0;">
-              <div class="section-header">
-                <i class="el-icon-menu"></i>
-                <span class="section-title">功能模块授权</span>
-                <div class="section-actions">
-                  <el-button
-                    size="small"
-                    type="primary"
-                    plain
-                    :disabled="form.inherit"
-                    @click="setAllModules(true)"
-                  >
-                    <i class="el-icon-check"></i>
-                    全部启用
-                  </el-button>
-                  <el-button
-                    size="small"
-                    :disabled="form.inherit"
-                    @click="setAllModules(false)"
-                  >
-                    <i class="el-icon-close"></i>
-                    全部禁用
-                  </el-button>
-                </div>
-              </div>
-              <div class="module-table-wrapper">
+              <div v-if="userList.length > 0" class="user-list-wrapper">
                 <el-table
-                  :data="moduleRows"
+                  :data="currentPageUsers"
                   border
                   size="small"
-                  :height="tableHeight"
+                  max-height="100%"
                 >
                   <el-table-column
                     prop="name"
-                    label="功能模块"
-                    min-width="220"
+                    label="人员姓名"
+                    min-width="120"
                   />
                   <el-table-column
-                    prop="path"
-                    label="路由路径"
-                    min-width="200"
-                    show-overflow-tooltip
+                    prop="username"
+                    label="用户名"
+                    min-width="120"
                   />
                   <el-table-column
-                    label="授权状态"
-                    width="140"
-                    align="center"
-                  >
+                    prop="position"
+                    label="职位"
+                    min-width="120"
+                  />
+                  <el-table-column
+                    prop="phone"
+                    label="联系电话"
+                    min-width="130"
+                  />
+                  <el-table-column label="所属角色" min-width="200">
                     <template slot-scope="{ row }">
-                      <el-switch
-                        :value="isModuleEnabled(row.id)"
-                        :disabled="form.inherit"
-                        @change="(val) => toggleModule(row.id, val)"
-                      />
+                      <el-tag
+                        v-for="role in row.roles"
+                        :key="role.id"
+                        type="info"
+                        size="small"
+                        class="role-tag"
+                      >
+                        {{ role.name }}
+                      </el-tag>
+                      <span v-if="row.roles.length === 0" class="empty-text"
+                        >无角色</span
+                      >
                     </template>
                   </el-table-column>
                 </el-table>
+                <!-- 分页组件 -->
+                <div class="pagination-wrapper">
+                  <el-pagination
+                    @size-change="handleSizeChange"
+                    @current-change="handleCurrentChange"
+                    :current-page="pagination.currentPage"
+                    :page-sizes="[10, 20, 50, 100]"
+                    :page-size="pagination.pageSize"
+                    layout="total, sizes, prev, pager, next, jumper"
+                    :total="userList.length"
+                    background
+                    size="small"
+                  >
+                  </el-pagination>
+                </div>
+              </div>
+              <div v-else class="empty-content">
+                <div class="empty-icon">
+                  <i class="el-icon-user"></i>
+                </div>
+                <p>该机构暂无人员</p>
               </div>
             </el-card>
           </div>
@@ -183,30 +154,157 @@
         <div v-else class="empty-card">
           <el-empty description="请选择组织机构" class="custom-empty">
             <template #image>
-              <i class="el-icon-office-building" style="font-size: 48px; color: #d9d9d9;"></i>
+              <i
+                class="el-icon-office-building"
+                style="font-size: 48px; color: #d9d9d9"
+              ></i>
             </template>
             <template #description>
               <span>请选择组织机构</span>
-              <p style="margin-top: 8px; font-size: 12px; color: #999;">从左侧组织机构树中选择一个部门或单位进行权限配置</p>
+              <p style="margin-top: 8px; font-size: 12px; color: #999">
+                从左侧组织机构树中选择一个部门查看人员信息
+              </p>
             </template>
           </el-empty>
         </div>
       </div>
     </div>
+
+    <!-- 人员详情弹窗 -->
+    <el-dialog
+      title="人员详情"
+      :visible.sync="userDetailVisible"
+      width="500px"
+      :close-on-click-modal="false"
+    >
+      <el-descriptions :column="2" border size="small" v-if="selectedUser">
+        <el-descriptions-item label="姓名">{{
+          selectedUser.name
+        }}</el-descriptions-item>
+        <el-descriptions-item label="用户名">{{
+          selectedUser.username
+        }}</el-descriptions-item>
+        <el-descriptions-item label="职位">{{
+          selectedUser.position || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="联系电话">{{
+          selectedUser.phone || "-"
+        }}</el-descriptions-item>
+        <el-descriptions-item label="所属机构" :span="2">{{
+          orgName
+        }}</el-descriptions-item>
+        <el-descriptions-item label="拥有角色" :span="2">
+          <div class="detail-roles">
+            <el-tag
+              v-for="role in selectedUser.roles"
+              :key="role.id"
+              type="info"
+              size="small"
+            >
+              {{ role.name }}
+            </el-tag>
+            <span v-if="selectedUser.roles.length === 0" class="empty-text"
+              >无角色</span
+            >
+          </div>
+        </el-descriptions-item>
+      </el-descriptions>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import { loadOrgTree } from "../utils/orgManagement";
 import {
-  getAllModuleLeaves,
-  getOrgLevelPermission,
-  updateOrgLevelPermission,
-  updateOrgLevelModule,
-  DATA_SCOPE_OPTIONS,
   filterOrgTreeForPermission,
   getOrgNodeName,
 } from "../utils/permissionManagement";
+
+// 模拟数据：组织机构人员
+const generateOrgUsers = (orgId) => {
+  const userTemplates = [
+    {
+      name: "张伟",
+      username: "zhangwei",
+      position: "部门经理",
+      phone: "13800138001",
+    },
+    {
+      name: "李娜",
+      username: "lina",
+      position: "业务主管",
+      phone: "13800138002",
+    },
+    {
+      name: "王强",
+      username: "wangqiang",
+      position: "技术专员",
+      phone: "13800138003",
+    },
+    {
+      name: "刘洋",
+      username: "liuyang",
+      position: "数据分析师",
+      phone: "13800138004",
+    },
+    {
+      name: "陈静",
+      username: "chenjing",
+      position: "管理员",
+      phone: "13800138005",
+    },
+    {
+      name: "李明",
+      username: "liming",
+      position: "项目经理",
+      phone: "13800138006",
+    },
+    {
+      name: "赵丽",
+      username: "zhaoli",
+      position: "系统运维",
+      phone: "13800138007",
+    },
+    {
+      name: "孙浩",
+      username: "sunhao",
+      position: "安全专员",
+      phone: "13800138008",
+    },
+  ];
+
+  const roleTemplates = [
+    { id: "role-admin", name: "系统管理员" },
+    { id: "role-manager", name: "部门管理员" },
+    { id: "role-user", name: "普通用户" },
+    { id: "role-data", name: "数据管理员" },
+    { id: "role-security", name: "安全管理员" },
+    { id: "role-audit", name: "审计员" },
+  ];
+
+  // 根据orgId生成不同数量的用户
+  const userCount = (orgId % 8) + 2;
+  const users = [];
+
+  for (let i = 0; i < userCount; i++) {
+    const template = userTemplates[i % userTemplates.length];
+    // 为每个用户随机分配1-3个角色
+    const roleCount = Math.floor(Math.random() * 3) + 1;
+    const shuffledRoles = [...roleTemplates].sort(() => Math.random() - 0.5);
+    const userRoles = shuffledRoles.slice(0, roleCount);
+
+    users.push({
+      id: `${orgId}-${i}`,
+      ...template,
+      roles: userRoles,
+    });
+  }
+
+  return users;
+};
+
+// 缓存用户数据
+const userCache = {};
 
 export default {
   name: "OrgLevelPermission",
@@ -215,10 +313,14 @@ export default {
       orgTree: [],
       orgKeyword: "",
       selectedOrgId: null,
-      form: { inherit: true, dataScope: "self_and_children", modules: {}, remark: "" },
-      dataScopeOptions: DATA_SCOPE_OPTIONS,
-      moduleRows: getAllModuleLeaves(),
+      userList: [],
       tableHeight: 300,
+      userDetailVisible: false,
+      selectedUser: null,
+      pagination: {
+        currentPage: 1,
+        pageSize: 10,
+      },
     };
   },
   computed: {
@@ -228,13 +330,19 @@ export default {
     orgName() {
       return getOrgNodeName(this.selectedOrgId);
     },
+    currentPageUsers() {
+      const start =
+        (this.pagination.currentPage - 1) * this.pagination.pageSize;
+      const end = start + this.pagination.pageSize;
+      return this.userList.slice(start, end);
+    },
   },
   mounted() {
     this.orgTree = loadOrgTree();
     const root = this.orgTree[0];
     if (root) {
       this.selectedOrgId = root.id;
-      this.loadOrgConfig();
+      this.loadOrgUsers();
       this.$nextTick(() => {
         if (this.$refs.orgTree) {
           this.$refs.orgTree.setCurrentKey(this.selectedOrgId);
@@ -249,47 +357,31 @@ export default {
   },
   methods: {
     updateTableHeight() {
-      this.tableHeight = Math.max(300, window.innerHeight - 500);
+      this.tableHeight = Math.max(250, window.innerHeight - 480);
     },
     handleOrgClick(data) {
       this.selectedOrgId = data.id;
-      this.loadOrgConfig();
+      this.loadOrgUsers();
     },
-    loadOrgConfig() {
-      const cfg = getOrgLevelPermission(this.selectedOrgId);
-      this.form = {
-        inherit: cfg.inherit !== false,
-        dataScope: cfg.dataScope || "self_and_children",
-        modules: { ...(cfg.modules || {}) },
-        remark: cfg.remark || "",
-      };
+    loadOrgUsers() {
+      // 重置分页
+      this.pagination.currentPage = 1;
+      // 从缓存获取或生成用户数据
+      if (!userCache[this.selectedOrgId]) {
+        userCache[this.selectedOrgId] = generateOrgUsers(this.selectedOrgId);
+      }
+      this.userList = userCache[this.selectedOrgId];
     },
-    saveOrgConfig() {
-      updateOrgLevelPermission(this.selectedOrgId, {
-        inherit: this.form.inherit,
-        dataScope: this.form.dataScope,
-        remark: this.form.remark,
-        modules: this.form.modules,
-      });
-      this.$message.success("机构权限配置已保存");
+    viewUserDetail(user) {
+      this.selectedUser = user;
+      this.userDetailVisible = true;
     },
-    isModuleEnabled(moduleId) {
-      if (this.form.inherit) return true;
-      return this.form.modules[moduleId] !== false;
+    handleSizeChange(val) {
+      this.pagination.pageSize = val;
+      this.pagination.currentPage = 1;
     },
-    toggleModule(moduleId, enabled) {
-      updateOrgLevelModule(this.selectedOrgId, moduleId, enabled);
-      this.form.modules[moduleId] = enabled;
-      this.form.inherit = false;
-      this.$message.success(enabled ? "已授权" : "已取消授权");
-    },
-    setAllModules(enabled) {
-      this.moduleRows.forEach((m) => {
-        this.form.modules[m.id] = enabled;
-        updateOrgLevelModule(this.selectedOrgId, m.id, enabled);
-      });
-      this.form.inherit = false;
-      this.$message.success(enabled ? "已全部启用" : "已全部禁用");
+    handleCurrentChange(val) {
+      this.pagination.currentPage = val;
     },
   },
 };
@@ -432,11 +524,6 @@ export default {
   background: #fff;
 }
 
-.config-card >>> .el-card__body {
-  padding: 0;
-  margin: 0;
-}
-
 .card-header-row {
   display: flex;
   justify-content: space-between;
@@ -469,6 +556,25 @@ export default {
   font-weight: normal;
 }
 
+.card-stats {
+  display: flex;
+  gap: 12px;
+}
+
+.stat-badge {
+  display: flex;
+  align-items: center;
+  padding: 6px 12px;
+  background: #f0f9ff;
+  border-radius: 20px;
+  font-size: 12px;
+  color: #0ea5e9;
+}
+
+.stat-badge i {
+  margin-right: 6px;
+}
+
 .config-content {
   flex: 1;
   padding: 16px;
@@ -478,9 +584,13 @@ export default {
   gap: 16px;
 }
 
-.config-section {
+.info-section {
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.06);
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .section-header {
@@ -505,30 +615,74 @@ export default {
   color: #334155;
 }
 
-.section-actions {
-  margin-left: auto;
+/* 用户列表 */
+.user-list-wrapper {
+  flex: 1;
   display: flex;
-  gap: 8px;
+  flex-direction: column;
+  min-height: 0;
 }
 
-.config-form {
+.user-list-wrapper >>> .el-table {
+  --el-table-header-text-color: #64748b;
+  --el-table-row-hover-bg-color: #f8fafc;
+  flex: 1;
+}
+
+/* 分页 */
+.pagination-wrapper {
+  padding: 12px 16px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  display: flex;
+  justify-content: center;
+}
+
+.pagination-wrapper >>> .el-pagination {
+  --el-pagination-font-size: 12px;
+}
+
+.role-tag {
+  margin-right: 6px;
+  margin-bottom: 4px;
+}
+
+.empty-text {
+  color: #94a3b8;
+  font-size: 12px;
+}
+
+.empty-content {
+  padding: 40px;
+  text-align: center;
+}
+
+.empty-content .empty-icon {
+  width: 64px;
+  height: 64px;
+  margin: 0 auto 16px;
+  background: #f1f5f9;
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-content .empty-icon i {
+  font-size: 32px;
+  color: #cbd5e1;
+}
+
+.empty-content p {
+  color: #94a3b8;
   margin: 0;
 }
 
-.form-hint {
-  margin-left: 8px;
-  font-size: 12px;
-  color: #94a3b8;
-}
-
-.module-table-wrapper {
-  max-height: 400px;
-  overflow: hidden;
-}
-
-.module-table-wrapper >>> .el-table {
-  --el-table-header-text-color: #64748b;
-  --el-table-row-hover-bg-color: #f8fafc;
+/* 人员详情弹窗 */
+.detail-roles {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
 }
 
 /* 空状态卡片 */
