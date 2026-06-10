@@ -181,9 +181,7 @@
                   </div>
                   <p class="form-tip">
                     源表共
-                    {{
-                      ruleSchemaFieldCount
-                    }}
+                    {{ ruleSchemaFieldCount }}
                     个字段可选；下方标签展示当前全部已选项。
                   </p>
                 </el-form-item>
@@ -2574,23 +2572,39 @@ export default {
   max-width: 100%;
 }
 
+.tab-panel--output {
+  display: flex;
+  flex-direction: column;
+  min-height: 500px;
+  overflow-x: auto;
+}
+
+/* 允许数据结果输出页面水平滚动 */
+.sensing-basic-page .main-content {
+  overflow-x: auto !important;
+}
+
 .content-wrapper {
   display: flex;
   gap: 16px;
   min-height: 0;
+  flex: 1;
 }
 
 .table-container {
   flex: 1;
-  overflow: hidden;
   padding: 16px;
   min-height: 0;
 }
 
 .table-hscroll-viewport {
-  overflow-x: auto;
-  overflow-y: visible;
-  width: 100%;
+  display: block !important;
+  width: 100% !important;
+  max-width: 100% !important;
+  min-width: 0 !important;
+  overflow-x: auto !important;
+  overflow-y: visible !important;
+  -webkit-overflow-scrolling: touch;
 }
 
 .third-tabs {
@@ -2697,8 +2711,7 @@ export default {
   border-radius: 12px;
   border: 1px solid #e8eaed;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
-  display: flex;
-  flex-direction: column;
+  display: block;
 }
 
 .panel-tip {
