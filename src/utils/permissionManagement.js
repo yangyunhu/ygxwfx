@@ -175,7 +175,7 @@ export const SYSTEM_MODULE_TREE = [
           { id: "mod-role-hierarchy", name: "角色层级管理", path: "/role-hierarchy" },
           { id: "mod-role-user", name: "角色与用户关联", path: "/role-user-association" },
           { id: "mod-module-perm", name: "功能模块权限分配", path: "/module-permission-allocation" },
-          { id: "mod-org-level-perm", name: "组织机构层级分配", path: "/org-level-permission" },
+          { id: "mod-org-level-perm", name: "组织机构层级管理", path: "/org-level-permission" },
           { id: "mod-perm-control", name: "权限控制与分配", path: "/permission-control" },
         ],
       },

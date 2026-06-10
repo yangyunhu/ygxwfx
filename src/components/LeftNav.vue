@@ -200,7 +200,7 @@
             </el-menu-item>
             <el-menu-item index="/org-level-permission">
               <i class="el-icon-document"></i>
-              <span>组织机构层级分配</span>
+              <span>组织机构层级管理</span>
             </el-menu-item>
             <el-menu-item index="/permission-control">
               <i class="el-icon-document"></i>

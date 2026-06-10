@@ -285,7 +285,7 @@ export const PROJECT_FUNCTION_TREE = [
           { id: "mod-role-hierarchy", name: "角色层级管理" },
           { id: "mod-role-user", name: "角色与用户关联" },
           { id: "mod-module-perm", name: "功能模块权限分配" },
-          { id: "mod-org-level-perm", name: "组织机构层级分配" },
+          { id: "mod-org-level-perm", name: "组织机构层级管理" },
           { id: "mod-perm-control", name: "权限控制与分配" },
         ],
       },
