@@ -17,7 +17,7 @@
         <div class="org-config-wrapper">
           <!-- 左侧组织机构树 -->
           <div class="side-panel">
-            <el-card class="panel-card" body-style="padding: 0;">
+            <div class="panel-card">
               <div class="panel-header">
                 <i class="el-icon-office-building panel-icon"></i>
                 <span class="panel-title">组织机构树</span>
@@ -51,12 +51,7 @@
                   <span class="custom-tree-node" slot-scope="{ node, data }">
                     <span class="node-content">
                       <i
-                        :class="[
-                          'node-icon',
-                          data.type === 'team'
-                            ? 'el-icon-user'
-                            : 'el-icon-building',
-                        ]"
+                        :class="['node-icon', data.icon || 'el-icon-folder']"
                       ></i>
                       <span class="node-label">{{ node.label }}</span>
                     </span>
@@ -70,7 +65,7 @@
                   </span>
                 </el-tree>
               </div>
-            </el-card>
+            </div>
           </div>
 
           <!-- 右侧配置区域 -->
@@ -134,26 +129,6 @@
                     <code class="code-value">{{ selectedOrg.code }}</code>
                   </el-descriptions-item>
                 </el-descriptions>
-              </div>
-
-              <!-- 线下接入工具栏 -->
-              <div v-if="offlineSources.length > 0" class="offline-toolbar">
-                <div class="toolbar-header">
-                  <i class="el-icon-upload2"></i>
-                  <span>线下接入数据</span>
-                </div>
-                <div class="toolbar-buttons">
-                  <el-button
-                    v-for="source in offlineSources"
-                    :key="source.id"
-                    type="success"
-                    size="small"
-                    icon="el-icon-upload"
-                    @click="openOfflineDataUpload(source)"
-                  >
-                    {{ source.sourceName }}
-                  </el-button>
-                </div>
               </div>
 
               <!-- 数据源列表 -->
@@ -258,13 +233,20 @@
 
             <!-- 未选择组织机构时的空状态 -->
             <el-card v-else class="empty-card">
-              <div class="empty-state">
-                <div class="empty-icon-wrapper">
-                  <i class="el-icon-sitemap"></i>
-                </div>
-                <h3>请选择组织机构</h3>
-                <p>从左侧组织机构树中选择一个部门或班组</p>
-              </div>
+              <el-empty description="请选择组织机构" class="custom-empty">
+                <template #image>
+                  <i
+                    class="el-icon-sitemap"
+                    style="font-size: 48px; color: #d9d9d9"
+                  ></i>
+                </template>
+                <template #description>
+                  <span>请选择组织机构</span>
+                  <p style="margin-top: 8px; font-size: 12px; color: #999">
+                    从左侧组织机构树中选择一个部门或班组
+                  </p>
+                </template>
+              </el-empty>
             </el-card>
           </div>
         </div>
@@ -496,29 +478,6 @@
             <el-option label="单位线下自行导入" value="offline"></el-option>
           </el-select>
         </el-form-item>
-
-        <el-form-item label="同步频率">
-          <el-select
-            v-model="sourceForm.syncFreq"
-            placeholder="请选择同步频率"
-            style="width: 100%"
-            size="small"
-          >
-            <el-option label="实时同步" value="实时同步"></el-option>
-            <el-option label="每30分钟同步" value="每30分钟同步"></el-option>
-            <el-option label="每1小时同步" value="每1小时同步"></el-option>
-            <el-option label="每2小时同步" value="每2小时同步"></el-option>
-            <el-option label="每4小时同步" value="每4小时同步"></el-option>
-            <el-option label="每日同步" value="每日同步"></el-option>
-          </el-select>
-        </el-form-item>
-
-        <el-form-item label="接入状态">
-          <el-radio-group v-model="sourceForm.status" size="small">
-            <el-radio label="sync">已接入</el-radio>
-            <el-radio label="disconnect">待接入</el-radio>
-          </el-radio-group>
-        </el-form-item>
       </el-form>
 
       <div slot="footer" class="dialog-footer">
@@ -690,6 +649,7 @@
 <script>
 import { SENSING_ACCESS_SOURCES } from "../utils/sensingAccessSchemas";
 import { getEnabledLeafCategories } from "../utils/majorCategory";
+import { generateOrgTree } from "../utils/orgTree";
 
 export default {
   name: "DataConfig",
@@ -704,8 +664,6 @@ export default {
       sourceForm: {
         sourceCode: "",
         sourceType: "online",
-        syncFreq: "每日同步",
-        status: "sync",
       },
       majorForm: {
         majorId: "",
@@ -742,88 +700,20 @@ export default {
   },
   methods: {
     initOrgTreeData() {
-      this.orgTreeData = [
-        {
-          id: "unit-1",
-          name: "云南电网有限责任公司",
-          type: "unit",
-          code: "YN_CSG",
-          configured: false,
-          children: [
-            {
-              id: "dept-1",
-              name: "变电运行一所",
-              type: "dept",
-              code: "BYD_YX01",
-              configured: true,
-              children: [
-                {
-                  id: "team-1",
-                  name: "运行区",
-                  type: "team",
-                  code: "YX01_QY",
-                  configured: false,
-                  children: [
-                    {
-                      id: "team-1-1",
-                      name: "运行一班",
-                      type: "team",
-                      code: "YX01_QY01",
-                      configured: true,
-                    },
-                    {
-                      id: "team-1-2",
-                      name: "运行二班",
-                      type: "team",
-                      code: "YX01_QY02",
-                      configured: false,
-                    },
-                  ],
-                },
-              ],
-            },
-            {
-              id: "dept-2",
-              name: "生产技术部",
-              type: "dept",
-              code: "SC_JSB",
-              configured: false,
-              children: [
-                {
-                  id: "team-2-1",
-                  name: "检修中心",
-                  type: "team",
-                  code: "SC_JSB_JXZX",
-                  configured: false,
-                },
-                {
-                  id: "team-2-2",
-                  name: "检修一班",
-                  type: "team",
-                  code: "SC_JSB_JXYB",
-                  configured: true,
-                },
-              ],
-            },
-            {
-              id: "dept-3",
-              name: "人力资源部",
-              type: "dept",
-              code: "HR_B",
-              configured: true,
-              children: [
-                {
-                  id: "team-3-1",
-                  name: "干部管理科",
-                  type: "team",
-                  code: "HR_B_GBK",
-                  configured: false,
-                },
-              ],
-            },
-          ],
-        },
-      ];
+      const tree = generateOrgTree();
+      const addConfiguredFlag = (nodes) => {
+        return nodes.map((node) => {
+          const hasChildren = node.children && node.children.length > 0;
+          return {
+            ...node,
+            configured: false,
+            children: hasChildren
+              ? addConfiguredFlag(node.children)
+              : undefined,
+          };
+        });
+      };
+      this.orgTreeData = addConfiguredFlag(tree);
     },
     filterOrgNode(value, data) {
       if (!value) return true;
@@ -842,8 +732,6 @@ export default {
       this.sourceForm = {
         sourceCode: "",
         sourceType: "online",
-        syncFreq: "每日同步",
-        status: "sync",
       };
       this.sourceDialogVisible = true;
     },
@@ -851,8 +739,6 @@ export default {
       const source = this.SENSING_ACCESS_SOURCES.find((s) => s.code === code);
       if (source) {
         this.sourceForm.sourceType = source.category;
-        this.sourceForm.syncFreq = source.defaultWeb.syncFreq;
-        this.sourceForm.status = source.defaultWeb.status;
       }
     },
     isSourceSelected(code) {
@@ -876,8 +762,6 @@ export default {
         sourceCode: this.sourceForm.sourceCode,
         sourceName: source.name,
         sourceType: this.sourceForm.sourceType,
-        syncFreq: this.sourceForm.syncFreq,
-        status: this.sourceForm.status,
       };
 
       this.orgConfigSources.push(newConfig);
@@ -889,8 +773,6 @@ export default {
       this.sourceForm = {
         sourceCode: config.sourceCode,
         sourceType: config.sourceType,
-        syncFreq: config.syncFreq,
-        status: config.status,
       };
       this.sourceDialogVisible = true;
 
@@ -1068,9 +950,9 @@ export default {
 
 /* 页面头部 */
 .page-header-wrapper {
-  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  background: #409eff;
   padding: 24px 32px;
-  box-shadow: 0 4px 12px rgba(26, 115, 232, 0.2);
+  box-shadow: 0 4px 12px rgba(64, 158, 255, 0.2);
 }
 
 .page-header {
@@ -1131,9 +1013,9 @@ export default {
 .side-panel {
   width: 320px;
   flex-shrink: 0;
-  display: flex;
-  flex-direction: column;
-  min-height: calc(100vh - 220px);
+  height: calc(100vh - 220px);
+  max-height: calc(100vh - 220px);
+  overflow: hidden;
 }
 
 .main-panel {
@@ -1141,6 +1023,8 @@ export default {
   min-width: 0;
   display: flex;
   flex-direction: column;
+  height: calc(100vh - 220px);
+  max-height: calc(100vh - 220px);
 }
 
 /* 面板卡片 */
@@ -1148,17 +1032,20 @@ export default {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  height: 100%;
   display: flex;
   flex-direction: column;
-  flex: 1;
+  background: #fff;
 }
 
 .panel-header {
   display: flex;
   align-items: center;
-  padding: 16px 20px;
-  background: linear-gradient(135deg, #1a73e8 0%, #4285f4 100%);
+  padding: 14px 20px;
+  background: #409eff;
   color: #fff;
+  font-size: 14px;
+  font-weight: 600;
 }
 
 .panel-icon {
@@ -1194,19 +1081,17 @@ export default {
 }
 
 .org-tree >>> .el-tree-node__content {
-  height: 38px;
+  height: 36px;
   padding: 0 12px;
-  border-radius: 6px;
-  margin: 2px 0;
 }
 
 .org-tree >>> .el-tree-node__content:hover {
-  background: #f0f5ff;
+  background-color: #f5f7fa;
 }
 
 .org-tree >>> .el-tree-node.is-current > .el-tree-node__content {
-  background: linear-gradient(135deg, #e8f0fe 0%, #d3e3fd 100%);
-  border: 1px solid #93c5fd;
+  background-color: #ecf5ff;
+  color: #409eff;
 }
 
 .custom-tree-node {
@@ -1248,6 +1133,18 @@ export default {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+}
+
+.config-card >>> .el-card__body {
+  padding: 0;
+  margin: 0;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
 }
 
 .card-header-row {
@@ -1301,47 +1198,12 @@ export default {
   color: #64748b;
 }
 
-/* 线下接入工具栏 */
-.offline-toolbar {
-  margin: 16px 20px;
-  padding: 16px;
-  background: linear-gradient(135deg, #fef3c7 0%, #fde68a 100%);
-  border-radius: 8px;
-  border: 1px solid #fcd34d;
-}
-
-.toolbar-header {
-  display: flex;
-  align-items: center;
-  font-size: 14px;
-  font-weight: 600;
-  color: #92400e;
-  margin-bottom: 12px;
-}
-
-.toolbar-header i {
-  margin-right: 8px;
-}
-
-.toolbar-buttons {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 8px;
-}
-
-.toolbar-buttons >>> .el-button {
-  background: #f59e0b;
-  border-color: #f59e0b;
-}
-
-.toolbar-buttons >>> .el-button:hover {
-  background: #d97706;
-  border-color: #d97706;
-}
-
 /* 数据源列表区域 */
 .source-table-section {
   padding: 16px 20px;
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
 }
 
 .section-header {
@@ -1391,37 +1253,8 @@ export default {
   justify-content: center;
 }
 
-.empty-state {
+.custom-empty {
   text-align: center;
-  color: #94a3b8;
-}
-
-.empty-icon-wrapper {
-  width: 80px;
-  height: 80px;
-  margin: 0 auto 20px;
-  background: linear-gradient(135deg, #e2e8f0 0%, #cbd5e1 100%);
-  border-radius: 50%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-
-.empty-icon-wrapper i {
-  font-size: 40px;
-  color: #64748b;
-}
-
-.empty-state h3 {
-  margin: 0 0 8px 0;
-  font-size: 18px;
-  font-weight: 500;
-  color: #475569;
-}
-
-.empty-state p {
-  margin: 0;
-  font-size: 14px;
 }
 
 /* 删除按钮 */
