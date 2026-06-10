@@ -15,11 +15,20 @@
             class="role-search"
             @keyup.enter.native="handleRoleSearch"
           />
+          <div class="main-actions">
+            <el-button size="small" @click="openCreateRole">新增角色</el-button>
+            <el-button
+              size="small"
+              :disabled="!selectedRows.length"
+              @click="batchDeleteRoles"
+              >删除角色</el-button
+            >
+          </div>
         </div>
 
         <el-table
           ref="roleTable"
-          :data="filteredRoles"
+          :data="pagedRoles"
           border
           size="small"
           class="role-table"
@@ -85,6 +94,11 @@
                 @click="openPermissionDialog(row)"
               />
               <i
+                class="op-icon op-delete el-icon-close"
+                title="删除"
+                @click="deleteSingleRole(row)"
+              />
+              <i
                 class="op-icon op-perm el-icon-document"
                 title="关联人员"
                 @click="openRolePersonnelDialog(row)"
@@ -92,6 +106,29 @@
             </template>
           </el-table-column>
         </el-table>
+
+        <div class="main-pager">
+          <div class="pager-left">
+            <span class="pager-total">共{{ filteredRoles.length }}条记录</span>
+            <span class="pager-label">每页显示</span>
+            <span
+              v-for="size in pageSizeOptions"
+              :key="size"
+              class="page-size-item"
+              :class="{ active: pageSize === size }"
+              @click="changePageSize(size)"
+            >
+              {{ size }}
+            </span>
+          </div>
+          <el-pagination
+            small
+            layout="prev, pager, next, jumper"
+            :total="filteredRoles.length"
+            :current-page.sync="currentPage"
+            :page-size="pageSize"
+          />
+        </div>
       </main>
     </div>
 
@@ -108,9 +145,7 @@
       <div slot="title" class="app-role-dialog-header">
         <span class="app-role-dialog-title">{{ roleFormTitle }}</span>
         <div class="app-role-dialog-actions">
-          <el-button size="small" type="primary" @click="submitRoleForm"
-            >保存</el-button
-          >
+          <el-button size="small" type="primary" @click="submitRoleForm">保存</el-button>
         </div>
       </div>
 
@@ -148,8 +183,7 @@
             style="width: 100%"
           />
           <div class="desc-counter">
-            (您还能输入<span class="desc-remain">{{ descRemain }}</span
-            >个字符)
+            (您还能输入<span class="desc-remain">{{ descRemain }}</span>个字符)
           </div>
         </el-form-item>
       </el-form>
@@ -609,6 +643,17 @@ export default {
           this.$message.warning(e.message);
         }
       });
+    },
+    deleteSingleRole(row) {
+      this.$confirm(`确定删除角色「${row.name}」？`, "删除角色", {
+        type: "warning",
+      })
+        .then(() => {
+          deleteAppRole(this.selectedAppId, row.id);
+          this.reloadRoles();
+          this.$message.success("已删除");
+        })
+        .catch(() => {});
     },
     batchDeleteRoles() {
       if (!this.selectedRows.length) return;

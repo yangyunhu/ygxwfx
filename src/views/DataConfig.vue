@@ -939,8 +939,9 @@ export default {
 }
 
 .left-panel {
-  width: 380px;
+  width: 300px;
   flex-shrink: 0;
+  min-height: 0;
 }
 
 .right-panel {
@@ -963,13 +964,13 @@ export default {
 
 .search-box {
   padding: 12px 16px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .tree-container {
   flex: 1;
   overflow-y: auto;
-  padding: 8px 0;
+  padding: 8px 12px;
 }
 
 .tree-container >>> .el-tree {
@@ -977,7 +978,7 @@ export default {
 }
 
 .tree-container >>> .el-tree-node__content {
-  height: 40px;
+  height: 36px;
   padding: 0 16px;
 }
 
@@ -991,7 +992,7 @@ export default {
 }
 
 .tree-container >>> .el-tree-node__expand-icon {
-  padding: 6px;
+  padding: 0 6px;
 }
 
 .tree-container >>> .el-tree-node__expand-icon.el-icon-caret-right {
