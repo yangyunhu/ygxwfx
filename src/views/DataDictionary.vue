@@ -44,7 +44,6 @@
               <div class="group-name">{{ group.dictName }}</div>
               <div class="group-code">{{ group.dictCode }}</div>
             </div>
-            <div class="group-count">{{ group.itemCount }}项</div>
           </div>
           <div v-if="!dictGroups.length" class="empty-tip">暂无字典组</div>
         </div>
