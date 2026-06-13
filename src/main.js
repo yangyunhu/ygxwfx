@@ -5,6 +5,7 @@ import locale from 'element-ui/lib/locale/lang/zh-CN';
 import App from './App.vue';
 import router from './router';
 import './styles.css';
+import './styles/table-scroll.css';
 
 Vue.use(ElementUI, { locale });
 
