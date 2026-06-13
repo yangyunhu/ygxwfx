@@ -4,7 +4,7 @@
       <div>
         <h2 class="page-title">权限控制与分配</h2>
         <p class="page-desc">
-          展示各角色的页面权限、操作权限、数据权限配置，配置结果与功能模块权限分配保持一致。
+          展示各角色的操作权限、数据权限配置，配置结果与功能模块权限分配保持一致。
         </p>
       </div>
     </div>
@@ -28,26 +28,6 @@
       </div>
 
       <el-tabs v-model="activeTab">
-        <el-tab-pane label="页面权限" name="page">
-          <p class="tab-tip">
-            展示角色可访问的功能页面（菜单），配置由功能模块权限分配统一管理。
-          </p>
-          <div class="page-list">
-            <div v-if="pageLeaves.length === 0" class="empty-tip">
-              该角色尚未分配页面权限
-            </div>
-            <ul v-else class="page-leaf-list">
-              <li
-                v-for="leaf in pageLeaves"
-                :key="leaf.id"
-                class="page-leaf-item"
-              >
-                {{ leaf.name }}
-              </li>
-            </ul>
-          </div>
-        </el-tab-pane>
-
         <el-tab-pane label="操作权限" name="operation">
           <p class="tab-tip">配置角色在各功能模块内可执行的操作。</p>
           <el-table :data="operationRows" border size="small" max-height="480">
@@ -137,7 +117,7 @@ export default {
     return {
       roles: [],
       selectedRoleId: null,
-      activeTab: "page",
+      activeTab: "operation",
       moduleTree: modulesToTreeOptions(SYSTEM_MODULE_TREE),
       operationTypes: OPERATION_TYPES,
       roleDataScopeOptions: ROLE_DATA_SCOPE_OPTIONS,
@@ -145,47 +125,10 @@ export default {
     };
   },
   computed: {
-    // 只显示角色已授权的模块树
-    filteredModuleTree() {
-      if (!this.detail.pageIds || this.detail.pageIds.length === 0) {
-        return [];
-      }
-
-      // 过滤模块树，只保留已授权的节点
-      function filterTree(nodes, authorizedIds) {
-        return nodes
-          .map((node) => {
-            const isLeaf = !node.children || node.children.length === 0;
-            const isAuthorized = authorizedIds.includes(node.id);
-
-            if (isLeaf) {
-              return isAuthorized ? node : null;
-            }
-
-            const filteredChildren = filterTree(
-              node.children || [],
-              authorizedIds,
-            );
-            if (filteredChildren.length > 0) {
-              return { ...node, children: filteredChildren };
-            }
-
-            return isAuthorized ? { ...node, children: [] } : null;
-          })
-          .filter((node) => node !== null);
-      }
-
-      return filterTree(this.moduleTree, this.detail.pageIds);
-    },
     operationRows() {
       return getAllModuleLeaves()
         .filter((m) => (this.detail.pageIds || []).includes(m.id))
         .map((m) => ({ moduleId: m.id, moduleName: m.name }));
-    },
-    pageLeaves() {
-      return getAllModuleLeaves()
-        .filter((m) => (this.detail.pageIds || []).includes(m.id))
-        .map((m) => ({ id: m.id, name: m.name }));
     },
     currentDataScopeLabel() {
       const scope = this.detail.dataScope;
@@ -267,7 +210,6 @@ export default {
   line-height: 1.8;
 }
 
-/* 数据权限展示区域样式 */
 .data-scope-list {
   display: flex;
   flex-direction: column;
@@ -338,24 +280,5 @@ export default {
   font-size: 12px;
   color: #909399;
   line-height: 1.6;
-}
-</style>
-<style scoped>
-.page-list {
-  min-height: 120px;
-}
-.empty-tip {
-  color: #909399;
-  padding: 12px 0;
-}
-.page-leaf-list {
-  list-style: none;
-  padding: 8px 0 24px 0;
-  margin: 0;
-}
-.page-leaf-item {
-  padding: 8px 16px;
-  color: #606266;
-  border-bottom: 1px solid #f3f6f8;
 }
 </style>
