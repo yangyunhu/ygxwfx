@@ -1,5 +1,5 @@
 <template>
-  <div class="sensing-basic-page">
+  <div class="sensing-basic-page" :class="{ 'is-output-tab': mainTab === 'output' }">
     <div class="page-header">
       <h2>无感基础数据管理</h2>
     </div>
@@ -2556,6 +2556,22 @@ export default {
   min-height: 100%;
 }
 
+.sensing-basic-page.is-output-tab {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+}
+
+.sensing-basic-page.is-output-tab .page-header,
+.sensing-basic-page.is-output-tab .third-tabs,
+.sensing-basic-page.is-output-tab .func-desc,
+.sensing-basic-page.is-output-tab .config-bar,
+.sensing-basic-page.is-output-tab .sub-tabs,
+.sensing-basic-page.is-output-tab .search-area {
+  flex-shrink: 0;
+}
+
 .page-header {
   margin-bottom: 20px;
 }
@@ -2575,13 +2591,17 @@ export default {
 .tab-panel--output {
   display: flex;
   flex-direction: column;
-  min-height: 500px;
-  overflow-x: auto;
+  min-height: 0;
+  flex: 1;
+  overflow: visible;
 }
 
-/* 允许数据结果输出页面水平滚动 */
-.sensing-basic-page .main-content {
-  overflow-x: auto !important;
+.sensing-basic-page.is-output-tab .main-content {
+  overflow-x: hidden !important;
+  overflow-y: auto !important;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
 }
 
 .content-wrapper {
@@ -2591,9 +2611,45 @@ export default {
   flex: 1;
 }
 
+.sensing-basic-page.is-output-tab .content-wrapper {
+  align-items: stretch;
+  min-height: 0;
+  overflow: hidden;
+  height: 500px;
+  min-height: 500px;
+  max-height: 500px;
+  flex: none;
+}
+
 .table-container {
   flex: 1;
   padding: 16px;
+  min-height: 0;
+}
+
+.sensing-basic-page.is-output-tab .table-panel {
+  display: flex;
+  flex-direction: column;
+  flex: none;
+  min-height: 0;
+  overflow: hidden;
+  height: 500px;
+  min-height: 500px;
+  max-height: 500px;
+}
+
+.sensing-basic-page.is-output-tab .table-container {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow-x: auto;
+  overflow-y: auto;
+  height: 100%;
+}
+
+.sensing-basic-page.is-output-tab .table-container .el-table {
+  flex: 1;
   min-height: 0;
 }
 
@@ -2810,6 +2866,21 @@ export default {
   display: flex;
   flex-direction: column;
   overflow: hidden;
+}
+
+.sensing-basic-page.is-output-tab .org-tree-panel {
+  flex: 0 0 260px;
+  height: 500px;
+  min-height: 500px;
+  max-height: 500px;
+  align-self: stretch;
+  min-height: 0;
+}
+
+.sensing-basic-page.is-output-tab .tree-container {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
 }
 
 .panel-header {
