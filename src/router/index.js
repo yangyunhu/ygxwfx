@@ -41,10 +41,22 @@ Vue.use(Router);
 export default new Router({
   routes: [
     {
-      path: '/employee-attendance-behavior',
-      name: 'EmployeeAttendanceBehavior',
+      path: '/employee-attendance-behavior/data',
+      name: 'EmployeeAttendanceDataManagement',
       component: ModulePlaceholder,
-      meta: { title: '员工出勤行为管理', description: '员工出勤行为管理模块页面，后续承载出勤行为分析与管理功能。' }
+      meta: { title: '员工出勤数据管理', description: '员工出勤数据管理模块页面，后续承载出勤数据维护与查询功能。' }
+    },
+    {
+      path: '/employee-attendance-behavior/abnormal',
+      name: 'EmployeeAttendanceAbnormalManagement',
+      component: ModulePlaceholder,
+      meta: { title: '员工异常数据管理', description: '员工异常数据管理模块页面，后续承载异常出勤数据处置功能。' }
+    },
+    {
+      path: '/employee-attendance-behavior/config',
+      name: 'EmployeeAttendanceConfigManagement',
+      component: ModulePlaceholder,
+      meta: { title: '出勤配置管理', description: '出勤配置管理模块页面，后续承载出勤规则与参数配置功能。' }
     },
     {
       path: '/behavior-visual-dashboard',
