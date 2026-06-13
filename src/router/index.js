@@ -34,11 +34,36 @@ import AbnormalDataDisposal from '../views/AbnormalDataDisposal.vue';
 import DataExportFunction from '../views/DataExportFunction.vue';
 import ExportRecordQuery from '../views/ExportRecordQuery.vue';
 import DataDictionary from '../views/DataDictionary.vue';
+import ModulePlaceholder from '../views/ModulePlaceholder.vue';
 
 Vue.use(Router);
 
 export default new Router({
   routes: [
+    {
+      path: '/employee-attendance-behavior',
+      name: 'EmployeeAttendanceBehavior',
+      component: ModulePlaceholder,
+      meta: { title: '员工出勤行为管理', description: '员工出勤行为管理模块页面，后续承载出勤行为分析与管理功能。' }
+    },
+    {
+      path: '/behavior-visual-dashboard',
+      name: 'BehaviorVisualDashboard',
+      component: ModulePlaceholder,
+      meta: { title: '员工行为可视化数据看板', description: '员工行为可视化数据看板模块页面，后续承载统计看板与趋势展示功能。' }
+    },
+    {
+      path: '/behavior-intelligence-scenarios',
+      name: 'BehaviorIntelligenceScenarios',
+      component: ModulePlaceholder,
+      meta: { title: '员工行为智能分析场景应用', description: '员工行为智能分析场景应用模块页面，后续承载智能分析场景功能。' }
+    },
+    {
+      path: '/employee-credit-profile',
+      name: 'EmployeeCreditProfile',
+      component: ModulePlaceholder,
+      meta: { title: '员工信用画像', description: '员工信用画像模块页面，后续承载信用画像与指标汇总功能。' }
+    },
     {
       path: '/data-access',
       name: 'DataAccessManagement',
@@ -223,6 +248,18 @@ export default new Router({
       path: '/data-dictionary',
       name: 'DataDictionary',
       component: DataDictionary
+    },
+    {
+      path: '/personal-attendance-app',
+      name: 'PersonalAttendanceApp',
+      component: ModulePlaceholder,
+      meta: { title: '个人出勤管理APP', description: '个人出勤管理APP模块页面，后续承载移动端出勤管理功能。' }
+    },
+    {
+      path: '/team-behavior-portrait',
+      name: 'TeamBehaviorPortrait',
+      component: ModulePlaceholder,
+      meta: { title: '员工（班组）行为画像', description: '员工（班组）行为画像模块页面，后续承载班组画像分析功能。' }
     },
     {
       path: '/',

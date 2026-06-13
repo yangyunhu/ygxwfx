@@ -12,6 +12,50 @@
       router
       @select="handleMenuSelect"
     >
+      <el-submenu index="0">
+        <template slot="title">
+          <i class="el-icon-folder-opened"></i>
+          <span>员工出勤行为管理</span>
+        </template>
+        <el-menu-item index="/employee-attendance-behavior">
+          <i class="el-icon-document"></i>
+          <span>员工出勤行为管理</span>
+        </el-menu-item>
+      </el-submenu>
+
+      <el-submenu index="0-1">
+        <template slot="title">
+          <i class="el-icon-folder-opened"></i>
+          <span>员工行为可视化数据看板</span>
+        </template>
+        <el-menu-item index="/behavior-visual-dashboard">
+          <i class="el-icon-document"></i>
+          <span>员工行为可视化数据看板</span>
+        </el-menu-item>
+      </el-submenu>
+
+      <el-submenu index="0-2">
+        <template slot="title">
+          <i class="el-icon-folder-opened"></i>
+          <span>员工行为智能分析场景应用</span>
+        </template>
+        <el-menu-item index="/behavior-intelligence-scenarios">
+          <i class="el-icon-document"></i>
+          <span>员工行为智能分析场景应用</span>
+        </el-menu-item>
+      </el-submenu>
+
+      <el-submenu index="0-3">
+        <template slot="title">
+          <i class="el-icon-folder-opened"></i>
+          <span>员工信用画像</span>
+        </template>
+        <el-menu-item index="/employee-credit-profile">
+          <i class="el-icon-document"></i>
+          <span>员工信用画像</span>
+        </el-menu-item>
+      </el-submenu>
+
       <el-submenu index="1">
         <template slot="title">
           <i class="el-icon-folder-opened"></i>
@@ -109,6 +153,28 @@
             </el-menu-item>
           </el-submenu>
         </el-submenu>
+      </el-submenu>
+
+      <el-submenu index="5">
+        <template slot="title">
+          <i class="el-icon-folder-opened"></i>
+          <span>个人出勤管理APP</span>
+        </template>
+        <el-menu-item index="/personal-attendance-app">
+          <i class="el-icon-document"></i>
+          <span>个人出勤管理APP</span>
+        </el-menu-item>
+      </el-submenu>
+
+      <el-submenu index="6">
+        <template slot="title">
+          <i class="el-icon-folder-opened"></i>
+          <span>员工（班组）行为画像</span>
+        </template>
+        <el-menu-item index="/team-behavior-portrait">
+          <i class="el-icon-document"></i>
+          <span>员工（班组）行为画像</span>
+        </el-menu-item>
       </el-submenu>
 
       <el-submenu index="4">
