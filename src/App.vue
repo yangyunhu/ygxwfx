@@ -1,7 +1,7 @@
 <template>
   <div class="app-container">
-    <left-nav></left-nav>
-    <div class="main-wrapper">
+    <left-nav :collapsed="navCollapsed" @toggle="toggleSidebar"></left-nav>
+    <div class="main-wrapper" :class="{ collapsed: navCollapsed }">
       <header-component></header-component>
       <div class="main-content">
         <router-view></router-view>
@@ -19,6 +19,33 @@ export default {
   components: {
     LeftNav,
     HeaderComponent,
+  },
+  data() {
+    return {
+      navCollapsed: false,
+    };
+  },
+  mounted() {
+    this.syncSidebarBodyClass();
+  },
+  beforeDestroy() {
+    document.body.classList.remove("nav-sidebar-collapsed");
+  },
+  watch: {
+    navCollapsed() {
+      this.syncSidebarBodyClass();
+    },
+  },
+  methods: {
+    toggleSidebar() {
+      this.navCollapsed = !this.navCollapsed;
+    },
+    syncSidebarBodyClass() {
+      document.body.classList.toggle(
+        "nav-sidebar-collapsed",
+        this.navCollapsed,
+      );
+    },
   },
 };
 </script>
@@ -62,6 +89,11 @@ body {
   overflow: hidden;
 }
 
+.main-wrapper.collapsed {
+  margin-left: 64px;
+  width: calc(100vw - 64px);
+}
+
 .main-content {
   flex: 1;
   min-width: 0;
@@ -73,6 +105,11 @@ body {
 
 @media (max-width: 1200px) {
   .main-wrapper {
+    margin-left: 64px;
+    width: calc(100vw - 64px);
+  }
+
+  .main-wrapper.collapsed {
     margin-left: 64px;
     width: calc(100vw - 64px);
   }
