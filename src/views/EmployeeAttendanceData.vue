@@ -1,12 +1,5 @@
 <template>
   <div class="attendance-data-management">
-    <!-- 顶部标签页 -->
-    <el-tabs v-model="activeTab" class="page-tabs">
-      <el-tab-pane label="员工出勤数据管理" name="attendance-data"></el-tab-pane>
-      <el-tab-pane label="员工异常数据管理" name="abnormal-data"></el-tab-pane>
-      <el-tab-pane label="出勤配置管理" name="config"></el-tab-pane>
-    </el-tabs>
-
     <!-- 主内容区域 -->
     <div class="main-container">
       <!-- 左侧组织架构树 -->
@@ -48,13 +41,12 @@
             <el-form :inline="true" class="query-form">
               <el-form-item label="时间范围:">
                 <el-date-picker
-                  v-model="dateRange"
-                  type="daterange"
-                  range-separator="至"
-                  start-placeholder="开始日期"
-                  end-placeholder="结束日期"
-                  value-format="yyyy-MM-dd"
+                  v-model="selectedMonth"
+                  type="month"
+                  placeholder="选择月份"
+                  value-format="yyyy-MM"
                   size="small"
+                  style="width: 180px;"
                 ></el-date-picker>
               </el-form-item>
               <el-form-item>
@@ -108,11 +100,6 @@
                   </el-button>
                 </div>
               </div>
-              <div class="card-footer">
-                <el-link type="primary" @click="handleViewRawData(group)">
-                  查看原始考勤数据
-                </el-link>
-              </div>
             </div>
 
             <!-- 空状态 -->
@@ -148,9 +135,8 @@ export default {
   name: "EmployeeAttendanceData",
   data() {
     return {
-      activeTab: 'attendance-data',
       orgSearchKeyword: '',
-      dateRange: [],
+      selectedMonth: '',
       treeProps: {
         label: 'label',
         children: 'children'
@@ -476,7 +462,7 @@ export default {
 
     // 重置
     handleReset() {
-      this.dateRange = [];
+      this.selectedMonth = '';
       this.orgSearchKeyword = '';
       this.selectedOrg = '';
       this.currentPage = 1;
@@ -504,12 +490,6 @@ export default {
       // 跳转到详情页或打开对话框
     },
 
-    // 查看原始数据
-    handleViewRawData(group) {
-      this.$message.info(`查看原始考勤数据: ${group.name}`);
-      // 打开原始数据对话框
-    },
-
     // 分页大小改变
     handleSizeChange(val) {
       this.pageSize = val;
@@ -532,27 +512,6 @@ export default {
   flex-direction: column;
   background-color: #f5f7fa;
   overflow: hidden;
-}
-
-/* 顶部标签页 */
-.page-tabs {
-  background-color: #fff;
-  padding: 0 20px;
-  border-bottom: 1px solid #e8e8e8;
-}
-
-.page-tabs >>> .el-tabs__header {
-  margin-bottom: 0;
-}
-
-.page-tabs >>> .el-tabs__item {
-  font-size: 14px;
-  color: #606266;
-}
-
-.page-tabs >>> .el-tabs__item.is-active {
-  color: #409EFF;
-  font-weight: 500;
 }
 
 /* 主容器 */
@@ -716,11 +675,6 @@ export default {
   display: flex;
   justify-content: flex-end;
   align-items: center;
-}
-
-.card-footer {
-  padding-top: 10px;
-  border-top: 1px solid #ebeef5;
 }
 
 /* 分页 */

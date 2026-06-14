@@ -36,6 +36,7 @@ import ExportRecordQuery from '../views/ExportRecordQuery.vue';
 import DataDictionary from '../views/DataDictionary.vue';
 import ModulePlaceholder from '../views/ModulePlaceholder.vue';
 import EmployeeAttendanceData from '../views/EmployeeAttendanceData.vue';
+import AttendanceGroupManagement from '../views/AttendanceGroupManagement.vue';
 
 Vue.use(Router);
 
@@ -58,6 +59,12 @@ export default new Router({
       name: 'EmployeeAttendanceConfigManagement',
       component: ModulePlaceholder,
       meta: { title: '出勤配置管理', description: '出勤配置管理模块页面，后续承载出勤规则与参数配置功能。' }
+    },
+    {
+      path: '/employee-attendance-behavior/group-management',
+      name: 'AttendanceGroupManagement',
+      component: AttendanceGroupManagement,
+      meta: { title: '考勤组管理', description: '考勤组管理页面，支持用户新增考勤组并关联人员。' }
     },
     {
       path: '/behavior-visual-dashboard/attendance-stats',

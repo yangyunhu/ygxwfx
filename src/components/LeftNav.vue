@@ -21,6 +21,10 @@
           <i class="el-icon-document"></i>
           <span>员工出勤数据管理</span>
         </el-menu-item>
+        <el-menu-item index="/employee-attendance-behavior/group-management">
+          <i class="el-icon-document"></i>
+          <span>考勤组管理</span>
+        </el-menu-item>
         <el-menu-item index="/employee-attendance-behavior/abnormal">
           <i class="el-icon-document"></i>
           <span>员工异常数据管理</span>
