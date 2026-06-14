@@ -466,7 +466,7 @@
           <div class="chart-panel right-panel">
             <div class="panel-header">
               <i class="el-icon-warning-outline"></i>
-              <span class="panel-title">迟到异常</span>
+              <span class="panel-title">{{ selectedAbnormalType }}</span>
               <a href="#" class="detail-link">查看数据明细 &gt;</a>
             </div>
             <div class="panel-body">
@@ -716,7 +716,22 @@ export default {
       warningTableData: [],
       warningTotal: 0,
       warningPageSize: 25,
-      warningCurrentPage: 1
+      warningCurrentPage: 1,
+      
+      // 图表实例
+      pieChartInstance: null,
+      barChartInstance: null,
+      
+      // 当前选中的异常类型（默认选中'迟到/早退'）
+      selectedAbnormalType: '迟到/早退',
+      
+      // 各异常类型的月度数据
+      monthlyDataByType: {
+        '迟到/早退': [285, 250, 320, 310, 285],
+        '在岗证据不足/冲突': [180, 200, 220, 190, 210],
+        '旷工': [45, 50, 60, 55, 48],
+        '请假超时': [30, 35, 40, 38, 42]
+      }
     };
   },
   created() {
@@ -1064,6 +1079,7 @@ export default {
       if (!this.$refs.distributionChart) return;
       
       const chart = echarts.init(this.$refs.distributionChart);
+      this.pieChartInstance = chart; // 保存实例
       
       const option = {
         tooltip: {
@@ -1114,6 +1130,14 @@ export default {
       
       chart.setOption(option);
       
+      // 添加点击事件监听
+      chart.on('click', (params) => {
+        console.log('点击了:', params.name);
+        this.selectedAbnormalType = params.name;
+        this.updateBarChart(params.name);
+        this.$message.success(`已切换到【${params.name}】的月度数据`);
+      });
+      
       // 响应式调整
       window.addEventListener('resize', () => {
         chart.resize();
@@ -1125,6 +1149,10 @@ export default {
       if (!this.$refs.lateBarChart) return;
       
       const chart = echarts.init(this.$refs.lateBarChart);
+      this.barChartInstance = chart; // 保存实例
+      
+      // 根据当前选中的类型获取数据
+      const currentData = this.monthlyDataByType[this.selectedAbnormalType] || [285, 250, 320, 310, 285];
       
       const option = {
         tooltip: {
@@ -1166,7 +1194,7 @@ export default {
         },
         series: [
           {
-            name: '迟到次数',
+            name: this.selectedAbnormalType,
             type: 'bar',
             barWidth: '50%',
             itemStyle: {
@@ -1185,7 +1213,7 @@ export default {
                 ])
               }
             },
-            data: [285, 250, 320, 310, 285]
+            data: currentData
           }
         ]
       };
@@ -1196,6 +1224,59 @@ export default {
       window.addEventListener('resize', () => {
         chart.resize();
       });
+    },
+
+    // 更新柱状图（联动）
+    updateBarChart(type) {
+      if (!this.barChartInstance) return;
+      
+      const data = this.monthlyDataByType[type] || [285, 250, 320, 310, 285];
+      
+      // 根据不同类型设置不同的颜色
+      let gradientColors;
+      switch (type) {
+        case '迟到/早退':
+          gradientColors = ['#83bff6', '#188df0', '#188df0'];
+          break;
+        case '在岗证据不足/冲突':
+          gradientColors = ['#a8e6cf', '#7bc97b', '#7bc97b'];
+          break;
+        case '旷工':
+          gradientColors = ['#ffd3b6', '#ffaa80', '#ffaa80'];
+          break;
+        case '请假超时':
+          gradientColors = ['#ffaaa5', '#ff6b6b', '#ff6b6b'];
+          break;
+        default:
+          gradientColors = ['#83bff6', '#188df0', '#188df0'];
+      }
+      
+      const option = {
+        series: [
+          {
+            name: type,
+            data: data,
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: gradientColors[0] },
+                { offset: 0.5, color: gradientColors[1] },
+                { offset: 1, color: gradientColors[2] }
+              ])
+            },
+            emphasis: {
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: gradientColors[1] },
+                  { offset: 0.7, color: gradientColors[1] },
+                  { offset: 1, color: gradientColors[0] }
+                ])
+              }
+            }
+          }
+        ]
+      };
+      
+      this.barChartInstance.setOption(option);
     },
 
     // ========== 台账信息相关方法 ==========
