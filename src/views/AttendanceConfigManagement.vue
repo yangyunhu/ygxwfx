@@ -446,36 +446,19 @@
                 <span>{{ scope.row.department }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="attendanceGroup" label="考勤组" min-width="120">
-              <template slot-scope="scope">
-                <span>{{ scope.row.attendanceGroup }}</span>
-              </template>
-            </el-table-column>
             <el-table-column prop="name" label="姓名" min-width="100">
               <template slot-scope="scope">
                 <span>{{ scope.row.name }}</span>
               </template>
             </el-table-column>
-            <el-table-column prop="abnormalCount" label="异常次数" width="100" align="center">
-              <template slot-scope="scope">
-                <span>{{ scope.row.abnormalCount || '-' }}</span>
-              </template>
-            </el-table-column>
             <el-table-column prop="status" label="状态" width="100" align="center">
               <template slot-scope="scope">
-                <el-tag :type="scope.row.status === '正在打卡' ? 'success' : 'info'" size="small">
+                <el-tag 
+                  :type="scope.row.status === '强制打卡' ? 'danger' : (scope.row.status === '已结束' ? 'success' : 'info')" 
+                  size="small"
+                >
                   {{ scope.row.status }}
                 </el-tag>
-              </template>
-            </el-table-column>
-            <el-table-column prop="location" label="打卡地点" min-width="150">
-              <template slot-scope="scope">
-                <span>{{ scope.row.location || '-' }}</span>
-              </template>
-            </el-table-column>
-            <el-table-column prop="totalCount" label="累计打卡次数" width="120" align="center">
-              <template slot-scope="scope">
-                <span>{{ scope.row.totalCount }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="timeRange" label="打卡时间" min-width="200">
@@ -665,6 +648,66 @@
         <el-button type="primary" @click="handleWarningAddSubmit">确定</el-button>
       </div>
     </el-dialog>
+
+    <!-- 打卡人员设置新增对话框 -->
+    <el-dialog
+      title="新增人员"
+      :visible.sync="punchAddDialogVisible"
+      width="60%"
+      top="10vh"
+      @close="handlePunchAddDialogClose"
+    >
+      <el-form :model="punchAddForm" label-width="120px" size="small">
+        <el-form-item label="选择人员：" required>
+          <el-select
+            v-model="punchAddForm.selectedPerson"
+            placeholder="请选择人员"
+            filterable
+            style="width: 100%;"
+          >
+            <el-option
+              v-for="person in personOptions"
+              :key="person.value"
+              :label="person.label"
+              :value="person.value"
+            >
+              <span style="float: left;">{{ person.label }}</span>
+              <span style="float: right; color: #909399; font-size: 12px;">
+                {{ person.unit }} / {{ person.department }} / {{ person.attendanceGroup }}
+              </span>
+            </el-option>
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="强制打卡时间段：" required>
+          <div style="display: flex; align-items: center; width: 100%;">
+            <el-date-picker
+              v-model="punchAddForm.startTime"
+              type="datetime"
+              placeholder="选择开始时间"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              format="yyyy-MM-dd HH:mm:ss"
+              style="width: calc(50% - 20px);"
+            >
+            </el-date-picker>
+            <span style="margin: 0 10px; white-space: nowrap;">至</span>
+            <el-date-picker
+              v-model="punchAddForm.endTime"
+              type="datetime"
+              placeholder="选择结束时间"
+              value-format="yyyy-MM-dd HH:mm:ss"
+              format="yyyy-MM-dd HH:mm:ss"
+              style="width: calc(50% - 20px);"
+            >
+            </el-date-picker>
+          </div>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="punchAddDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handlePunchAddSubmit">确定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -751,125 +794,98 @@ export default {
         dataType: '',
         status: ''
       },
+      punchAddDialogVisible: false,       // 新增人员对话框显示状态
+      punchAddForm: {                     // 新增人员表单数据
+        selectedPerson: '',               // 选择的人员
+        startTime: '',                    // 强制打卡开始时间
+        endTime: ''                       // 强制打卡结束时间
+      },
+      personOptions: [                    // 人员选项列表
+        { label: '张三', value: 'zhangsan', unit: '某某集团公司', department: '人力资源部', attendanceGroup: '行政班' },
+        { label: '李四', value: 'lisi', unit: '某某集团公司', department: '技术部', attendanceGroup: '研发班' },
+        { label: '王二', value: 'wanger', unit: '某某分公司', department: '财务部', attendanceGroup: '财务班' },
+        { label: '赵五', value: 'zhaowu', unit: '某某分公司', department: '市场部', attendanceGroup: '市场班' },
+        { label: '钱六', value: 'qianliu', unit: '某某子公司', department: '生产部', attendanceGroup: '生产班' }
+      ],
       punchTableData: [                   // 表格数据
         {
           order: 1,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '张三',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 2,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '李四',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 3,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '王二',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 4,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '张三',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 5,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '李四',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 6,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '张三',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 7,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '李四',
-          abnormalCount: '',
-          status: '正在打卡',
-          location: '',
-          totalCount: 5,
+          status: '强制打卡',
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 8,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '王二',
-          abnormalCount: '',
           status: '已结束',
-          location: '',
-          totalCount: 5,
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 9,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '张三',
-          abnormalCount: '',
           status: '已结束',
-          location: '',
-          totalCount: 5,
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         },
         {
           order: 10,
           unit: '单位名称',
           department: '部门名称',
-          attendanceGroup: '考勤组名称',
           name: '李四',
-          abnormalCount: '',
           status: '已结束',
-          location: '',
-          totalCount: 5,
           timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
         }
       ],
@@ -1799,6 +1815,106 @@ export default {
     // 表格选择变化
     handlePunchSelectionChange(selection) {
       this.punchSelectedRows = selection;
+    },
+
+    // ==================== 新增人员对话框相关方法 ====================
+
+    // 打开新增人员对话框
+    handlePunchAdd() {
+      console.log('=== 打卡人员设置-新增人员 ===');
+      
+      // 重置表单数据
+      this.punchAddForm = {
+        selectedPerson: '',
+        startTime: '',
+        endTime: ''
+      };
+      
+      // 打开对话框
+      this.punchAddDialogVisible = true;
+    },
+
+    // 关闭新增人员对话框
+    handlePunchAddDialogClose() {
+      console.log('=== 打卡人员设置-关闭新增对话框 ===');
+      
+      // 重置表单数据
+      this.punchAddForm = {
+        selectedPerson: '',
+        startTime: '',
+        endTime: ''
+      };
+    },
+
+    // 提交新增人员
+    handlePunchAddSubmit() {
+      console.log('=== 打卡人员设置-提交新增人员 ===');
+      
+      // 验证必填项
+      if (!this.punchAddForm.selectedPerson) {
+        this.$message.warning('请选择人员');
+        return;
+      }
+      
+      if (!this.punchAddForm.startTime || !this.punchAddForm.endTime) {
+        this.$message.warning('请填写强制打卡时间段');
+        return;
+      }
+      
+      // 验证时间范围
+      const start = new Date(this.punchAddForm.startTime);
+      const end = new Date(this.punchAddForm.endTime);
+      
+      if (start >= end) {
+        this.$message.warning('开始时间必须早于结束时间');
+        return;
+      }
+      
+      // 获取选中的人员信息
+      const selectedPerson = this.personOptions.find(
+        p => p.value === this.punchAddForm.selectedPerson
+      );
+      
+      if (!selectedPerson) {
+        this.$message.error('人员信息异常，请重新选择');
+        return;
+      }
+      
+      // 格式化时间范围为字符串
+      const timeRange = `${this.formatDateTime(start)} ~ ${this.formatDateTime(end)}`;
+      
+      // 计算新的序号
+      const maxOrder = this.punchTableData.length > 0 
+        ? Math.max(...this.punchTableData.map(item => item.order)) : 0;
+      const newOrder = maxOrder + 1;
+      
+      // 添加到表格数据中
+      const newRow = {
+        order: newOrder,
+        unit: selectedPerson.unit,
+        department: selectedPerson.department,
+        name: selectedPerson.label,
+        status: '强制打卡',
+        timeRange: timeRange
+      };
+      
+      this.punchTableData.push(newRow);
+      
+      // 关闭对话框并提示成功
+      this.punchAddDialogVisible = false;
+      this.$message.success(`已成功添加"${selectedPerson.label}"到打卡人员列表`);
+      
+      console.log('新增的人员:', newRow);
+    },
+
+    // 格式化日期时间为字符串
+    formatDateTime(date) {
+      const year = date.getFullYear();
+      const month = String(date.getMonth() + 1).padStart(2, '0');
+      const day = String(date.getDate()).padStart(2, '0');
+      const hour = String(date.getHours()).padStart(2, '0');
+      const minute = String(date.getMinutes()).padStart(2, '0');
+      return `${year}-${month}-${day} ${hour}:${minute}`;
     },
 
     // 每页条数变化
