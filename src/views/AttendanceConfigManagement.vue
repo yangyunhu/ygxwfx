@@ -57,7 +57,23 @@
             <el-table-column prop="order" label="校验顺序" width="100" align="center"></el-table-column>
             <el-table-column prop="adjustment" label="顺序调整" width="100" align="center">
               <template slot-scope="scope">
-                <span class="adjust-text">{{ scope.row.adjustment }}</span>
+                <span v-if="scope.row.order <= 3" class="adjust-text">—</span>
+                <div v-else class="adjust-buttons">
+                  <el-button 
+                    type="text" 
+                    icon="el-icon-arrow-up" 
+                    size="small"
+                    @click="handleMoveUp(scope.$index)"
+                    :disabled="isFirstMovableRow(scope.$index)"
+                  ></el-button>
+                  <el-button 
+                    type="text" 
+                    icon="el-icon-arrow-down" 
+                    size="small"
+                    @click="handleMoveDown(scope.$index)"
+                    :disabled="isLastMovableRow(scope.$index)"
+                  ></el-button>
+                </div>
               </template>
             </el-table-column>
             <el-table-column prop="dataSource" label="数据来源" min-width="200">
@@ -162,9 +178,6 @@
               <el-button type="primary" size="small" @click="handleShiftSave">
                 保存
               </el-button>
-              <el-button size="small" @click="handleShiftEdit">
-                修改
-              </el-button>
               <el-button type="success" icon="el-icon-plus" size="small" @click="handleShiftAdd">
                 新增
               </el-button>
@@ -200,6 +213,18 @@
                 <el-table-column prop="shift" label="班次" min-width="150">
                   <template slot-scope="scope">
                     <span>{{ scope.row.shift || '-' }}</span>
+                  </template>
+                </el-table-column>
+                <el-table-column label="操作" width="120" align="center">
+                  <template slot-scope="scope">
+                    <el-button 
+                      type="text" 
+                      size="small" 
+                      icon="el-icon-edit"
+                      @click="handleShiftEditRow(scope.row)"
+                    >
+                      修改
+                    </el-button>
                   </template>
                 </el-table-column>
               </el-table>
@@ -544,6 +569,112 @@ export default {
       return row.order > 3;
     },
 
+    // 判断是否是第一个可移动的行（序号4或数组中第一个order>3的行）
+    isFirstMovableRow(index) {
+      if (index === 0) return true; // 第一行不能上移
+      
+      // 找到前面最近的 order > 3 的行
+      for (let i = index - 1; i >= 0; i--) {
+        if (this.tableData[i].order > 3) {
+          return false; // 前面有可移动的行，可以上移
+        }
+      }
+      return true; // 前面没有可移动的行，不能上移
+    },
+
+    // 判断是否是最后一个可移动的行
+    isLastMovableRow(index) {
+      if (index === this.tableData.length - 1) return true; // 最后一行不能下移
+      
+      // 找到后面最近的 order > 3 的行
+      for (let i = index + 1; i < this.tableData.length; i++) {
+        if (this.tableData[i].order > 3) {
+          return false; // 后面有可移动的行，可以下移
+        }
+      }
+      return true; // 后面没有可移动的行，不能下移
+    },
+
+    // 上移
+    handleMoveUp(index) {
+      const currentRow = this.tableData[index];
+      
+      // 如果当前行是前3条，不允许移动
+      if (currentRow.order <= 3) {
+        this.$message.warning("前3条为强制项，不可调整顺序！");
+        return;
+      }
+      
+      // 找到上一个可移动的行
+      let prevIndex = -1;
+      for (let i = index - 1; i >= 0; i--) {
+        if (this.tableData[i].order > 3) {
+          prevIndex = i;
+          break;
+        }
+      }
+      
+      if (prevIndex === -1) {
+        this.$message.warning("已经是第一个可调整顺序的项了！");
+        return;
+      }
+      
+      // 交换两行的位置
+      const temp = this.tableData[index];
+      this.$set(this.tableData, index, this.tableData[prevIndex]);
+      this.$set(this.tableData, prevIndex, temp);
+      
+      // 重新计算序号
+      this.recalculateOrders();
+      
+      this.$message.success("已上移");
+    },
+
+    // 下移
+    handleMoveDown(index) {
+      const currentRow = this.tableData[index];
+      
+      // 如果当前行是前3条，不允许移动
+      if (currentRow.order <= 3) {
+        this.$message.warning("前3条为强制项，不可调整顺序！");
+        return;
+      }
+      
+      // 找到下一个可移动的行
+      let nextIndex = -1;
+      for (let i = index + 1; i < this.tableData.length; i++) {
+        if (this.tableData[i].order > 3) {
+          nextIndex = i;
+          break;
+        }
+      }
+      
+      if (nextIndex === -1) {
+        this.$message.warning("已经是最后一个可调整顺序的项了！");
+        return;
+      }
+      
+      // 交换两行的位置
+      const temp = this.tableData[index];
+      this.$set(this.tableData, index, this.tableData[nextIndex]);
+      this.$set(this.tableData, nextIndex, temp);
+      
+      // 重新计算序号
+      this.recalculateOrders();
+      
+      this.$message.success("已下移");
+    },
+
+    // 重新计算序号（保持前3条不变，只调整4及以后的）
+    recalculateOrders() {
+      let newOrder = 4;
+      this.tableData.forEach((row) => {
+        if (row.order >= 4) {
+          row.order = newOrder++;
+        }
+      });
+    },
+
     // 新增
     handleAdd() {
       console.log('=== 新增配置项 ===');
@@ -846,7 +977,7 @@ export default {
       this.$message.success('保存成功');
     },
     
-    // 班次修改
+    // 班次修改（通过选择框）
     handleShiftEdit() {
       if (this.shiftSelectedRows.length !== 1) {
         this.$message.warning("请选择一条数据进行修改");
@@ -854,14 +985,18 @@ export default {
       }
           
       const selectedRow = this.shiftSelectedRows[0];
-      
+      this.handleShiftEditRow(selectedRow);
+    },
+
+    // 班次修改（通过操作列按钮）
+    handleShiftEditRow(row) {
       // 填充表单数据
       this.shiftEditForm = {
-        order: selectedRow.order,
-        groupName: selectedRow.groupName || '',
-        attendanceMode: selectedRow.attendanceMode || '',
-        timeSetting: selectedRow.timeSetting || '',
-        shift: selectedRow.shift || ''
+        order: row.order,
+        groupName: row.groupName || '',
+        attendanceMode: row.attendanceMode || '',
+        timeSetting: row.timeSetting || '',
+        shift: row.shift || ''
       };
       
       // 设置编辑类型为修改
@@ -1199,6 +1334,22 @@ export default {
   font-weight: 500;
 }
 
+.adjust-buttons {
+  display: flex;
+  justify-content: center;
+  gap: 4px;
+}
+
+.adjust-buttons .el-button {
+  padding: 4px;
+  min-height: auto;
+}
+
+.adjust-buttons .el-button.is-disabled {
+  opacity: 0.3;
+  cursor: not-allowed;
+}
+
 .logic-text {
   color: #606266;
   font-size: 13px;
@@ -1296,6 +1447,16 @@ export default {
 
 .dialog-footer {
   text-align: center;
+}
+
+/* 操作列按钮样式 */
+.el-table .el-button--text {
+  color: #409eff;
+  font-size: 13px;
+}
+
+.el-table .el-button--text:hover {
+  color: #66b1ff;
 }
 
 /* 响应式适配 */
