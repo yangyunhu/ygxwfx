@@ -248,10 +248,76 @@
       </div>
 
       <!-- 异常预警配置页签内容 -->
-      <div v-if="activeTab === 'warning'" class="tab-content">
-        <div class="empty-state">
-          <i class="el-icon-warning-outline"></i>
-          <p>异常预警配置功能待开发...</p>
+      <div v-if="activeTab === 'warning'" class="tab-content warning-tab">
+        <!-- 标题栏 -->
+        <div class="section-header">
+          <el-button icon="el-icon-back" size="small" @click="handleWarningBack">
+            返回
+          </el-button>
+          <span class="section-title">配置预警项</span>
+          <span class="section-subtitle">（根据提供信息进行填写-备注信息提示）</span>
+        </div>
+
+        <!-- 操作按钮栏 -->
+        <div class="action-bar">
+          <el-button type="primary" size="small" @click="handleWarningSave">
+            保存
+          </el-button>
+          <el-button type="primary" size="small" @click="handleWarningEnable">
+            启用
+          </el-button>
+          <el-button type="primary" size="small" @click="handleWarningDisable">
+            停用
+          </el-button>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="table-wrapper">
+          <el-table
+            :data="warningTableData"
+            border
+            stripe
+            style="width: 100%"
+            height="calc(100vh - 280px)"
+            @selection-change="handleWarningSelectionChange"
+          >
+            <el-table-column 
+              type="selection" 
+              width="55" 
+              align="center"
+            ></el-table-column>
+            <el-table-column prop="order" label="序号" width="80" align="center"></el-table-column>
+            <el-table-column prop="warningType" label="预警数据类型" min-width="200">
+              <template slot-scope="scope">
+                <span>{{ scope.row.warningType }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="thresholdLower" label="阈值区间（下限）" min-width="200">
+              <template slot-scope="scope">
+                <el-input
+                  v-model="scope.row.thresholdLower"
+                  placeholder="请输入"
+                  size="small"
+                ></el-input>
+              </template>
+            </el-table-column>
+            <el-table-column prop="thresholdUpper" label="阈值区间（上线）" min-width="200">
+              <template slot-scope="scope">
+                <el-input
+                  v-model="scope.row.thresholdUpper"
+                  placeholder="请输入"
+                  size="small"
+                ></el-input>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <!-- 底部添加行 -->
+        <div class="add-row-wrapper">
+          <el-button type="text" size="small" icon="el-icon-plus" @click="handleWarningAddRow">
+            + 增加一行
+          </el-button>
         </div>
       </div>
 
@@ -439,6 +505,41 @@ export default {
       shiftTotal: 100,
       shiftPageSize: 25,
       shiftCurrentPage: 1,
+      
+      // 异常预警配置相关
+      warningTableData: [
+        {
+          order: 1,
+          warningType: '在岗证据冲突',
+          thresholdLower: '',
+          thresholdUpper: ''
+        },
+        {
+          order: 2,
+          warningType: '迟到',
+          thresholdLower: '',
+          thresholdUpper: ''
+        },
+        {
+          order: 3,
+          warningType: '早退',
+          thresholdLower: '',
+          thresholdUpper: ''
+        },
+        {
+          order: 4,
+          warningType: '在岗证据不足',
+          thresholdLower: '',
+          thresholdUpper: ''
+        },
+        {
+          order: 5,
+          warningType: '旷工',
+          thresholdLower: '',
+          thresholdUpper: ''
+        }
+      ],
+      warningSelectedRows: [],
       
       tableData: [
         {
@@ -1102,6 +1203,86 @@ export default {
       // 关闭对话框
       this.shiftEditDialogVisible = false;
     },
+
+    // ==================== 异常预警配置相关方法 ====================
+
+    // 返回（预留功能）
+    handleWarningBack() {
+      console.log('=== 异常预警配置-返回 ===');
+      // 这里可以添加返回上一页的逻辑
+    },
+
+    // 保存
+    handleWarningSave() {
+      console.log('=== 异常预警配置-保存 ===');
+      
+      // 验证阈值区间是否填写完整
+      const emptyRows = this.warningTableData.filter(row => 
+        !row.thresholdLower && !row.thresholdUpper
+      );
+      
+      if (emptyRows.length > 0) {
+        this.$message.warning('请确保所有预警项的阈值区间都已填写完整后再保存');
+        return;
+      }
+      
+      // 模拟保存操作
+      console.log('保存的数据:', this.warningTableData);
+      this.$message.success('保存成功');
+    },
+
+    // 启用
+    handleWarningEnable() {
+      console.log('=== 异常预警配置-启用 ===');
+      
+      if (this.warningSelectedRows.length === 0) {
+        this.$message.warning('请先选择要启用的预警项');
+        return;
+      }
+      
+      // 模拟启用操作
+      console.log('启用的数据:', this.warningSelectedRows);
+      this.$message.success(`已启用 ${this.warningSelectedRows.length} 个预警项`);
+    },
+
+    // 停用
+    handleWarningDisable() {
+      console.log('=== 异常预警配置-停用 ===');
+      
+      if (this.warningSelectedRows.length === 0) {
+        this.$message.warning('请先选择要停用的预警项');
+        return;
+      }
+      
+      // 模拟停用操作
+      console.log('停用的数据:', this.warningSelectedRows);
+      this.$message.success(`已停用 ${this.warningSelectedRows.length} 个预警项`);
+    },
+
+    // 表格选择变化
+    handleWarningSelectionChange(selection) {
+      this.warningSelectedRows = selection;
+    },
+
+    // 增加一行
+    handleWarningAddRow() {
+      console.log('=== 异常预警配置-增加一行 ===');
+      
+      // 获取当前最大序号
+      const maxOrder = this.warningTableData.length > 0 
+        ? Math.max(...this.warningTableData.map(item => item.order)) : 0;
+      const newOrder = maxOrder + 1;
+      
+      // 添加新行
+      this.warningTableData.push({
+        order: newOrder,
+        warningType: '',
+        thresholdLower: '',
+        thresholdUpper: ''
+      });
+      
+      this.$message.success('已添加新的一行');
+    },
   }
 };
 </script>
@@ -1457,6 +1638,46 @@ export default {
 
 .el-table .el-button--text:hover {
   color: #66b1ff;
+}
+
+/* 异常预警配置样式 */
+.warning-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.section-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.section-header .section-title {
+  font-size: 18px;
+  font-weight: 600;
+  color: #303133;
+  margin-left: 12px;
+}
+
+.section-header .section-subtitle {
+  font-size: 13px;
+  color: #909399;
+  margin-left: 8px;
+}
+
+.table-wrapper {
+  flex: 1;
+  overflow: hidden;
+  margin-top: 16px;
+}
+
+.add-row-wrapper {
+  margin-top: 12px;
+  padding-top: 12px;
+  border-top: 1px solid #e4e7ed;
 }
 
 /* 响应式适配 */
