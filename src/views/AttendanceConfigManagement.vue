@@ -251,23 +251,17 @@
       <div v-if="activeTab === 'warning'" class="tab-content warning-tab">
         <!-- 标题栏 -->
         <div class="section-header">
-          <el-button icon="el-icon-back" size="small" @click="handleWarningBack">
-            返回
-          </el-button>
           <span class="section-title">配置预警项</span>
           <span class="section-subtitle">（根据提供信息进行填写-备注信息提示）</span>
         </div>
 
         <!-- 操作按钮栏 -->
         <div class="action-bar">
+          <el-button type="primary" size="small" icon="el-icon-plus" @click="handleWarningAddRow">
+            新增
+          </el-button>
           <el-button type="primary" size="small" @click="handleWarningSave">
             保存
-          </el-button>
-          <el-button type="primary" size="small" @click="handleWarningEnable">
-            启用
-          </el-button>
-          <el-button type="primary" size="small" @click="handleWarningDisable">
-            停用
           </el-button>
         </div>
 
@@ -310,15 +304,37 @@
                 ></el-input>
               </template>
             </el-table-column>
+            <el-table-column prop="status" label="状态" width="100" align="center">
+              <template slot-scope="scope">
+                <el-tag :type="scope.row.status === '启用' ? 'success' : 'info'" size="small">
+                  {{ scope.row.status || '停用' }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="180" align="center">
+              <template slot-scope="scope">
+                <el-button 
+                  type="text" 
+                  size="small" 
+                  icon="el-icon-check"
+                  @click="handleWarningEnableRow(scope.row)"
+                >
+                  启用
+                </el-button>
+                <el-button 
+                  type="text" 
+                  size="small" 
+                  icon="el-icon-close"
+                  @click="handleWarningDisableRow(scope.row)"
+                >
+                  停用
+                </el-button>
+              </template>
+            </el-table-column>
           </el-table>
         </div>
 
-        <!-- 底部添加行 -->
-        <div class="add-row-wrapper">
-          <el-button type="text" size="small" icon="el-icon-plus" @click="handleWarningAddRow">
-            + 增加一行
-          </el-button>
-        </div>
+
       </div>
 
       <!-- 打卡人员设置页签内容 -->
@@ -512,31 +528,36 @@ export default {
           order: 1,
           warningType: '在岗证据冲突',
           thresholdLower: '',
-          thresholdUpper: ''
+          thresholdUpper: '',
+          status: '停用'
         },
         {
           order: 2,
           warningType: '迟到',
           thresholdLower: '',
-          thresholdUpper: ''
+          thresholdUpper: '',
+          status: '停用'
         },
         {
           order: 3,
           warningType: '早退',
           thresholdLower: '',
-          thresholdUpper: ''
+          thresholdUpper: '',
+          status: '停用'
         },
         {
           order: 4,
           warningType: '在岗证据不足',
           thresholdLower: '',
-          thresholdUpper: ''
+          thresholdUpper: '',
+          status: '停用'
         },
         {
           order: 5,
           warningType: '旷工',
           thresholdLower: '',
-          thresholdUpper: ''
+          thresholdUpper: '',
+          status: '停用'
         }
       ],
       warningSelectedRows: [],
@@ -1264,9 +1285,9 @@ export default {
       this.warningSelectedRows = selection;
     },
 
-    // 增加一行
+    // 新增一行
     handleWarningAddRow() {
-      console.log('=== 异常预警配置-增加一行 ===');
+      console.log('=== 异常预警配置-新增 ===');
       
       // 获取当前最大序号
       const maxOrder = this.warningTableData.length > 0 
@@ -1278,10 +1299,41 @@ export default {
         order: newOrder,
         warningType: '',
         thresholdLower: '',
-        thresholdUpper: ''
+        thresholdUpper: '',
+        status: '停用'
       });
       
       this.$message.success('已添加新的一行');
+    },
+
+    // 行内启用
+    handleWarningEnableRow(row) {
+      console.log('=== 异常预警配置-行内启用 ===', row);
+      
+      // 验证阈值区间是否填写完整
+      if (!row.thresholdLower && !row.thresholdUpper) {
+        this.$message.warning('请先填写该预警项的阈值区间后再启用');
+        return;
+      }
+      
+      // 更新状态为启用
+      this.$set(row, 'status', '启用');
+      
+      // 模拟启用操作
+      console.log('启用的数据:', row);
+      this.$message.success(`已启用"${row.warningType}"预警项`);
+    },
+
+    // 行内停用
+    handleWarningDisableRow(row) {
+      console.log('=== 异常预警配置-行内停用 ===', row);
+      
+      // 更新状态为停用
+      this.$set(row, 'status', '停用');
+      
+      // 模拟停用操作
+      console.log('停用的数据:', row);
+      this.$message.success(`已停用"${row.warningType}"预警项`);
     },
   }
 };
