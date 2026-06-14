@@ -48,7 +48,12 @@
             height="calc(100vh - 320px)"
             @selection-change="handleSelectionChange"
           >
-            <el-table-column type="selection" width="55" align="center"></el-table-column>
+            <el-table-column 
+              type="selection" 
+              width="55" 
+              align="center"
+              :selectable="isRowSelectable"
+            ></el-table-column>
             <el-table-column prop="order" label="校验顺序" width="100" align="center"></el-table-column>
             <el-table-column prop="adjustment" label="顺序调整" width="100" align="center">
               <template slot-scope="scope">
@@ -160,6 +165,9 @@
               <el-button size="small" @click="handleShiftEdit">
                 修改
               </el-button>
+              <el-button type="success" icon="el-icon-plus" size="small" @click="handleShiftAdd">
+                新增
+              </el-button>
             </div>
 
             <!-- 底部数据表格 -->
@@ -176,23 +184,12 @@
                 <el-table-column prop="order" label="序号" width="80" align="center"></el-table-column>
                 <el-table-column prop="groupName" label="考勤组名称" min-width="150">
                   <template slot-scope="scope">
-                    <span>{{ scope.row.groupName }}</span>
+                    <span>{{ scope.row.groupName || '-' }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="attendanceMode" label="出勤模式选择" min-width="150">
                   <template slot-scope="scope">
-                    <el-select
-                      v-if="scope.row.editable"
-                      v-model="scope.row.attendanceMode"
-                      placeholder="请选择"
-                      size="small"
-                    >
-                      <el-option label="业务班" value="business"></el-option>
-                      <el-option label="行政班" value="admin"></el-option>
-                      <el-option label="轮值班" value="rotation"></el-option>
-                      <el-option label="弹性班" value="flexible"></el-option>
-                    </el-select>
-                    <span v-else>{{ getAttendanceModeLabel(scope.row.attendanceMode) }}</span>
+                    <span>{{ getAttendanceModeLabel(scope.row.attendanceMode) }}</span>
                   </template>
                 </el-table-column>
                 <el-table-column prop="timeSetting" label="时间设置" min-width="150">
@@ -277,6 +274,68 @@
         <el-button type="primary" @click="rulesDialogVisible = false">我知道了</el-button>
       </div>
     </el-dialog>
+
+    <!-- 班次设置编辑对话框 -->
+    <el-dialog
+      :title="shiftEditType === 'add' ? '新增考勤组' : '修改考勤组'"
+      :visible.sync="shiftEditDialogVisible"
+      width="50%"
+      top="10vh"
+      @close="handleShiftEditDialogClose"
+    >
+      <el-form :model="shiftEditForm" label-width="120px" size="small">
+        <el-form-item label="序号：">
+          <span>{{ shiftEditForm.order }}</span>
+        </el-form-item>
+        
+        <el-form-item label="考勤组名称：" required>
+          <el-input
+            v-model="shiftEditForm.groupName"
+            placeholder="请输入考勤组名称"
+            maxlength="50"
+            show-word-limit
+          ></el-input>
+        </el-form-item>
+        
+        <el-form-item label="出勤模式选择：" required>
+          <el-select
+            v-model="shiftEditForm.attendanceMode"
+            placeholder="请选择出勤模式"
+            style="width: 100%;"
+          >
+            <el-option label="业务班" value="business"></el-option>
+            <el-option label="行政班" value="admin"></el-option>
+            <el-option label="轮值班" value="rotation"></el-option>
+            <el-option label="弹性班" value="flexible"></el-option>
+          </el-select>
+        </el-form-item>
+        
+        <el-form-item label="时间设置：">
+          <el-time-picker
+            v-model="shiftEditForm.timeSetting"
+            placeholder="请选择时间"
+            value-format="HH:mm"
+            format="HH:mm"
+            style="width: 100%;"
+          >
+          </el-time-picker>
+        </el-form-item>
+        
+        <el-form-item label="班次：">
+          <el-input
+            v-model="shiftEditForm.shift"
+            placeholder="请输入班次（如：早班、晚班）"
+            maxlength="50"
+            show-word-limit
+          ></el-input>
+        </el-form-item>
+      </el-form>
+      
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="shiftEditDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleShiftEditSubmit">确定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -312,38 +371,43 @@ export default {
       shiftQueryParams: {
         groupName: ''
       },
+      shiftEditDialogVisible: false,  // 编辑对话框显示状态
+      shiftEditForm: {                // 编辑表单数据
+        order: 0,
+        groupName: '',
+        attendanceMode: '',
+        timeSetting: '',              // 单个时间点 HH:mm
+        shift: ''
+      },
+      shiftEditType: 'add',           // 编辑类型：'add' 或 'edit'
       shiftTableData: [
         {
           order: 1,
           groupName: 'XXXXX',
           attendanceMode: 'business',
           timeSetting: '',
-          shift: '',
-          editable: false
+          shift: ''
         },
         {
           order: 2,
           groupName: 'XXXXX',
           attendanceMode: 'admin',
           timeSetting: '',
-          shift: '',
-          editable: false
+          shift: ''
         },
         {
           order: 3,
           groupName: '',
           attendanceMode: '',
           timeSetting: '',
-          shift: '',
-          editable: false
+          shift: ''
         },
         {
           order: 4,
           groupName: '',
           attendanceMode: '',
           timeSetting: '',
-          shift: '',
-          editable: false
+          shift: ''
         }
       ],
       shiftSelectedRows: [],
@@ -475,6 +539,11 @@ export default {
       }
     },
 
+    // 判断行是否可选择（序号1-3不可选择）
+    isRowSelectable(row) {
+      return row.order > 3;
+    },
+
     // 新增
     handleAdd() {
       console.log('=== 新增配置项 ===');
@@ -515,9 +584,10 @@ export default {
       }
       
       // 检查是否有强制校验项（序号1-3）被选中
-      const hasForcedItem = this.selectedRows.some(row => row.order <= 3);
-      if (hasForcedItem) {
-        this.$message.error("序号1-3为强制校验项，不可删除！");
+      const forcedItems = this.selectedRows.filter(row => row.order <= 3);
+      if (forcedItems.length > 0) {
+        const orders = forcedItems.map(row => row.order).join('、');
+        this.$message.error(`序号${orders}为强制校验项，不可删除！`);
         return;
       }
       
@@ -531,10 +601,11 @@ export default {
           const selectedOrders = this.selectedRows.map(row => row.order);
           this.tableData = this.tableData.filter(row => !selectedOrders.includes(row.order));
           
-          // 重新排序序号
-          this.tableData.forEach((row, index) => {
+          // 重新排序序号（只调整序号4及以后的）
+          let newOrder = 4;
+          this.tableData.forEach((row) => {
             if (row.order >= 4) {
-              row.order = index + 4;
+              row.order = newOrder++;
             }
           });
           
@@ -758,6 +829,20 @@ export default {
     // 班次保存
     handleShiftSave() {
       console.log('=== 班次保存 ===');
+      
+      // 验证必填字段
+      const emptyRows = this.shiftTableData.filter(row => 
+        !row.groupName || !row.groupName.trim()
+      );
+      
+      if (emptyRows.length > 0) {
+        this.$message.warning('请确保所有考勤组都已填写完整后再保存');
+        return;
+      }
+      
+      // 这里可以调用后端 API 保存数据
+      console.log('保存的数据:', this.shiftTableData);
+      
       this.$message.success('保存成功');
     },
     
@@ -769,8 +854,46 @@ export default {
       }
           
       const selectedRow = this.shiftSelectedRows[0];
-      this.$set(selectedRow, 'editable', true);
-      this.$message.info("已进入编辑模式");
+      
+      // 填充表单数据
+      this.shiftEditForm = {
+        order: selectedRow.order,
+        groupName: selectedRow.groupName || '',
+        attendanceMode: selectedRow.attendanceMode || '',
+        timeSetting: selectedRow.timeSetting || '',
+        shift: selectedRow.shift || ''
+      };
+      
+      // 设置编辑类型为修改
+      this.shiftEditType = 'edit';
+      
+      // 打开对话框
+      this.shiftEditDialogVisible = true;
+    },
+    
+    // 班次新增
+    handleShiftAdd() {
+      console.log('=== 班次新增 ===');
+      
+      // 获取当前最大序号
+      const maxOrder = this.shiftTableData.length > 0 
+        ? Math.max(...this.shiftTableData.map(item => item.order)) : 0;
+      const newOrder = maxOrder + 1;
+      
+      // 重置表单数据
+      this.shiftEditForm = {
+        order: newOrder,
+        groupName: '',
+        attendanceMode: '',
+        timeSetting: '',
+        shift: ''
+      };
+      
+      // 设置编辑类型为新增
+      this.shiftEditType = 'add';
+      
+      // 打开对话框
+      this.shiftEditDialogVisible = true;
     },
     
     // 班次表格选择变化
@@ -793,6 +916,56 @@ export default {
       console.log('新页码:', val);
       this.shiftCurrentPage = val;
       this.loadShiftData();
+    },
+
+    // 编辑对话框关闭
+    handleShiftEditDialogClose() {
+      // 重置表单数据
+      this.shiftEditForm = {
+        order: 0,
+        groupName: '',
+        attendanceMode: '',
+        timeSetting: '',              // 单个时间点 HH:mm
+        shift: ''
+      };
+      this.shiftEditType = 'add';
+    },
+
+    // 编辑对话框提交
+    handleShiftEditSubmit() {
+      // 验证必填字段
+      if (!this.shiftEditForm.groupName || !this.shiftEditForm.groupName.trim()) {
+        this.$message.warning('请填写考勤组名称');
+        return;
+      }
+      
+      if (!this.shiftEditForm.attendanceMode) {
+        this.$message.warning('请选择出勤模式');
+        return;
+      }
+      
+      if (this.shiftEditType === 'add') {
+        // 新增逻辑
+        const newRow = {
+          ...this.shiftEditForm,
+          editable: false
+        };
+        this.shiftTableData.push(newRow);
+        this.$message.success(`已新增第 ${newRow.order} 条考勤组配置`);
+      } else {
+        // 修改逻辑
+        const index = this.shiftTableData.findIndex(row => row.order === this.shiftEditForm.order);
+        if (index !== -1) {
+          this.$set(this.shiftTableData[index], 'groupName', this.shiftEditForm.groupName);
+          this.$set(this.shiftTableData[index], 'attendanceMode', this.shiftEditForm.attendanceMode);
+          this.$set(this.shiftTableData[index], 'timeSetting', this.shiftEditForm.timeSetting);
+          this.$set(this.shiftTableData[index], 'shift', this.shiftEditForm.shift);
+          this.$message.success('修改成功');
+        }
+      }
+      
+      // 关闭对话框
+      this.shiftEditDialogVisible = false;
     },
   }
 };
