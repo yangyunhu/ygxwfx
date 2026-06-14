@@ -517,13 +517,32 @@
               ></el-input>
             </el-form-item>
             <el-form-item label="单位:">
-              <el-input
+              <el-select
                 v-model="warningDetailQueryParams.unit"
-                placeholder="请输入"
+                placeholder="请选择"
                 size="small"
                 style="width: 150px;"
                 clearable
-              ></el-input>
+                filterable
+              >
+                <el-option label="云南电网有限责任公司" value="yunnan"></el-option>
+                <el-option label="昆明供电局" value="kunming"></el-option>
+                <el-option label="曲靖供电局" value="qujing"></el-option>
+                <el-option label="玉溪供电局" value="yuxi"></el-option>
+                <el-option label="红河供电局" value="honghe"></el-option>
+                <el-option label="保山供电局" value="baoshan"></el-option>
+                <el-option label="大理供电局" value="dali"></el-option>
+                <el-option label="丽江供电局" value="lijiang"></el-option>
+                <el-option label="普洱供电局" value="puer"></el-option>
+                <el-option label="临沧供电局" value="lincang"></el-option>
+                <el-option label="文山供电局" value="wenshan"></el-option>
+                <el-option label="西双版纳供电局" value="xishuangbanna"></el-option>
+                <el-option label="德宏供电局" value="dehong"></el-option>
+                <el-option label="怒江供电局" value="nujiang"></el-option>
+                <el-option label="迪庆供电局" value="diqing"></el-option>
+                <el-option label="昭通供电局" value="zhaotong"></el-option>
+                <el-option label="楚雄供电局" value="chuxiong"></el-option>
+              </el-select>
             </el-form-item>
             <el-form-item label="日期范围:">
               <el-date-picker
@@ -1607,8 +1626,29 @@ export default {
       }
       
       if (this.warningDetailQueryParams.unit) {
+        // 将value转换为显示名称进行匹配
+        const unitMap = {
+          'yunnan': '云南电网有限责任公司',
+          'kunming': '昆明供电局',
+          'qujing': '曲靖供电局',
+          'yuxi': '玉溪供电局',
+          'honghe': '红河供电局',
+          'baoshan': '保山供电局',
+          'dali': '大理供电局',
+          'lijiang': '丽江供电局',
+          'puer': '普洱供电局',
+          'lincang': '临沧供电局',
+          'wenshan': '文山供电局',
+          'xishuangbanna': '西双版纳供电局',
+          'dehong': '德宏供电局',
+          'nujiang': '怒江供电局',
+          'diqing': '迪庆供电局',
+          'zhaotong': '昭通供电局',
+          'chuxiong': '楚雄供电局'
+        };
+        const unitName = unitMap[this.warningDetailQueryParams.unit] || this.warningDetailQueryParams.unit;
         filtered = filtered.filter(item => 
-          item.unit.includes(this.warningDetailQueryParams.unit)
+          item.unit.includes(unitName)
         );
       }
       
