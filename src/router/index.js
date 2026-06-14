@@ -37,6 +37,7 @@ import DataDictionary from '../views/DataDictionary.vue';
 import ModulePlaceholder from '../views/ModulePlaceholder.vue';
 import EmployeeAttendanceData from '../views/EmployeeAttendanceData.vue';
 import AttendanceGroupManagement from '../views/AttendanceGroupManagement.vue';
+import AbnormalDataManagement from '../views/AbnormalDataManagement.vue';
 
 Vue.use(Router);
 
@@ -51,8 +52,8 @@ export default new Router({
     {
       path: '/employee-attendance-behavior/abnormal',
       name: 'EmployeeAttendanceAbnormalManagement',
-      component: ModulePlaceholder,
-      meta: { title: '员工异常数据管理', description: '员工异常数据管理模块页面，后续承载异常出勤数据处置功能。' }
+      component: AbnormalDataManagement,
+      meta: { title: '员工异常数据管理', description: '员工异常数据管理模块页面，包含异常数据审批、台账信息和预警查询功能。' }
     },
     {
       path: '/employee-attendance-behavior/config',
