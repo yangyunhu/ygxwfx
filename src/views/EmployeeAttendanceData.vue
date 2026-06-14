@@ -34,80 +34,77 @@
 
       <!-- 右侧内容区 -->
       <div class="right-panel">
-        <!-- 可滚动内容容器 -->
-        <div class="scrollable-content">
-          <!-- 查询条件 -->
-          <div class="query-section">
-            <el-form :inline="true" class="query-form">
-              <el-form-item label="时间范围:">
-                <el-date-picker
-                  v-model="selectedMonth"
-                  type="month"
-                  placeholder="选择月份"
-                  value-format="yyyy-MM"
-                  size="small"
-                  style="width: 180px;"
-                ></el-date-picker>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">
-                  查询
-                </el-button>
-                <el-button icon="el-icon-refresh" size="small" @click="handleReset">
-                  重置
-                </el-button>
-              </el-form-item>
-            </el-form>
-          </div>
+        <!-- 查询条件 -->
+        <div class="query-section">
+          <el-form :inline="true" class="query-form">
+            <el-form-item label="时间范围:">
+              <el-date-picker
+                v-model="selectedMonth"
+                type="month"
+                placeholder="选择月份"
+                value-format="yyyy-MM"
+                size="small"
+                style="width: 180px;"
+              ></el-date-picker>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleQuery">
+                查询
+              </el-button>
+              <el-button icon="el-icon-refresh" size="small" @click="handleReset">
+                重置
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
 
-          <!-- 操作按钮 -->
-          <div class="action-section">
-            <el-button type="primary" icon="el-icon-download" size="small" @click="handleExport">
-              导出
-            </el-button>
-          </div>
+        <!-- 操作按钮 -->
+        <div class="action-section">
+          <el-button type="primary" icon="el-icon-download" size="small" @click="handleExport">
+            导出
+          </el-button>
+        </div>
 
-          <!-- 考勤组信息标题 -->
-          <div class="section-title">考勤组信息</div>
+        <!-- 考勤组信息标题 -->
+        <div class="section-title">考勤组信息</div>
 
-          <!-- 考勤组列表 -->
-          <div class="attendance-list">
-            <div
-              v-for="(group, index) in attendanceGroups"
-              :key="index"
-              class="attendance-card"
-            >
-              <div class="card-header">
-                <el-checkbox v-model="group.checked"></el-checkbox>
-                <span class="group-name">{{ group.name }}</span>
+        <!-- 可滚动列表区域 -->
+        <div class="scrollable-list">
+          <div
+            v-for="(group, index) in attendanceGroups"
+            :key="index"
+            class="attendance-card"
+          >
+            <div class="card-header">
+              <el-checkbox v-model="group.checked"></el-checkbox>
+              <span class="group-name">{{ group.name }}</span>
+            </div>
+            <div class="card-content">
+              <div class="info-row">
+                <span class="label">考勤类型:</span>
+                <span class="value">{{ group.attendanceType }}</span>
               </div>
-              <div class="card-content">
-                <div class="info-row">
-                  <span class="label">考勤类型:</span>
-                  <span class="value">{{ group.attendanceType }}</span>
-                </div>
-                <div class="info-row">
-                  <span class="label">考勤组人数:</span>
-                  <span class="value">{{ group.memberCount }}人</span>
-                </div>
-                <div class="info-row">
-                  <span class="label">所属部门:</span>
-                  <span class="value">{{ group.department }}</span>
-                </div>
-                <div class="action-buttons">
-                  <el-button type="primary" size="mini" @click="handleView(group)">
-                    查看
-                  </el-button>
-                </div>
+              <div class="info-row">
+                <span class="label">考勤组人数:</span>
+                <span class="value">{{ group.memberCount }}人</span>
+              </div>
+              <div class="info-row">
+                <span class="label">所属部门:</span>
+                <span class="value">{{ group.department }}</span>
+              </div>
+              <div class="action-buttons">
+                <el-button type="primary" size="mini" @click="handleView(group)">
+                  查看
+                </el-button>
               </div>
             </div>
-
-            <!-- 空状态 -->
-            <el-empty
-              v-if="attendanceGroups.length === 0"
-              description="暂无考勤组数据"
-            ></el-empty>
           </div>
+
+          <!-- 空状态 -->
+          <el-empty
+            v-if="attendanceGroups.length === 0"
+            description="暂无考勤组数据"
+          ></el-empty>
         </div>
 
         <!-- 分页 - 固定在底部 -->
@@ -921,7 +918,6 @@ export default {
   white-space: nowrap;
 }
 
-/* 右侧面板 */
 .right-panel {
   flex: 1;
   min-width: 0;
@@ -930,19 +926,11 @@ export default {
   min-height: 0;
 }
 
-/* 可滚动内容容器 */
-.scrollable-content {
-  flex: 1;
-  overflow-y: auto;
-  min-height: 0;
-  height: 0;
-  background-color: #f5f7fa;
-}
-
 .query-section {
   background: #fff;
   border-bottom: 1px solid #e4e7ed;
   padding: 12px 16px;
+  flex-shrink: 0;
 }
 
 .query-form {
@@ -964,11 +952,13 @@ export default {
   color: #303133;
 }
 
-/* 考勤组列表 */
-.attendance-list {
-  padding: 20px;
-  max-height: calc(100vh - 380px);
+/* 可滚动列表区域 - 核心！ */
+.scrollable-list {
+  flex: 1;
   overflow-y: auto;
+  padding: 20px;
+  min-height: 0;
+  background-color: #f5f7fa;
 }
 
 .attendance-card {

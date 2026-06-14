@@ -9,8 +9,10 @@
 
     <!-- 主内容区域 -->
     <div class="main-container">
-      <!-- 查询条件 -->
-      <div class="query-section">
+      <!-- 异常数据审批管理页签内容 -->
+      <div v-if="activeTab === 'approval'" class="tab-content">
+        <!-- 查询条件 -->
+        <div class="query-section">
         <el-form :inline="true" class="query-form">
           <el-form-item label="单位:">
             <el-select
@@ -191,6 +193,186 @@
           ></el-pagination>
         </div>
       </div>
+    </div>
+    <!-- 异常数据审批管理页签内容结束 -->
+
+    <!-- 异常数据台账信息页签内容 -->
+    <div v-if="activeTab === 'ledger'" class="tab-content ledger-tab">
+      <!-- 可滚动内容容器 -->
+      <div class="scrollable-content">
+        <!-- 查询条件 -->
+        <div class="query-section">
+          <el-form :inline="true" class="query-form">
+            <el-form-item label="单位:">
+              <el-select
+                v-model="ledgerQueryParams.unit"
+                placeholder="请选择"
+                size="small"
+                style="width: 150px;"
+                clearable
+              >
+                <el-option label="云南电网有限责任公司" value="yunnan"></el-option>
+                <el-option label="昆明供电局" value="kunming"></el-option>
+                <el-option label="曲靖供电局" value="qujing"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="部门:">
+              <el-select
+                v-model="ledgerQueryParams.department"
+                placeholder="请选择"
+                size="small"
+                style="width: 150px;"
+                clearable
+              >
+                <el-option label="法规部" value="legal"></el-option>
+                <el-option label="综合服务中心" value="service"></el-option>
+                <el-option label="工会办" value="union"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="班组:">
+              <el-select
+                v-model="ledgerQueryParams.team"
+                placeholder="请选择"
+                size="small"
+                style="width: 150px;"
+                clearable
+              >
+                <el-option label="班组1" value="team1"></el-option>
+                <el-option label="班组2" value="team2"></el-option>
+                <el-option label="班组3" value="team3"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="异常类型:">
+              <el-select
+                v-model="ledgerQueryParams.abnormalType"
+                placeholder="请选择"
+                size="small"
+                style="width: 150px;"
+                clearable
+              >
+                <el-option label="迟到" value="late"></el-option>
+                <el-option label="早退" value="early_leave"></el-option>
+                <el-option label="旷工" value="absent"></el-option>
+                <el-option label="缺卡" value="missing_card"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="人员姓名:">
+              <el-input
+                v-model="ledgerQueryParams.name"
+                placeholder="请输入"
+                size="small"
+                style="width: 150px;"
+                clearable
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="异常状态:">
+              <el-select
+                v-model="ledgerQueryParams.status"
+                placeholder="请选择"
+                size="small"
+                style="width: 150px;"
+                clearable
+              >
+                <el-option label="待确认" value="pending"></el-option>
+                <el-option label="待审批" value="awaiting"></el-option>
+                <el-option label="已确认" value="confirmed"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="日期范围:">
+              <el-date-picker
+                v-model="ledgerQueryParams.dateRange"
+                type="daterange"
+                range-separator="-"
+                start-placeholder="起始日期"
+                end-placeholder="结束日期"
+                value-format="yyyy-MM-dd"
+                size="small"
+                style="width: 240px;"
+              ></el-date-picker>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleLedgerQuery">
+                查询
+              </el-button>
+              <el-button icon="el-icon-refresh" size="small" @click="handleLedgerReset">
+                重置
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 操作按钮栏 -->
+        <div class="action-bar">
+          <el-button type="primary" icon="el-icon-download" size="small" @click="handleLedgerExport">
+            导出
+          </el-button>
+        </div>
+
+        <!-- 表格区域 -->
+        <div class="table-container">
+          <el-table
+            ref="ledgerTable"
+            :data="ledgerTableData"
+            border
+            stripe
+            style="width: 100%;"
+            @selection-change="handleSelectionChange"
+          >
+            <el-table-column type="selection" width="50" align="center"></el-table-column>
+            <el-table-column label="序号" width="60" align="center">
+              <template slot-scope="scope">
+                {{ (ledgerCurrentPage - 1) * ledgerPageSize + scope.$index + 1 }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="name" label="人员姓名" width="100" align="center"></el-table-column>
+            <el-table-column prop="unit" label="单位" width="150" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="department" label="部门" width="150" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="team" label="班组" width="100" align="center"></el-table-column>
+            <el-table-column prop="abnormalType" label="异常类型" width="100" align="center">
+              <template slot-scope="scope">
+                <el-tag size="small" :type="getAbnormalTypeTag(scope.row.abnormalType)">
+                  {{ getAbnormalTypeText(scope.row.abnormalType) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="abnormalTime" label="异常时间" width="120" align="center"></el-table-column>
+            <el-table-column label="状态" width="100" align="center">
+              <template slot-scope="scope">
+                <el-tag size="small" :type="getLedgerStatusType(scope.row.status)">
+                  {{ getLedgerStatusText(scope.row.status) }}
+                </el-tag>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+      </div>
+
+      <!-- 分页 - 固定在底部 -->
+      <div class="pagination-wrapper">
+        <span class="total-text">共 {{ ledgerTotal }}条</span>
+        <div class="page-size-selector">
+          <span>每页显示：</span>
+          <el-radio-group v-model="ledgerPageSize" size="small" @change="handleLedgerSizeChange">
+            <el-radio-button :label="10">10</el-radio-button>
+            <el-radio-button :label="25">25</el-radio-button>
+            <el-radio-button :label="50">50</el-radio-button>
+          </el-radio-group>
+          <span>条</span>
+        </div>
+        <el-pagination
+          background
+          layout="prev, pager, next, jumper"
+          :total="ledgerTotal"
+          :page-size="ledgerPageSize"
+          :current-page="ledgerCurrentPage"
+          small
+          @current-change="handleLedgerCurrentChange"
+        ></el-pagination>
+      </div>
+    </div>
+    <!-- 异常数据台账信息页签内容结束 -->
+
+    <!-- 主内容区域结束 -->
     </div>
 
     <!-- 异常处理对话框 -->
@@ -381,11 +563,28 @@ export default {
         attachments: []
       },
       // 审批记录
-      approvalRecords: []
+      approvalRecords: [],
+
+      // 台账信息相关数据
+      ledgerQueryParams: {
+        unit: '',
+        department: '',
+        team: '',
+        abnormalType: '',
+        name: '',
+        status: '',
+        dateRange: []
+      },
+      ledgerTableData: [],
+      ledgerTotal: 0,
+      ledgerPageSize: 25,
+      ledgerCurrentPage: 1,
+      selectedRows: []
     };
   },
   created() {
     this.loadData();
+    this.loadLedgerData();
   },
   methods: {
     // 加载数据
@@ -496,9 +695,9 @@ export default {
     // 获取部门名称
     getDepartmentName(value) {
       const map = {
-        'hr': '人力资源',
-        'finance': '财务',
-        'production': '生产技术'
+        'legal': '法规部',
+        'service': '综合服务中心',
+        'union': '工会办'
       };
       return map[value] || '';
     },
@@ -689,16 +888,206 @@ export default {
       }
     },
 
-    // 加载台账数据
-    loadLedgerData() {
-      this.$message.info('加载异常数据台账信息');
-      // TODO: 实现台账数据加载逻辑
-    },
-
     // 加载预警数据
     loadWarningData() {
       this.$message.info('加载异常数据预警查询');
       // TODO: 实现预警数据加载逻辑
+    },
+
+    // ========== 台账信息相关方法 ==========
+
+    // 加载台账数据
+    loadLedgerData() {
+      console.log('=== 开始加载台账数据 ===');
+      console.log('查询参数:', this.ledgerQueryParams);
+      
+      // 模拟数据
+      const mockData = [
+        {
+          id: 1,
+          name: '张三',
+          unit: '云南电网有限责任公司',
+          department: '法规部',
+          team: '班组1',
+          abnormalType: 'late',
+          abnormalTime: '2024-12-15',
+          status: 'pending'
+        },
+        {
+          id: 2,
+          name: '李思',
+          unit: '云南电网有限责任公司',
+          department: '综合服务中心',
+          team: '班组1',
+          abnormalType: 'late',
+          abnormalTime: '2024-12-15',
+          status: 'awaiting'
+        },
+        {
+          id: 3,
+          name: '王武',
+          unit: '云南电网有限责任公司',
+          department: '综合服务中心',
+          team: '班组1',
+          abnormalType: 'late',
+          abnormalTime: '2024-12-14',
+          status: 'confirmed'
+        },
+        {
+          id: 4,
+          name: '王战',
+          unit: '云南电网有限责任公司',
+          department: '工会办',
+          team: '班组1',
+          abnormalType: 'late',
+          abnormalTime: '2024-12-14',
+          status: 'confirmed'
+        }
+      ];
+
+      // 根据查询条件过滤
+      let filtered = [...mockData];
+
+      if (this.ledgerQueryParams.unit) {
+        filtered = filtered.filter(item => 
+          item.unit.includes(this.getUnitName(this.ledgerQueryParams.unit))
+        );
+      }
+
+      if (this.ledgerQueryParams.department) {
+        filtered = filtered.filter(item => 
+          item.department.includes(this.getDepartmentName(this.ledgerQueryParams.department))
+        );
+      }
+
+      if (this.ledgerQueryParams.name) {
+        filtered = filtered.filter(item => 
+          item.name.includes(this.ledgerQueryParams.name)
+        );
+      }
+
+      if (this.ledgerQueryParams.abnormalType) {
+        filtered = filtered.filter(item => item.abnormalType === this.ledgerQueryParams.abnormalType);
+      }
+
+      if (this.ledgerQueryParams.status) {
+        filtered = filtered.filter(item => item.status === this.ledgerQueryParams.status);
+      }
+
+      this.ledgerTableData = filtered;
+      this.ledgerTotal = filtered.length;
+      
+      console.log('台账数据加载完成');
+      console.log('表格数据:', this.ledgerTableData);
+      console.log('总数:', this.ledgerTotal);
+      console.log('=== 台账数据加载结束 ===');
+    },
+
+    // 台账信息查询
+    handleLedgerQuery() {
+      this.ledgerCurrentPage = 1;
+      this.loadLedgerData();
+      this.$message.success('查询成功');
+    },
+
+    // 台账信息重置
+    handleLedgerReset() {
+      this.ledgerQueryParams = {
+        unit: '',
+        department: '',
+        team: '',
+        abnormalType: '',
+        name: '',
+        status: '',
+        dateRange: []
+      };
+      this.ledgerCurrentPage = 1;
+      this.loadLedgerData();
+      this.$message.info('已重置查询条件');
+    },
+
+    // 台账信息导出
+    handleLedgerExport() {
+      if (this.ledgerTableData.length === 0) {
+        this.$message.warning('没有可导出的数据');
+        return;
+      }
+
+      // 构建导出数据
+      const exportData = this.ledgerTableData.map((row, index) => ({
+        '序号': (this.ledgerCurrentPage - 1) * this.ledgerPageSize + index + 1,
+        '人员姓名': row.name,
+        '单位': row.unit,
+        '部门': row.department,
+        '班组': row.team,
+        '异常类型': this.getAbnormalTypeText(row.abnormalType),
+        '异常时间': row.abnormalTime,
+        '状态': this.getLedgerStatusText(row.status)
+      }));
+
+      // 使用 CSV 导出
+      this.exportToCSV(exportData, `异常数据台账_${new Date().toISOString().slice(0, 10)}.csv`);
+
+      this.$message.success(`成功导出 ${exportData.length} 条数据`);
+    },
+
+    // 多选变化
+    handleSelectionChange(selection) {
+      this.selectedRows = selection;
+    },
+
+    // 台账分页大小改变
+    handleLedgerSizeChange(val) {
+      this.ledgerPageSize = val;
+      this.loadLedgerData();
+    },
+
+    // 台账当前页改变
+    handleLedgerCurrentChange(val) {
+      this.ledgerCurrentPage = val;
+      this.loadLedgerData();
+    },
+
+    // 获取异常类型标签
+    getAbnormalTypeTag(type) {
+      const typeMap = {
+        'late': 'warning',
+        'early_leave': 'danger',
+        'absent': 'danger',
+        'missing_card': 'info'
+      };
+      return typeMap[type] || 'info';
+    },
+
+    // 获取异常类型文本
+    getAbnormalTypeText(type) {
+      const textMap = {
+        'late': '迟到',
+        'early_leave': '早退',
+        'absent': '旷工',
+        'missing_card': '缺卡'
+      };
+      return textMap[type] || type;
+    },
+
+    // 获取台账状态标签类型
+    getLedgerStatusType(status) {
+      const typeMap = {
+        'pending': 'warning',
+        'awaiting': 'info',
+        'confirmed': 'success'
+      };
+      return typeMap[status] || 'info';
+    },
+
+    // 获取台账状态文本
+    getLedgerStatusText(status) {
+      const textMap = {
+        'pending': '待确认',
+        'awaiting': '待审批',
+        'confirmed': '已确认'
+      };
+      return textMap[status] || status;
     },
 
     // 分页大小改变
@@ -902,6 +1291,14 @@ export default {
   color: #606266;
 }
 
+.page-size-selector {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  color: #606266;
+}
+
 /* 异常处理对话框样式 */
 .process-dialog-content {
   max-height: calc(85vh - 200px);
@@ -1094,7 +1491,54 @@ export default {
   font-weight: 500;
 }
 
-/* 响应式 */
+/* 台账信息页签样式 */
+.ledger-tab {
+  display: flex;
+  flex-direction: column;
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 台账信息页签样式 */
+.ledger-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 可滚动内容容器 - 核心！*/
+.scrollable-content {
+  flex: 1;
+  overflow-y: auto;
+  min-height: 0;
+  padding-bottom: 16px;
+}
+
+.tab-content {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.action-bar {
+  background-color: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.table-container {
+  background-color: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+}
 @media (max-width: 1400px) {
   .stats-cards {
     flex-wrap: wrap;
