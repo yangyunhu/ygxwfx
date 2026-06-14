@@ -347,10 +347,175 @@
       </div>
 
       <!-- 打卡人员设置页签内容 -->
-      <div v-if="activeTab === 'punch'" class="tab-content">
-        <div class="empty-state">
-          <i class="el-icon-user"></i>
-          <p>打卡人员设置功能待开发...</p>
+      <div v-if="activeTab === 'punch'" class="tab-content punch-tab">
+        <!-- 查询栏 -->
+        <div class="query-bar">
+          <el-form :inline="true" size="small">
+            <el-form-item label="姓名：">
+              <el-input
+                v-model="punchQueryParams.name"
+                placeholder="请输入"
+                clearable
+                style="width: 200px;"
+              ></el-input>
+            </el-form-item>
+            
+            <el-form-item label="月份：">
+              <el-select
+                v-model="punchQueryParams.month"
+                placeholder="请选择"
+                clearable
+                style="width: 200px;"
+              >
+                <el-option label="2025-04" value="2025-04"></el-option>
+                <el-option label="2025-03" value="2025-03"></el-option>
+                <el-option label="2025-02" value="2025-02"></el-option>
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item label="数据类型：">
+              <el-select
+                v-model="punchQueryParams.dataType"
+                placeholder="请选择"
+                clearable
+                style="width: 200px;"
+              >
+                <el-option label="全部" value="all"></el-option>
+                <el-option label="正常打卡" value="normal"></el-option>
+                <el-option label="异常打卡" value="abnormal"></el-option>
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item label="状态：">
+              <el-select
+                v-model="punchQueryParams.status"
+                placeholder="请选择"
+                clearable
+                style="width: 200px;"
+              >
+                <el-option label="全部" value="all"></el-option>
+                <el-option label="正在打卡" value="punching"></el-option>
+                <el-option label="已结束" value="ended"></el-option>
+              </el-select>
+            </el-form-item>
+            
+            <el-form-item>
+              <el-button type="primary" icon="el-icon-search" @click="handlePunchQuery">
+                查询
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 操作按钮栏 -->
+        <div class="action-bar">
+          <el-button type="primary" size="small" @click="handlePunchAdd">
+            新增人员
+          </el-button>
+          <el-button type="primary" size="small" @click="handlePunchBatchSet">
+            批量设置
+          </el-button>
+          <el-button type="primary" size="small" @click="handlePunchBatchCancel">
+            批量取消
+          </el-button>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="table-wrapper">
+          <el-table
+            :data="punchTableData"
+            border
+            stripe
+            style="width: 100%"
+            height="calc(100vh - 380px)"
+            @selection-change="handlePunchSelectionChange"
+          >
+            <el-table-column 
+              type="selection" 
+              width="55" 
+              align="center"
+            ></el-table-column>
+            <el-table-column prop="order" label="序号" width="80" align="center"></el-table-column>
+            <el-table-column prop="unit" label="单位" min-width="120">
+              <template slot-scope="scope">
+                <span>{{ scope.row.unit }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="department" label="部门" min-width="120">
+              <template slot-scope="scope">
+                <span>{{ scope.row.department }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="attendanceGroup" label="考勤组" min-width="120">
+              <template slot-scope="scope">
+                <span>{{ scope.row.attendanceGroup }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="name" label="姓名" min-width="100">
+              <template slot-scope="scope">
+                <span>{{ scope.row.name }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="abnormalCount" label="异常次数" width="100" align="center">
+              <template slot-scope="scope">
+                <span>{{ scope.row.abnormalCount || '-' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="status" label="状态" width="100" align="center">
+              <template slot-scope="scope">
+                <el-tag :type="scope.row.status === '正在打卡' ? 'success' : 'info'" size="small">
+                  {{ scope.row.status }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="location" label="打卡地点" min-width="150">
+              <template slot-scope="scope">
+                <span>{{ scope.row.location || '-' }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="totalCount" label="累计打卡次数" width="120" align="center">
+              <template slot-scope="scope">
+                <span>{{ scope.row.totalCount }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column prop="timeRange" label="打卡时间" min-width="200">
+              <template slot-scope="scope">
+                <span>{{ scope.row.timeRange }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="操作" width="200" align="center">
+              <template slot-scope="scope">
+                <el-button 
+                  type="text" 
+                  size="small"
+                  @click="handlePunchCancelLimit(scope.row)"
+                >
+                  取消打卡限制
+                </el-button>
+                <el-button 
+                  type="text" 
+                  size="small"
+                  @click="handlePunchViewDetail(scope.row)"
+                >
+                  查看打卡情况
+                </el-button>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination-wrapper">
+          <el-pagination
+            @size-change="handlePunchSizeChange"
+            @current-change="handlePunchCurrentChange"
+            :current-page="punchCurrentPage"
+            :page-sizes="[10, 25, 50]"
+            :page-size="punchPageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="punchTotal"
+          >
+          </el-pagination>
         </div>
       </div>
     </div>
@@ -578,6 +743,140 @@ export default {
       shiftTotal: 100,
       shiftPageSize: 25,
       shiftCurrentPage: 1,
+      
+      // 打卡人员设置相关
+      punchQueryParams: {                 // 查询参数
+        name: '',
+        month: '',
+        dataType: '',
+        status: ''
+      },
+      punchTableData: [                   // 表格数据
+        {
+          order: 1,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '张三',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 2,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '李四',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 3,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '王二',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 4,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '张三',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 5,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '李四',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 6,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '张三',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 7,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '李四',
+          abnormalCount: '',
+          status: '正在打卡',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 8,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '王二',
+          abnormalCount: '',
+          status: '已结束',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 9,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '张三',
+          abnormalCount: '',
+          status: '已结束',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        },
+        {
+          order: 10,
+          unit: '单位名称',
+          department: '部门名称',
+          attendanceGroup: '考勤组名称',
+          name: '李四',
+          abnormalCount: '',
+          status: '已结束',
+          location: '',
+          totalCount: 5,
+          timeRange: '2025-4-16 09:00 ~ 2025-4-19 18:00'
+        }
+      ],
+      punchSelectedRows: [],
+      punchTotal: 100,
+      punchPageSize: 25,
+      punchCurrentPage: 1,
       
       // 异常预警配置相关
       warningAddDialogVisible: false,       // 新增对话框显示状态
@@ -1455,6 +1754,99 @@ export default {
           // 用户取消删除
         });
     },
+
+    // ==================== 打卡人员设置相关方法 ====================
+
+    // 查询
+    handlePunchQuery() {
+      console.log('=== 打卡人员设置-查询 ===');
+      console.log('查询参数:', this.punchQueryParams);
+      
+      // 模拟查询操作
+      this.$message.success('查询成功');
+    },
+
+    // 新增人员
+    handlePunchAdd() {
+      console.log('=== 打卡人员设置-新增人员 ===');
+      this.$message.info('新增人员功能待开发');
+    },
+
+    // 批量设置
+    handlePunchBatchSet() {
+      console.log('=== 打卡人员设置-批量设置 ===');
+      
+      if (this.punchSelectedRows.length === 0) {
+        this.$message.warning('请先选择要设置的人员');
+        return;
+      }
+      
+      this.$message.success(`已对 ${this.punchSelectedRows.length} 人进行批量设置`);
+    },
+
+    // 批量取消
+    handlePunchBatchCancel() {
+      console.log('=== 打卡人员设置-批量取消 ===');
+      
+      if (this.punchSelectedRows.length === 0) {
+        this.$message.warning('请先选择要取消的人员');
+        return;
+      }
+      
+      this.$message.success(`已取消 ${this.punchSelectedRows.length} 人的打卡限制`);
+    },
+
+    // 表格选择变化
+    handlePunchSelectionChange(selection) {
+      this.punchSelectedRows = selection;
+    },
+
+    // 每页条数变化
+    handlePunchSizeChange(val) {
+      console.log('=== 打卡人员设置-每页显示条数变化 ===');
+      console.log('新值:', val);
+      this.punchPageSize = val;
+      this.punchCurrentPage = 1; // 重置为第一页
+      this.loadPunchData();
+    },
+
+    // 当前页变化
+    handlePunchCurrentChange(val) {
+      console.log('=== 打卡人员设置-当前页变化 ===');
+      console.log('新页码:', val);
+      this.punchCurrentPage = val;
+      this.loadPunchData();
+    },
+
+    // 加载数据（预留）
+    loadPunchData() {
+      console.log('=== 加载打卡人员数据 ===');
+      // 这里可以调用后端 API 获取数据
+    },
+
+    // 取消打卡限制
+    handlePunchCancelLimit(row) {
+      console.log('=== 打卡人员设置-取消打卡限制 ===', row);
+      
+      this.$confirm(`确定要取消"${row.name}"的打卡限制吗？`, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          console.log('取消限制的数据:', row);
+          this.$message.success(`已取消"${row.name}"的打卡限制`);
+        })
+        .catch(() => {
+          // 用户取消
+        });
+    },
+
+    // 查看打卡情况
+    handlePunchViewDetail(row) {
+      console.log('=== 打卡人员设置-查看打卡情况 ===', row);
+      this.$message.info(`查看"${row.name}"的打卡详情功能待开发`);
+    },
   }
 };
 </script>
@@ -1850,6 +2242,21 @@ export default {
   margin-top: 12px;
   padding-top: 12px;
   border-top: 1px solid #e4e7ed;
+}
+
+/* 打卡人员设置样式 */
+.punch-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.query-bar {
+  background: #fff;
+  padding: 16px;
+  border-radius: 4px;
+  margin-bottom: 16px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
 }
 
 /* 响应式适配 */
