@@ -40,6 +40,7 @@ import AttendanceGroupManagement from '../views/AttendanceGroupManagement.vue';
 import AbnormalDataManagement from '../views/AbnormalDataManagement.vue';
 import AttendanceConfigManagement from '../views/AttendanceConfigManagement.vue';
 import AttendanceStatistics from '../views/AttendanceStatistics.vue';
+import EmployeeBehaviorOverview from '../views/EmployeeBehaviorOverview.vue';
 
 Vue.use(Router);
 
@@ -78,7 +79,7 @@ export default new Router({
     {
       path: '/behavior-visual-dashboard/employee-overview',
       name: 'EmployeeBehaviorOverview',
-      component: ModulePlaceholder,
+      component: EmployeeBehaviorOverview,
       meta: { title: '员工行为总览-员工出勤情况', description: '员工行为总览页面，展示员工出勤情况综合视图。' }
     },
     {
