@@ -372,6 +372,126 @@
     </div>
     <!-- 异常数据台账信息页签内容结束 -->
 
+    <!-- 异常数据预警查询页签内容 -->
+    <div v-if="activeTab === 'warning'" class="tab-content warning-tab">
+      <!-- 可滚动内容容器 -->
+      <div class="scrollable-content">
+        <!-- 查询条件 -->
+        <div class="query-section">
+          <el-form :inline="true" class="query-form">
+            <el-form-item label="单位:">
+              <el-select
+                v-model="warningQueryParams.unit"
+                placeholder="请选择"
+                size="small"
+                style="width: 150px;"
+                clearable
+              >
+                <el-option label="云南电网有限责任公司" value="yunnan"></el-option>
+                <el-option label="昆明供电局" value="kunming"></el-option>
+                <el-option label="曲靖供电局" value="qujing"></el-option>
+              </el-select>
+            </el-form-item>
+            <el-form-item label="开始时间:">
+              <el-date-picker
+                v-model="warningQueryParams.startDate"
+                type="date"
+                placeholder="选择日期"
+                value-format="yyyy-MM-dd"
+                size="small"
+                style="width: 150px;"
+              ></el-date-picker>
+            </el-form-item>
+            <el-form-item label="-">
+              <span>截止时间:</span>
+            </el-form-item>
+            <el-form-item>
+              <el-date-picker
+                v-model="warningQueryParams.endDate"
+                type="date"
+                placeholder="选择日期"
+                value-format="yyyy-MM-dd"
+                size="small"
+                style="width: 150px;"
+              ></el-date-picker>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleWarningQuery">
+                查询
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 图表区域 -->
+        <div class="charts-container">
+          <!-- 左侧：异常数据分布情况 -->
+          <div class="chart-panel left-panel">
+            <div class="panel-header">
+              <i class="el-icon-pie-chart"></i>
+              <span class="panel-title">异常数据分布情况</span>
+              <span class="link-text">点击联动</span>
+            </div>
+            <div class="chart-content">
+              <!-- 环形图 -->
+              <div ref="distributionChart" class="pie-chart"></div>
+              
+              <!-- 数据表格 -->
+              <div class="data-table">
+                <table>
+                  <thead>
+                    <tr>
+                      <th>类型：</th>
+                      <th>迟到/早退</th>
+                      <th>在岗证据不足/冲突</th>
+                      <th>旷工</th>
+                      <th>请假超时</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr>
+                      <td>占比：</td>
+                      <td>20%</td>
+                      <td>30%</td>
+                      <td>40%</td>
+                      <td>10%</td>
+                    </tr>
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+
+          <!-- 右侧：迟到异常 -->
+          <div class="chart-panel right-panel">
+            <div class="panel-header">
+              <i class="el-icon-warning-outline"></i>
+              <span class="panel-title">迟到异常</span>
+              <a href="#" class="detail-link">查看数据明细 &gt;</a>
+            </div>
+            <div class="panel-body">
+              <!-- 黄色提示框 -->
+              <div class="alert-box">
+                <p>注：该预警数据类型的预警方式为区间预警，区间值为xx-xx，异常数据在此范围内的人员包含在下述统计数据中</p>
+              </div>
+              
+              <!-- 统计说明 -->
+              <div class="stats-note">
+                注：统计数据截止2025年5月25日
+              </div>
+              
+              <!-- 柱状图 -->
+              <div class="bar-chart-wrapper">
+                <div class="unit-label">单位：次</div>
+                <div ref="lateBarChart" class="bar-chart"></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <!-- 异常数据预警查询页签内容结束 -->
+
     <!-- 主内容区域结束 -->
     </div>
 
@@ -523,6 +643,8 @@
 </template>
 
 <script>
+import * as echarts from 'echarts';
+
 export default {
   name: "AbnormalDataManagement",
   data() {
@@ -579,12 +701,28 @@ export default {
       ledgerTotal: 0,
       ledgerPageSize: 25,
       ledgerCurrentPage: 1,
-      selectedRows: []
+      selectedRows: [],
+
+      // 预警查询相关数据
+      warningQueryParams: {
+        unit: '',
+        department: '',
+        team: '',
+        abnormalType: '',
+        name: '',
+        status: '',
+        dateRange: []
+      },
+      warningTableData: [],
+      warningTotal: 0,
+      warningPageSize: 25,
+      warningCurrentPage: 1
     };
   },
   created() {
     this.loadData();
     this.loadLedgerData();
+    // 默认不加载预警数据，等用户切换到预警页签时再加载
   },
   methods: {
     // 加载数据
@@ -890,8 +1028,174 @@ export default {
 
     // 加载预警数据
     loadWarningData() {
-      this.$message.info('加载异常数据预警查询');
-      // TODO: 实现预警数据加载逻辑
+      console.log('=== 开始加载预警数据 ===');
+      console.log('查询参数:', this.warningQueryParams);
+      
+      // 模拟数据
+      const mockDistributionData = [
+        { value: 20, name: '迟到/早退' },
+        { value: 30, name: '在岗证据不足/冲突' },
+        { value: 40, name: '旷工' },
+        { value: 10, name: '请假超时' }
+      ];
+      
+      const mockLateData = [
+        { month: '1月', count: 285 },
+        { month: '2月', count: 250 },
+        { month: '3月', count: 320 },
+        { month: '4月', count: 310 },
+        { month: '5月', count: 285 }
+      ];
+      
+      this.warningTableData = mockDistributionData;
+      this.warningTotal = mockLateData.reduce((sum, item) => sum + item.count, 0);
+      
+      // 延迟初始化图表，确保 DOM 已渲染
+      this.$nextTick(() => {
+        this.initPieChart();
+        this.initBarChart();
+      });
+      
+      this.$message.success('预警数据加载成功');
+    },
+
+    // 初始化环形图
+    initPieChart() {
+      if (!this.$refs.distributionChart) return;
+      
+      const chart = echarts.init(this.$refs.distributionChart);
+      
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          formatter: '{b}: {c} ({d}%)'
+        },
+        legend: {
+          orient: 'vertical',
+          right: 10,
+          top: 'center',
+          data: ['迟到/早退', '在岗证据不足/冲突', '旷工', '请假超时']
+        },
+        series: [
+          {
+            name: '异常数据分布',
+            type: 'pie',
+            radius: ['50%', '70%'],
+            avoidLabelOverlap: false,
+            itemStyle: {
+              borderRadius: 10,
+              borderColor: '#fff',
+              borderWidth: 2
+            },
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{b}\n{d}%'
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: 16,
+                fontWeight: 'bold'
+              }
+            },
+            labelLine: {
+              show: true
+            },
+            data: [
+              { value: 20, name: '迟到/早退', itemStyle: { color: '#5470C6' } },
+              { value: 30, name: '在岗证据不足/冲突', itemStyle: { color: '#91CC75' } },
+              { value: 40, name: '旷工', itemStyle: { color: '#FAC858' } },
+              { value: 10, name: '请假超时', itemStyle: { color: '#EE6666' } }
+            ]
+          }
+        ]
+      };
+      
+      chart.setOption(option);
+      
+      // 响应式调整
+      window.addEventListener('resize', () => {
+        chart.resize();
+      });
+    },
+
+    // 初始化柱状图
+    initBarChart() {
+      if (!this.$refs.lateBarChart) return;
+      
+      const chart = echarts.init(this.$refs.lateBarChart);
+      
+      const option = {
+        tooltip: {
+          trigger: 'axis',
+          axisPointer: {
+            type: 'shadow'
+          }
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '3%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: ['1月', '2月', '3月', '4月', '5月'],
+          axisTick: {
+            alignWithLabel: true
+          },
+          axisLabel: {
+            fontSize: 12,
+            color: '#606266'
+          }
+        },
+        yAxis: {
+          type: 'value',
+          max: 350,
+          interval: 50,
+          axisLabel: {
+            fontSize: 12,
+            color: '#606266'
+          },
+          splitLine: {
+            lineStyle: {
+              color: '#E4E7ED'
+            }
+          }
+        },
+        series: [
+          {
+            name: '迟到次数',
+            type: 'bar',
+            barWidth: '50%',
+            itemStyle: {
+              color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                { offset: 0, color: '#83bff6' },
+                { offset: 0.5, color: '#188df0' },
+                { offset: 1, color: '#188df0' }
+              ])
+            },
+            emphasis: {
+              itemStyle: {
+                color: new echarts.graphic.LinearGradient(0, 0, 0, 1, [
+                  { offset: 0, color: '#2378f7' },
+                  { offset: 0.7, color: '#2378f7' },
+                  { offset: 1, color: '#83bff6' }
+                ])
+              }
+            },
+            data: [285, 250, 320, 310, 285]
+          }
+        ]
+      };
+      
+      chart.setOption(option);
+      
+      // 响应式调整
+      window.addEventListener('resize', () => {
+        chart.resize();
+      });
     },
 
     // ========== 台账信息相关方法 ==========
@@ -1029,6 +1333,28 @@ export default {
       this.exportToCSV(exportData, `异常数据台账_${new Date().toISOString().slice(0, 10)}.csv`);
 
       this.$message.success(`成功导出 ${exportData.length} 条数据`);
+    },
+
+    // ========== 预警查询相关方法 ==========
+
+    // 预警查询
+    handleWarningQuery() {
+      console.log('=== 开始预警查询 ===');
+      console.log('查询参数:', this.warningQueryParams);
+      
+      // 重新加载图表数据
+      this.loadWarningData();
+    },
+
+    // 预警重置
+    handleWarningReset() {
+      this.warningQueryParams = {
+        unit: '',
+        startDate: '',
+        endDate: ''
+      };
+      this.loadWarningData();
+      this.$message.info('已重置查询条件');
     },
 
     // 多选变化
@@ -1539,6 +1865,165 @@ export default {
   border-radius: 4px;
   overflow: hidden;
 }
+
+/* 预警查询页签样式 */
+.warning-tab {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+/* 图表容器 */
+.charts-container {
+  display: flex;
+  gap: 16px;
+  margin-top: 16px;
+}
+
+/* 图表面板 */
+.chart-panel {
+  background-color: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  padding: 16px;
+  flex-shrink: 0;
+}
+
+.left-panel {
+  flex: 1;
+  min-width: 400px;
+}
+
+.right-panel {
+  flex: 1.5;
+  min-width: 500px;
+}
+
+/* 面板头部 */
+.panel-header {
+  display: flex;
+  align-items: center;
+  margin-bottom: 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid #e4e7ed;
+}
+
+.panel-header i {
+  font-size: 18px;
+  color: #409EFF;
+  margin-right: 8px;
+}
+
+.panel-title {
+  font-size: 16px;
+  font-weight: bold;
+  color: #303133;
+  flex: 1;
+}
+
+.link-text {
+  font-size: 12px;
+  color: #909399;
+  cursor: pointer;
+}
+
+.detail-link {
+  font-size: 12px;
+  color: #409EFF;
+  text-decoration: none;
+}
+
+.detail-link:hover {
+  text-decoration: underline;
+}
+
+/* 左侧图表内容 */
+.chart-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.pie-chart {
+  width: 100%;
+  height: 300px;
+}
+
+/* 数据表格 */
+.data-table {
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.data-table table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.data-table th,
+.data-table td {
+  padding: 12px;
+  text-align: center;
+  border: 1px solid #e4e7ed;
+  font-size: 14px;
+}
+
+.data-table th {
+  background-color: #f5f7fa;
+  font-weight: bold;
+  color: #606266;
+}
+
+.data-table td {
+  color: #303133;
+}
+
+/* 右侧面板内容 */
+.panel-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 黄色提示框 */
+.alert-box {
+  background-color: #fdf6ec;
+  border: 1px solid #faecd8;
+  border-radius: 4px;
+  padding: 12px;
+}
+
+.alert-box p {
+  margin: 0;
+  font-size: 13px;
+  color: #e6a23c;
+  line-height: 1.6;
+}
+
+/* 统计说明 */
+.stats-note {
+  font-size: 13px;
+  color: #909399;
+  margin-top: 8px;
+}
+
+/* 柱状图包装器 */
+.bar-chart-wrapper {
+  margin-top: 16px;
+}
+
+.unit-label {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.bar-chart {
+  width: 100%;
+  height: 350px;
+}
+
 @media (max-width: 1400px) {
   .stats-cards {
     flex-wrap: wrap;
