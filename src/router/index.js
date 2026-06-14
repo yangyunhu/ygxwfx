@@ -35,6 +35,7 @@ import DataExportFunction from '../views/DataExportFunction.vue';
 import ExportRecordQuery from '../views/ExportRecordQuery.vue';
 import DataDictionary from '../views/DataDictionary.vue';
 import ModulePlaceholder from '../views/ModulePlaceholder.vue';
+import EmployeeAttendanceData from '../views/EmployeeAttendanceData.vue';
 
 Vue.use(Router);
 
@@ -42,9 +43,9 @@ export default new Router({
   routes: [
     {
       path: '/employee-attendance-behavior/data',
-      name: 'EmployeeAttendanceDataManagement',
-      component: ModulePlaceholder,
-      meta: { title: '员工出勤数据管理', description: '员工出勤数据管理模块页面，后续承载出勤数据维护与查询功能。' }
+      name: 'EmployeeAttendanceData',
+      component: EmployeeAttendanceData,
+      meta: { title: '员工出勤数据管理', description: '员工出勤数据管理页面，展示和管理各类考勤组信息。' }
     },
     {
       path: '/employee-attendance-behavior/abnormal',
@@ -59,22 +60,46 @@ export default new Router({
       meta: { title: '出勤配置管理', description: '出勤配置管理模块页面，后续承载出勤规则与参数配置功能。' }
     },
     {
-      path: '/behavior-visual-dashboard',
-      name: 'BehaviorVisualDashboard',
+      path: '/behavior-visual-dashboard/attendance-stats',
+      name: 'AttendanceStats',
       component: ModulePlaceholder,
-      meta: { title: '员工行为可视化数据看板', description: '员工行为可视化数据看板模块页面，后续承载统计看板与趋势展示功能。' }
+      meta: { title: '出勤情况统计', description: '员工出勤情况统计页面，展示各类出勤数据统计与分析。' }
     },
     {
-      path: '/behavior-intelligence-scenarios',
-      name: 'BehaviorIntelligenceScenarios',
+      path: '/behavior-visual-dashboard/employee-overview',
+      name: 'EmployeeBehaviorOverview',
       component: ModulePlaceholder,
-      meta: { title: '员工行为智能分析场景应用', description: '员工行为智能分析场景应用模块页面，后续承载智能分析场景功能。' }
+      meta: { title: '员工行为总览-员工出勤情况', description: '员工行为总览页面，展示员工出勤情况综合视图。' }
     },
     {
-      path: '/employee-credit-profile',
-      name: 'EmployeeCreditProfile',
+      path: '/behavior-intelligence-scenarios/model-management',
+      name: 'ModelManagement',
       component: ModulePlaceholder,
-      meta: { title: '员工信用画像', description: '员工信用画像模块页面，后续承载信用画像与指标汇总功能。' }
+      meta: { title: '智能分析模型管理', description: '智能分析模型管理页面，用于配置和管理各类行为分析模型。' }
+    },
+    {
+      path: '/behavior-intelligence-scenarios/work-saturation',
+      name: 'WorkSaturationAnalysis',
+      component: ModulePlaceholder,
+      meta: { title: '员工工作饱和度分析', description: '员工工作饱和度分析页面，展示员工工作量与饱和度统计。' }
+    },
+    {
+      path: '/employee-credit-profile/evaluation-standard',
+      name: 'CreditEvaluationStandard',
+      component: ModulePlaceholder,
+      meta: { title: '信用评价标准库', description: '信用评价标准库页面，用于管理和维护员工信用评价的标准体系。' }
+    },
+    {
+      path: '/employee-credit-profile/rating-data',
+      name: 'CreditRatingData',
+      component: ModulePlaceholder,
+      meta: { title: '信用评级数据管理', description: '信用评级数据管理页面，用于管理员工信用评级相关数据。' }
+    },
+    {
+      path: '/employee-credit-profile/profile-display',
+      name: 'CreditProfileDisplay',
+      component: ModulePlaceholder,
+      meta: { title: '信用画像展示', description: '信用画像展示页面，可视化展示员工信用画像与指标汇总。' }
     },
     {
       path: '/data-access',
@@ -262,16 +287,46 @@ export default new Router({
       component: DataDictionary
     },
     {
-      path: '/personal-attendance-app',
-      name: 'PersonalAttendanceApp',
+      path: '/personal-attendance-app/settings',
+      name: 'PersonalAttendanceSettings',
       component: ModulePlaceholder,
-      meta: { title: '个人出勤管理APP', description: '个人出勤管理APP模块页面，后续承载移动端出勤管理功能。' }
+      meta: { title: '我的设置', description: '个人出勤管理APP设置页面，用于配置个人偏好与参数。' }
     },
     {
-      path: '/team-behavior-portrait',
-      name: 'TeamBehaviorPortrait',
+      path: '/personal-attendance-app/attendance-stats',
+      name: 'PersonalAttendanceStats',
       component: ModulePlaceholder,
-      meta: { title: '员工（班组）行为画像', description: '员工（班组）行为画像模块页面，后续承载班组画像分析功能。' }
+      meta: { title: '出勤统计', description: '个人出勤统计页面，展示个人出勤数据统计与分析。' }
+    },
+    {
+      path: '/personal-attendance-app/home',
+      name: 'PersonalAttendanceHome',
+      component: ModulePlaceholder,
+      meta: { title: '首页', description: '个人出勤管理APP首页，展示个人出勤概览信息。' }
+    },
+    {
+      path: '/team-behavior-portrait/attendance-stability',
+      name: 'AttendanceStabilityAnalysis',
+      component: ModulePlaceholder,
+      meta: { title: '出勤稳定性分析', description: '出勤稳定性分析页面，展示员工或班组的出勤稳定情况。' }
+    },
+    {
+      path: '/team-behavior-portrait/attendance-pattern',
+      name: 'AttendancePatternAnalysis',
+      component: ModulePlaceholder,
+      meta: { title: '出勤时间规律分析', description: '出勤时间规律分析页面，分析员工或班组的出勤时间规律。' }
+    },
+    {
+      path: '/team-behavior-portrait/leave-behavior',
+      name: 'LeaveBehaviorAnalysis',
+      component: ModulePlaceholder,
+      meta: { title: '请假行为分析', description: '请假行为分析页面，统计和分析员工或班组的请假行为模式。' }
+    },
+    {
+      path: '/team-behavior-portrait/comprehensive-evaluation',
+      name: 'ComprehensiveEvaluation',
+      component: ModulePlaceholder,
+      meta: { title: '员工行为画像综合评估', description: '员工行为画像综合评估页面，提供多维度的行为画像综合评分与展示。' }
     },
     {
       path: '/',

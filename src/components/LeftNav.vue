@@ -36,9 +36,13 @@
           <i class="el-icon-folder-opened"></i>
           <span>员工行为可视化数据看板</span>
         </template>
-        <el-menu-item index="/behavior-visual-dashboard">
+        <el-menu-item index="/behavior-visual-dashboard/attendance-stats">
           <i class="el-icon-document"></i>
-          <span>员工行为可视化数据看板</span>
+          <span>出勤情况统计</span>
+        </el-menu-item>
+        <el-menu-item index="/behavior-visual-dashboard/employee-overview">
+          <i class="el-icon-document"></i>
+          <span>员工行为总览-员工出勤情况</span>
         </el-menu-item>
       </el-submenu>
 
@@ -47,9 +51,13 @@
           <i class="el-icon-folder-opened"></i>
           <span>员工行为智能分析场景应用</span>
         </template>
-        <el-menu-item index="/behavior-intelligence-scenarios">
+        <el-menu-item index="/behavior-intelligence-scenarios/model-management">
           <i class="el-icon-document"></i>
-          <span>员工行为智能分析场景应用</span>
+          <span>智能分析模型管理</span>
+        </el-menu-item>
+        <el-menu-item index="/behavior-intelligence-scenarios/work-saturation">
+          <i class="el-icon-document"></i>
+          <span>员工工作饱和度分析</span>
         </el-menu-item>
       </el-submenu>
 
@@ -58,9 +66,17 @@
           <i class="el-icon-folder-opened"></i>
           <span>员工信用画像</span>
         </template>
-        <el-menu-item index="/employee-credit-profile">
+        <el-menu-item index="/employee-credit-profile/evaluation-standard">
           <i class="el-icon-document"></i>
-          <span>员工信用画像</span>
+          <span>信用评价标准库</span>
+        </el-menu-item>
+        <el-menu-item index="/employee-credit-profile/rating-data">
+          <i class="el-icon-document"></i>
+          <span>信用评级数据管理</span>
+        </el-menu-item>
+        <el-menu-item index="/employee-credit-profile/profile-display">
+          <i class="el-icon-document"></i>
+          <span>信用画像展示</span>
         </el-menu-item>
       </el-submenu>
 
@@ -168,9 +184,17 @@
           <i class="el-icon-folder-opened"></i>
           <span>个人出勤管理APP</span>
         </template>
-        <el-menu-item index="/personal-attendance-app">
+        <el-menu-item index="/personal-attendance-app/settings">
           <i class="el-icon-document"></i>
-          <span>个人出勤管理APP</span>
+          <span>我的设置</span>
+        </el-menu-item>
+        <el-menu-item index="/personal-attendance-app/attendance-stats">
+          <i class="el-icon-document"></i>
+          <span>出勤统计</span>
+        </el-menu-item>
+        <el-menu-item index="/personal-attendance-app/home">
+          <i class="el-icon-document"></i>
+          <span>首页</span>
         </el-menu-item>
       </el-submenu>
 
@@ -179,9 +203,21 @@
           <i class="el-icon-folder-opened"></i>
           <span>员工（班组）行为画像</span>
         </template>
-        <el-menu-item index="/team-behavior-portrait">
+        <el-menu-item index="/team-behavior-portrait/attendance-stability">
           <i class="el-icon-document"></i>
-          <span>员工（班组）行为画像</span>
+          <span>出勤稳定性分析</span>
+        </el-menu-item>
+        <el-menu-item index="/team-behavior-portrait/attendance-pattern">
+          <i class="el-icon-document"></i>
+          <span>出勤时间规律分析</span>
+        </el-menu-item>
+        <el-menu-item index="/team-behavior-portrait/leave-behavior">
+          <i class="el-icon-document"></i>
+          <span>请假行为分析</span>
+        </el-menu-item>
+        <el-menu-item index="/team-behavior-portrait/comprehensive-evaluation">
+          <i class="el-icon-document"></i>
+          <span>员工行为画像综合评估</span>
         </el-menu-item>
       </el-submenu>
 
@@ -410,6 +446,10 @@ export default {
   border-right: none;
   transition: width 0.28s ease;
   overflow: visible;
+  user-select: none;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
 }
 
 .left-nav.collapsed {
