@@ -467,7 +467,7 @@
             <div class="panel-header">
               <i class="el-icon-warning-outline"></i>
               <span class="panel-title">{{ selectedAbnormalType }}</span>
-              <a href="#" class="detail-link">查看数据明细 &gt;</a>
+              <a href="#" class="detail-link" @click.prevent="handleViewWarningDetail">查看数据明细 &gt;</a>
             </div>
             <div class="panel-body">
               <!-- 黄色提示框 -->
@@ -494,6 +494,125 @@
 
     <!-- 主内容区域结束 -->
     </div>
+
+    <!-- 预警数据详情对话框 -->
+    <el-dialog
+      title="预警数据详情"
+      :visible.sync="warningDetailDialogVisible"
+      width="90%"
+      top="5vh"
+      @close="handleWarningDetailDialogClose"
+    >
+      <div class="warning-detail-content">
+        <!-- 查询条件 -->
+        <div class="query-section">
+          <el-form :inline="true" class="query-form">
+            <el-form-item label="人员姓名:">
+              <el-input
+                v-model="warningDetailQueryParams.name"
+                placeholder="请输入"
+                size="small"
+                style="width: 150px;"
+                clearable
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="单位:">
+              <el-input
+                v-model="warningDetailQueryParams.unit"
+                placeholder="请输入"
+                size="small"
+                style="width: 150px;"
+                clearable
+              ></el-input>
+            </el-form-item>
+            <el-form-item label="日期范围:">
+              <el-date-picker
+                v-model="warningDetailQueryParams.dateRange"
+                type="daterange"
+                range-separator="-"
+                start-placeholder="起始日期"
+                end-placeholder="结束日期"
+                value-format="yyyy-MM-dd"
+                size="small"
+                style="width: 240px;"
+              ></el-date-picker>
+            </el-form-item>
+            <el-form-item>
+              <el-button type="primary" icon="el-icon-search" size="small" @click="handleWarningDetailQuery">
+                查询
+              </el-button>
+              <el-button icon="el-icon-refresh" size="small" @click="handleWarningDetailReset">
+                重置
+              </el-button>
+              <el-button type="success" icon="el-icon-download" size="small" @click="handleWarningDetailExport">
+                导出
+              </el-button>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 数据表格 -->
+        <div class="table-wrapper">
+          <el-table
+            :data="warningDetailTableData"
+            border
+            stripe
+            height="calc(100vh - 380px)"
+            style="width: 100%;"
+          >
+            <el-table-column type="selection" width="50" align="center"></el-table-column>
+            <el-table-column label="序号" width="60" align="center">
+              <template slot-scope="scope">
+                {{ (warningDetailCurrentPage - 1) * warningDetailPageSize + scope.$index + 1 }}
+              </template>
+            </el-table-column>
+            <el-table-column prop="unit" label="单位名称" width="150" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="department" label="部门" width="120" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="team" label="班组" width="120" show-overflow-tooltip></el-table-column>
+            <el-table-column prop="name" label="姓名" width="100" align="center"></el-table-column>
+            <el-table-column prop="abnormalType" label="异常类型" width="150" align="center">
+              <template slot-scope="scope">
+                <el-tag size="small" :type="getAbnormalTypeTag(scope.row.abnormalType)">
+                  {{ scope.row.abnormalType }}
+                </el-tag>
+              </template>
+            </el-table-column>
+            <el-table-column prop="warningCount" label="累计预警次数" width="120" align="center">
+              <template slot-scope="scope">
+                <span style="font-weight: bold; color: #F56C6C;">{{ scope.row.warningCount }}</span>
+              </template>
+            </el-table-column>
+          </el-table>
+        </div>
+
+        <!-- 分页 -->
+        <div class="pagination-wrapper">
+          <span class="total-text">共 {{ warningDetailTotal }}条</span>
+          <div class="page-size-selector">
+            <span>每页显示：</span>
+            <el-radio-group v-model="warningDetailPageSize" size="small" @change="handleWarningDetailSizeChange">
+              <el-radio-button :label="10">10</el-radio-button>
+              <el-radio-button :label="25">25</el-radio-button>
+              <el-radio-button :label="50">50</el-radio-button>
+            </el-radio-group>
+            <span>条</span>
+          </div>
+          <el-pagination
+            background
+            layout="prev, pager, next, jumper"
+            :total="warningDetailTotal"
+            :page-size="warningDetailPageSize"
+            :current-page="warningDetailCurrentPage"
+            small
+            @current-change="handleWarningDetailCurrentChange"
+          ></el-pagination>
+        </div>
+      </div>
+
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="warningDetailDialogVisible = false">返回</el-button>
+      </div>
+    </el-dialog>
 
     <!-- 异常处理对话框 -->
     <el-dialog
@@ -731,7 +850,19 @@ export default {
         '在岗证据不足/冲突': [180, 200, 220, 190, 210],
         '旷工': [45, 50, 60, 55, 48],
         '请假超时': [30, 35, 40, 38, 42]
-      }
+      },
+      
+      // 预警数据详情对话框
+      warningDetailDialogVisible: false,
+      warningDetailQueryParams: {
+        name: '',
+        unit: '',
+        dateRange: []
+      },
+      warningDetailTableData: [],
+      warningDetailTotal: 0,
+      warningDetailPageSize: 25,
+      warningDetailCurrentPage: 1
     };
   },
   created() {
@@ -1438,6 +1569,123 @@ export default {
       this.$message.info('已重置查询条件');
     },
 
+    // 查看数据明细
+    handleViewWarningDetail() {
+      console.log('=== 查看预警数据详情 ===');
+      console.log('当前选中类型:', this.selectedAbnormalType);
+      
+      this.warningDetailDialogVisible = true;
+      this.warningDetailCurrentPage = 1;
+      this.loadWarningDetailData();
+    },
+
+    // 加载预警详情数据
+    loadWarningDetailData() {
+      console.log('=== 开始加载预警详情数据 ===');
+      console.log('查询参数:', this.warningDetailQueryParams);
+      
+      // 模拟数据 - 根据当前选中的异常类型生成对应数据
+      const mockData = [
+        { id: 1, unit: '曲靖供电局', department: '安监部', team: 'XX班组', name: '张三', abnormalType: this.selectedAbnormalType, warningCount: 23 },
+        { id: 2, unit: '玉溪供电局', department: '财务部', team: 'XX班组', name: '李思', abnormalType: this.selectedAbnormalType, warningCount: 12 },
+        { id: 3, unit: '昆明供电局', department: '安监部', team: 'XX班组', name: '王武', abnormalType: '在岗证据不足/冲突', warningCount: 8 },
+        { id: 4, unit: '昆明供电局', department: '财务部', team: 'XX班组', name: '杜兰', abnormalType: '在岗证据不足/冲突', warningCount: 6 },
+        { id: 5, unit: '昆明供电局', department: '安监部', team: 'XX班组', name: '李峰', abnormalType: '在岗证据不足/冲突', warningCount: 4 },
+        { id: 6, unit: '昆明供电局', department: '财务部', team: 'XX班组', name: '张毅', abnormalType: '在岗证据不足/冲突', warningCount: 2 },
+        { id: 7, unit: '昆明供电局', department: '办公室', team: 'XX班组', name: '张三', abnormalType: '请假超时', warningCount: 2 },
+        { id: 8, unit: '红河供电局', department: '办公室', team: 'XX班组', name: '李思', abnormalType: '请假超时', warningCount: 2 },
+        { id: 9, unit: '保山供电局', department: '办公室', team: 'XX班组', name: '王武', abnormalType: '请假超时', warningCount: 2 }
+      ];
+      
+      // 根据查询条件过滤
+      let filtered = [...mockData];
+      
+      if (this.warningDetailQueryParams.name) {
+        filtered = filtered.filter(item => 
+          item.name.includes(this.warningDetailQueryParams.name)
+        );
+      }
+      
+      if (this.warningDetailQueryParams.unit) {
+        filtered = filtered.filter(item => 
+          item.unit.includes(this.warningDetailQueryParams.unit)
+        );
+      }
+      
+      this.warningDetailTableData = filtered;
+      this.warningDetailTotal = filtered.length;
+      
+      this.$message.success(`查询成功，共 ${filtered.length} 条数据`);
+    },
+
+    // 预警详情查询
+    handleWarningDetailQuery() {
+      this.warningDetailCurrentPage = 1;
+      this.loadWarningDetailData();
+    },
+
+    // 预警详情重置
+    handleWarningDetailReset() {
+      this.warningDetailQueryParams = {
+        name: '',
+        unit: '',
+        dateRange: []
+      };
+      this.warningDetailCurrentPage = 1;
+      this.loadWarningDetailData();
+      this.$message.info('已重置查询条件');
+    },
+
+    // 预警详情导出
+    handleWarningDetailExport() {
+      if (this.warningDetailTableData.length === 0) {
+        this.$message.warning('没有可导出的数据');
+        return;
+      }
+
+      // 构建导出数据
+      const exportData = this.warningDetailTableData.map((row, index) => ({
+        '序号': (this.warningDetailCurrentPage - 1) * this.warningDetailPageSize + index + 1,
+        '单位名称': row.unit,
+        '部门': row.department,
+        '班组': row.team,
+        '姓名': row.name,
+        '异常类型': row.abnormalType,
+        '累计预警次数': row.warningCount
+      }));
+
+      // 使用 CSV 导出
+      this.exportToCSV(exportData, `预警数据详情_${this.selectedAbnormalType}_${new Date().toISOString().slice(0, 10)}.csv`);
+
+      this.$message.success(`成功导出 ${exportData.length} 条数据`);
+    },
+
+    // 预警详情分页大小改变
+    handleWarningDetailSizeChange(val) {
+      this.warningDetailPageSize = val;
+      this.loadWarningDetailData();
+    },
+
+    // 预警详情当前页改变
+    handleWarningDetailCurrentChange(val) {
+      this.warningDetailCurrentPage = val;
+      this.loadWarningDetailData();
+    },
+
+    // 预警详情对话框关闭
+    handleWarningDetailDialogClose() {
+      console.log('=== 关闭预警数据详情对话框 ===');
+      this.warningDetailQueryParams = {
+        name: '',
+        unit: '',
+        dateRange: []
+      };
+      this.warningDetailTableData = [];
+      this.warningDetailTotal = 0;
+      this.warningDetailPageSize = 25;
+      this.warningDetailCurrentPage = 1;
+    },
+
     // 多选变化
     handleSelectionChange(selection) {
       this.selectedRows = selection;
@@ -2103,6 +2351,13 @@ export default {
 .bar-chart {
   width: 100%;
   height: 350px;
+}
+
+/* 预警数据详情对话框样式 */
+.warning-detail-content {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
 }
 
 @media (max-width: 1400px) {
