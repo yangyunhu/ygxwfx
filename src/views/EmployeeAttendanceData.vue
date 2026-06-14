@@ -127,6 +127,138 @@
         </div>
       </div>
     </div>
+
+    <!-- 考勤查看确认对话框 -->
+    <el-dialog
+      :title="'考勤查看确认 - ' + viewingGroupName"
+      :visible.sync="viewDialogVisible"
+      width="95%"
+      top="3vh"
+      @close="handleViewDialogClose"
+    >
+      <!-- 基本信息 -->
+      <div class="attendance-info-header">
+        <div class="info-item">
+          <span class="label">考勤周期:</span>
+          <span class="value">{{ viewingMonth }}月考勤</span>
+        </div>
+        <div class="info-item">
+          <span class="label">考勤部门:</span>
+          <span class="value">{{ viewingGroupName }}</span>
+        </div>
+        <div class="info-item">
+          <span class="label">考勤人数:</span>
+          <span class="value">{{ viewingMembers.length }}人</span>
+        </div>
+      </div>
+
+      <!-- 考勤类型说明 -->
+      <el-alert
+        type="info"
+        :closable="false"
+        style="margin-bottom: 16px;"
+      >
+        <template slot="title">
+          <div class="attendance-legend">
+            <span class="legend-item">出勤记“√”</span>
+            <span class="legend-item">出差记“Δ”</span>
+            <span class="legend-item">年休假记“年”</span>
+            <span class="legend-item">探亲假记“探”</span>
+            <span class="legend-item">事假记“事”</span>
+            <span class="legend-item">法定假记“法”</span>
+            <span class="legend-item">病假记“病”</span>
+            <span class="legend-item">流产假记“流”</span>
+            <span class="legend-item">产假记“产”</span>
+            <span class="legend-item">哺乳假记“哺”</span>
+            <span class="legend-item">陪护假记“陪”</span>
+            <span class="legend-item">节育假记“节”</span>
+            <span class="legend-item">育儿假记“儿”</span>
+            <span class="legend-item">父母护理假记“护”</span>
+            <span class="legend-item">婚假记“婚”</span>
+            <span class="legend-item">丧假记“丧”</span>
+            <span class="legend-item">节假日加班记“加(节)”</span>
+            <span class="legend-item">其他休假记“其他休假(休假类型)”</span>
+            <span class="legend-item">补休假记“补”</span>
+            <span class="legend-item">旷工记“旷”</span>
+            <span class="legend-item">迟到记“迟”</span>
+            <span class="legend-item">早退记“退”</span>
+            <span class="legend-item">其他考勤记“其他考勤(考勤类型)”</span>
+          </div>
+        </template>
+      </el-alert>
+
+      <!-- 操作栏 -->
+      <div class="toolbar">
+        <el-input
+          v-model="memberSearchKeyword"
+          placeholder="请输入关键字查找姓名"
+          size="small"
+          prefix-icon="el-icon-search"
+          style="width: 200px; margin-right: 12px;"
+          clearable
+        ></el-input>
+        <el-button type="primary" size="small" icon="el-icon-search" @click="handleMemberQuery">
+          查询
+        </el-button>
+        <el-button type="success" size="small" icon="el-icon-download" @click="handleExportAttendance">
+          导出
+        </el-button>
+        <div class="status-indicators">
+          <span class="indicator"><i class="dot abnormal-correct"></i>异常修正数据</span>
+          <span class="indicator"><i class="dot abnormal"></i>异常数据</span>
+          <span class="indicator"><i class="dot manual-correct"></i>手动修正数据</span>
+        </div>
+      </div>
+
+      <!-- 考勤表格 -->
+      <div class="attendance-table-wrapper">
+        <el-table
+          ref="attendanceTable"
+          :data="filteredViewingMembers"
+          border
+          stripe
+          height="500"
+          style="width: 100%;"
+        >
+          <el-table-column label="序号" width="60" align="center">
+            <template slot-scope="scope">
+              {{ scope.$index + 1 }}
+            </template>
+          </el-table-column>
+          <el-table-column prop="name" label="姓名" width="80" align="center" fixed></el-table-column>
+          <el-table-column prop="employeeId" label="员工编码" width="100" align="center"></el-table-column>
+          
+          <!-- 动态生成日期列 -->
+          <el-table-column
+            v-for="day in daysInMonth"
+            :key="day"
+            :label="String(day).padStart(2, '0')"
+            min-width="40"
+            align="center"
+          >
+            <template slot="header">
+              <div class="date-header">
+                <span>{{ day }}</span>
+                <div class="am-pm">
+                  <span>上</span>
+                  <span>下</span>
+                </div>
+              </div>
+            </template>
+            <template slot-scope="scope">
+              <div class="attendance-cell">
+                <span :class="getCellClass(scope.row, day, 'am')">{{ getCellText(scope.row, day, 'am') }}</span>
+                <span :class="getCellClass(scope.row, day, 'pm')">{{ getCellText(scope.row, day, 'pm') }}</span>
+              </div>
+            </template>
+          </el-table-column>
+        </el-table>
+      </div>
+
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="viewDialogVisible = false">关闭</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -146,7 +278,14 @@ export default {
       attendanceGroups: [],
       total: 0,
       pageSize: 10,
-      currentPage: 1
+      currentPage: 1,
+      
+      // 考勤查看对话框
+      viewDialogVisible: false,
+      viewingGroupName: '',
+      viewingMonth: '',
+      viewingMembers: [],
+      memberSearchKeyword: ''
     };
   },
   created() {
@@ -169,6 +308,24 @@ export default {
           })
           .filter(Boolean);
       return filter(this.orgTreeData);
+    },
+    
+    // 获取当前月份的天数
+    daysInMonth() {
+      if (!this.viewingMonth) return [];
+      const [year, month] = this.viewingMonth.split('-').map(Number);
+      const lastDay = new Date(year, month, 0).getDate();
+      return Array.from({ length: lastDay }, (_, i) => i + 1);
+    },
+    
+    // 过滤查看的成员
+    filteredViewingMembers() {
+      if (!this.memberSearchKeyword) return this.viewingMembers;
+      const keyword = this.memberSearchKeyword.toLowerCase();
+      return this.viewingMembers.filter(member => 
+        member.name.toLowerCase().includes(keyword) ||
+        member.employeeId.toLowerCase().includes(keyword)
+      );
     }
   },
   watch: {
@@ -486,8 +643,203 @@ export default {
 
     // 查看详情
     handleView(group) {
-      this.$message.info(`查看考勤组: ${group.name}`);
-      // 跳转到详情页或打开对话框
+      this.viewingGroupName = group.name;
+      this.viewingMonth = this.selectedMonth || new Date().toISOString().slice(0, 7);
+      
+      // 模拟生成考勤组成员数据
+      this.viewingMembers = this.generateMockAttendanceData(group.memberCount);
+      
+      this.viewDialogVisible = true;
+    },
+    
+    // 生成模拟考勤数据
+    generateMockAttendanceData(count) {
+      const attendanceTypes = ['√', 'Δ', '年', '探', '事', '法', '病', '流', '产', '哺', '陪', '节', '儿', '护', '婚', '丧', '加(节)', '补', '旷', '迟', '退'];
+      
+      // 常见中文姓氏
+      const surnames = ['张', '李', '王', '刘', '陈', '杨', '赵', '黄', '周', '吴', '徐', '孙', '马', '朱', '胡', '郭', '何', '高', '林', '罗', '郑', '梁', '谢', '宋', '唐', '许', '韩', '冯', '邓', '曹', '彭', '曾', '肖', '田', '董', '袁', '潘', '于', '蒋', '蔡', '余', '杜', '叶', '程', '苏', '魏', '吕', '丁', '任', '沈', '姚', '卢', '姜', '崔', '钟', '谭', '陆', '汪', '范', '金', '石', '廖', '贾', '夏', '韦', '付', '方', '白', '邹', '孟', '熊', '秦', '邱', '江', '尹', '薛', '闫', '段', '雷', '侯', '龙', '史', '陶', '黎', '贺', '顾', '毛', '郝', '龚', '邵', '万', '钱', '严', '覃', '武', '戴', '莫', '孔', '向', '汤'];
+      
+      // 常见名字用字
+      const nameChars = ['伟', '芳', '娜', '敏', '静', '秀英', '丽', '强', '磊', '军', '洋', '勇', '艳', '杰', '娟', '涛', '明', '超', '秀兰', '霞', '平', '刚', '桂英', '华', '梅', '鑫', '玲', '飞', '桂兰', '英', '兰', '燕', '萍', '波', '浩', '芬', '建华', '建国', '建军', '红', '玉兰', '桂芳', '秀珍', '婷', '玉梅', '海', '毅', '俊', '峰', '健', '文', '辉', '龙', '兴', '亮', '志', '成', '建', '云', '风', '正', '义', '光', '民', '瑞', '祥', '克', '先', '思', '清', '庆', '树', '良', '友', '嘉', '德', '宝', '月', '雪', '荣', '根', '占', '忠', '有', '卫', '凤', '素', '翠', '锦', '玉', '春', '菊', '如', '惠', '珠', '爱', '枝', '巧', '大', '会', '小', '改', '子', '孝', '连', '广', '利', '南', '昌', '发', '全', '金', '学', '政', '一', '继', '群', '修', '永', '少', '汝', '怀', '士', '作', '伯', '从', '代', '绍', '汉', '定', '宪', '宜', '凡', '登', '科', '章', '进', '盛', '恩', '农', '颜', '时', '薄', '历', '水', '宾', '归', '海', '善', '富', '合', '满', '元', '现', '典', '翠', '花', '粉', '勤', '雁', '西', '东', '北', '京', '津', '沪', '重', '庆', '武', '汉', '南', '宁', '成', '都', '贵', '阳', '昆', '明', '拉', '萨', '西', '安', '兰', '州', '银', '川', '乌', '鲁', '木', '齐', '呼', '和', '浩', '特', '太', '原', '石', '家', '庄', '济', '南', '青', '岛', '烟', '台', '威', '海', '日', '照', '临', '沂', '淄', '博', '枣', '庄', '东', '营', '济', '宁', '泰', '安', '聊', '城', '德', '州', '滨', '州', '菏', '泽'];
+      
+      const members = [];
+      
+      for (let i = 1; i <= count; i++) {
+        // 随机生成姓名：姓 + 名（1-2个字）
+        const surname = surnames[Math.floor(Math.random() * surnames.length)];
+        const nameLength = Math.random() > 0.3 ? 2 : 1; // 70%概率双字名
+        let givenName = '';
+        for (let j = 0; j < nameLength; j++) {
+          givenName += nameChars[Math.floor(Math.random() * nameChars.length)];
+        }
+        const fullName = surname + givenName;
+        
+        const member = {
+          id: i,
+          name: fullName,
+          employeeId: `EMP${String(i).padStart(4, '0')}`,
+          department: this.viewingGroupName.split('-')[0],
+          attendance: {}
+        };
+        
+        // 为每一天生成上午和下午的考勤记录
+        const daysInMonth = new Date(
+          parseInt(this.viewingMonth.split('-')[0]),
+          parseInt(this.viewingMonth.split('-')[1]),
+          0
+        ).getDate();
+        
+        for (let day = 1; day <= daysInMonth; day++) {
+          // 周末标记为休息
+          const date = new Date(`${this.viewingMonth}-${String(day).padStart(2, '0')}`);
+          const isWeekend = date.getDay() === 0 || date.getDay() === 6;
+          
+          if (isWeekend) {
+            member.attendance[day] = { am: '休', pm: '休' };
+          } else {
+            // 随机生成考勤状态，大部分是出勤
+            const rand = Math.random();
+            let status;
+            if (rand < 0.85) {
+              status = '√'; // 85% 出勤
+            } else if (rand < 0.90) {
+              status = attendanceTypes[Math.floor(Math.random() * attendanceTypes.length)];
+            } else {
+              status = '√';
+            }
+            
+            member.attendance[day] = { am: status, pm: status };
+          }
+        }
+        
+        members.push(member);
+      }
+      
+      return members;
+    },
+    
+    // 获取单元格文本
+    getCellText(row, day, period) {
+      if (!row.attendance || !row.attendance[day]) return '';
+      return row.attendance[day][period] || '';
+    },
+    
+    // 获取单元格样式类
+    getCellClass(row, day, period) {
+      const text = this.getCellText(row, day, period);
+      if (!text) return '';
+      
+      // 根据考勤类型返回不同的样式类
+      const classMap = {
+        '√': 'attendance-normal',
+        'Δ': 'attendance-business-trip',
+        '年': 'attendance-annual',
+        '探': 'attendance-family',
+        '事': 'attendance-personal',
+        '法': 'attendance-legal',
+        '病': 'attendance-sick',
+        '流': 'attendance-abortion',
+        '产': 'attendance-maternity',
+        '哺': 'attendance-nursing',
+        '陪': 'attendance-accompany',
+        '节': 'attendance-birth-control',
+        '儿': 'attendance-childcare',
+        '护': 'attendance-parent-care',
+        '婚': 'attendance-wedding',
+        '丧': 'attendance-funeral',
+        '加(节)': 'attendance-overtime',
+        '补': 'attendance-compensate',
+        '旷': 'attendance-absent',
+        '迟': 'attendance-late',
+        '退': 'attendance-early-leave',
+        '休': 'attendance-rest'
+      };
+      
+      return classMap[text] || 'attendance-normal';
+    },
+    
+    // 成员查询
+    handleMemberQuery() {
+      // 过滤逻辑已在 computed 中实现
+      this.$message.info(`查询到 ${this.filteredViewingMembers.length} 人`);
+    },
+    
+    // 导出考勤数据
+    handleExportAttendance() {
+      if (this.filteredViewingMembers.length === 0) {
+        this.$message.warning('没有可导出的数据');
+        return;
+      }
+      
+      // 构建导出数据
+      const exportData = this.filteredViewingMembers.map((member, index) => {
+        const rowData = {
+          '序号': index + 1,
+          '姓名': member.name,
+          '员工编码': member.employeeId,
+          '部门': member.department
+        };
+        
+        // 添加每天的考勤数据
+        this.daysInMonth.forEach(day => {
+          const attendance = member.attendance[day];
+          if (attendance) {
+            rowData[`${day}日-上`] = attendance.am;
+            rowData[`${day}日-下`] = attendance.pm;
+          }
+        });
+        
+        return rowData;
+      });
+      
+      // 使用 CSV 导出
+      this.exportToCSV(exportData, `${this.viewingGroupName}_${this.viewingMonth}_考勤表.csv`);
+      
+      this.$message.success(`成功导出 ${exportData.length} 人的考勤数据`);
+    },
+    
+    // CSV 导出工具方法
+    exportToCSV(data, filename) {
+      if (!data || data.length === 0) return;
+      
+      // 获取表头
+      const headers = Object.keys(data[0]);
+      
+      // 构建 CSV 内容
+      let csvContent = '\ufeff'; // BOM 标记，解决中文乱码
+      csvContent += headers.join(',') + '\n';
+      
+      // 添加数据行
+      data.forEach(row => {
+        const values = headers.map(header => {
+          const value = row[header];
+          // 如果包含逗号或换行符，需要用引号包裹
+          if (typeof value === 'string' && (value.includes(',') || value.includes('\n'))) {
+            return '"' + value.replace(/"/g, '""') + '"';
+          }
+          return value;
+        });
+        csvContent += values.join(',') + '\n';
+      });
+      
+      // 创建 Blob 并下载
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const link = document.createElement('a');
+      const url = URL.createObjectURL(blob);
+      
+      link.setAttribute('href', url);
+      link.setAttribute('download', filename);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    },
+    
+    // 关闭查看对话框
+    handleViewDialogClose() {
+      this.memberSearchKeyword = '';
+      this.viewingMembers = [];
     },
 
     // 分页大小改变
@@ -691,6 +1043,183 @@ export default {
 .total-text {
   font-size: 13px;
   color: #606266;
+}
+
+/* 考勤查看对话框样式 */
+.attendance-info-header {
+  display: flex;
+  gap: 40px;
+  padding: 16px;
+  background-color: #f5f7fa;
+  border-radius: 4px;
+  margin-bottom: 16px;
+}
+
+.info-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.info-item .label {
+  font-weight: 600;
+  color: #606266;
+  font-size: 14px;
+}
+
+.info-item .value {
+  color: #303133;
+  font-size: 14px;
+}
+
+.attendance-legend {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  line-height: 1.8;
+}
+
+.legend-item {
+  font-size: 12px;
+  color: #606266;
+}
+
+.toolbar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px;
+  background-color: #fff;
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+}
+
+.status-indicators {
+  display: flex;
+  gap: 20px;
+  margin-left: auto;
+}
+
+.indicator {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #606266;
+}
+
+.dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  display: inline-block;
+}
+
+.dot.abnormal-correct {
+  background-color: #67C23A;
+}
+
+.dot.abnormal {
+  background-color: #F56C6C;
+}
+
+.dot.manual-correct {
+  background-color: #409EFF;
+}
+
+.attendance-table-wrapper {
+  border: 1px solid #dcdfe6;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.date-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  line-height: 1.2;
+  font-size: 12px;
+}
+
+.am-pm {
+  display: flex;
+  gap: 4px;
+  font-size: 10px;
+  color: #909399;
+  margin-top: 2px;
+}
+
+.attendance-cell {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  min-height: 36px;
+  justify-content: center;
+}
+
+.attendance-cell span {
+  font-size: 11px;
+  padding: 2px 4px;
+  border-radius: 2px;
+  min-width: 20px;
+  text-align: center;
+}
+
+/* 考勤状态样式 */
+.attendance-normal {
+  color: #67C23A;
+  font-weight: 600;
+}
+
+.attendance-business-trip {
+  color: #409EFF;
+  font-weight: 600;
+}
+
+.attendance-annual,
+.attendance-family,
+.attendance-personal,
+.attendance-legal,
+.attendance-sick,
+.attendance-abortion,
+.attendance-maternity,
+.attendance-nursing,
+.attendance-accompany,
+.attendance-birth-control,
+.attendance-childcare,
+.attendance-parent-care,
+.attendance-wedding,
+.attendance-funeral {
+  color: #E6A23C;
+  font-weight: 600;
+}
+
+.attendance-overtime {
+  color: #909399;
+  font-weight: 600;
+}
+
+.attendance-compensate {
+  color: #606266;
+  font-weight: 600;
+}
+
+.attendance-absent {
+  color: #F56C6C;
+  font-weight: 600;
+  background-color: #fef0f0;
+}
+
+.attendance-late,
+.attendance-early-leave {
+  color: #F56C6C;
+  font-weight: 600;
+}
+
+.attendance-rest {
+  color: #909399;
 }
 
 /* 响应式 */
