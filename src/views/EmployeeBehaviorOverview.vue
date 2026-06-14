@@ -58,11 +58,11 @@
       </div>
       <div class="stat-card" @click="handleCardClick('actual')">
         <div class="stat-label">实际出勤人数</div>
-        <div class="stat-value highlight">{{ statsData.actualAttendance }}</div>
+        <div class="stat-value">{{ statsData.actualAttendance }}</div>
       </div>
       <div class="stat-card" @click="handleCardClick('rate')">
         <div class="stat-label">整体出勤率</div>
-        <div class="stat-value success">{{ statsData.overallRate }}</div>
+        <div class="stat-value">{{ statsData.overallRate }}</div>
       </div>
       <div class="stat-card" @click="handleCardClick('leave')">
         <div class="stat-label">请假时长</div>
@@ -113,6 +113,27 @@
           <el-button type="primary" size="mini" @click="handleExportChart('lateEarly')">导出明细</el-button>
         </div>
         <div ref="lateEarlyChart" style="height: 250px;"></div>
+      </div>
+    </div>
+
+    <!-- 第三行图表 -->
+    <div class="chart-row">
+      <!-- 请假趋势变化情况 -->
+      <div class="chart-section">
+        <div class="chart-header">
+          <span class="chart-title">请假趋势变化情况</span>
+          <el-button type="primary" size="mini" @click="handleExportChart('leaveTrend')">导出明细</el-button>
+        </div>
+        <div ref="leaveTrendChart" style="height: 250px;"></div>
+      </div>
+
+      <!-- 请假类型分布情况 -->
+      <div class="chart-section">
+        <div class="chart-header">
+          <span class="chart-title">请假类型分布情况</span>
+          <el-button type="primary" size="mini" @click="handleExportChart('leaveType')">导出明细</el-button>
+        </div>
+        <div ref="leaveTypeChart" style="height: 250px;"></div>
       </div>
     </div>
 
@@ -251,6 +272,8 @@ export default {
       this.initMainChart();
       this.initPunctualityChart();
       this.initLateEarlyChart();
+      this.initLeaveTrendChart();
+      this.initLeaveTypeChart();
       this.initBusinessTrainingChart();
       this.initSpecialtyChart();
       this.initLeaveBubbleChart();
@@ -264,16 +287,17 @@ export default {
       const option = {
         tooltip: {
           trigger: 'axis',
-          axisPointer: { type: 'cross' }
+          axisPointer: { type: 'shadow' }
         },
         legend: {
           data: ['应出勤人数', '实际出勤人数', '出勤率'],
-          top: 0
+          top: 10
         },
         grid: {
           left: '3%',
           right: '4%',
           bottom: '3%',
+          top: '15%',
           containLabel: true
         },
         xAxis: {
@@ -305,14 +329,12 @@ export default {
             name: '应出勤人数',
             type: 'bar',
             stack: 'attendance',
-            itemStyle: { color: '#5470c6' },
             data: [3000, 2800, 2500, 2600, 1500, 1800, 2200, 2000, 2400, 2700, 2300, 2100, 2800, 2500, 2200, 2000]
           },
           {
             name: '实际出勤人数',
             type: 'bar',
             stack: 'attendance',
-            itemStyle: { color: '#91cc75' },
             data: [2800, 2600, 2300, 2400, 1400, 1700, 2100, 1900, 2300, 2600, 2200, 2000, 2700, 2400, 2100, 1900]
           },
           {
@@ -320,7 +342,6 @@ export default {
             type: 'line',
             yAxisIndex: 1,
             smooth: true,
-            itemStyle: { color: '#fac858' },
             lineStyle: { width: 2 },
             data: [93, 93, 92, 92, 93, 94, 95, 95, 96, 96, 96, 95, 96, 96, 95, 95],
             markPoint: {
@@ -365,21 +386,18 @@ export default {
             name: '事假',
             type: 'line',
             smooth: true,
-            itemStyle: { color: '#5470c6' },
             data: [90, 90, 90, 90, 89, 86, 87, 87, 88, 93, 90, 94, 89, 90, 90, 89]
           },
           {
             name: '病假',
             type: 'line',
             smooth: true,
-            itemStyle: { color: '#91cc75' },
             data: [4, 4, 2, 11, 14, 7, 8, 10, 2, 7, 10, 4, 11, 10, 10, 11]
           },
           {
             name: '年休假',
             type: 'line',
             smooth: true,
-            itemStyle: { color: '#ee6666' },
             data: [6, 6, 8, 3, 1, 7, 5, 3, 10, 0, 0, 2, 0, 0, 0, 0]
           }
         ]
@@ -392,6 +410,49 @@ export default {
     initLateEarlyChart() {
       const chart = echarts.init(this.$refs.lateEarlyChart);
       this.charts.lateEarly = chart;
+      
+      const option = {
+        tooltip: { trigger: 'axis' },
+        legend: {
+          data: ['迟到人数', '早退人数'],
+          bottom: 0
+        },
+        grid: {
+          left: '3%',
+          right: '4%',
+          bottom: '15%',
+          containLabel: true
+        },
+        xAxis: {
+          type: 'category',
+          data: ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆']
+        },
+        yAxis: {
+          type: 'value'
+        },
+        series: [
+          {
+            name: '迟到人数',
+            type: 'bar',
+            stack: 'late',
+            data: [2, 6, 10, 7, 8, 9, 13, 10, 6, 4, 5, 9, 14, 15, 14, 11]
+          },
+          {
+            name: '早退人数',
+            type: 'bar',
+            stack: 'late',
+            data: [1, 0, 0, 3, 0, 0, 0, 4, 0, 3, 1, 3, 0, 0, 0, 0]
+          }
+        ]
+      };
+      
+      chart.setOption(option);
+    },
+    
+    // 请假趋势变化情况 - 堆叠柱状图
+    initLeaveTrendChart() {
+      const chart = echarts.init(this.$refs.leaveTrendChart);
+      this.charts.leaveTrend = chart;
       
       const option = {
         tooltip: { trigger: 'axis' },
@@ -410,29 +471,74 @@ export default {
           data: ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆']
         },
         yAxis: {
-          type: 'value'
+          type: 'value',
+          max: 60
         },
         series: [
           {
             name: '事假',
             type: 'bar',
-            stack: 'late',
-            itemStyle: { color: '#5470c6' },
-            data: [2, 5, 3, 2, 3, 4, 5, 6, 4, 5, 6, 3, 5, 4, 3, 4]
+            stack: 'leave',
+            data: [3, 2, 1, 1, 3, 2, 4, 2, 2, 3, 1, 2, 1, 1, 1, 1]
           },
           {
             name: '病假',
             type: 'bar',
-            stack: 'late',
-            itemStyle: { color: '#ee6666' },
-            data: [1, 10, 2, 3, 6, 7, 10, 14, 7, 12, 14, 15, 14, 12, 10, 11]
+            stack: 'leave',
+            data: [12, 10, 15, 8, 18, 15, 20, 12, 10, 15, 12, 10, 15, 12, 10, 8]
           },
           {
             name: '年休假',
             type: 'bar',
-            stack: 'late',
-            itemStyle: { color: '#fac858' },
-            data: [0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0]
+            stack: 'leave',
+            data: [25, 20, 18, 12, 22, 32, 8, 18, 16, 10, 15, 16, 12, 7, 7, 6]
+          }
+        ]
+      };
+      
+      chart.setOption(option);
+    },
+    
+    // 请假类型分布情况 - 环形饼图
+    initLeaveTypeChart() {
+      const chart = echarts.init(this.$refs.leaveTypeChart);
+      this.charts.leaveType = chart;
+      
+      const option = {
+        tooltip: {
+          trigger: 'item',
+          formatter: '{b}: {c}, {d}%'
+        },
+        legend: {
+          orient: 'horizontal',
+          bottom: 0,
+          data: ['事假', '病假', '年休假']
+        },
+        series: [
+          {
+            type: 'pie',
+            radius: ['40%', '70%'],
+            avoidLabelOverlap: false,
+            label: {
+              show: true,
+              position: 'outside',
+              formatter: '{b}, {c}, {d}%'
+            },
+            emphasis: {
+              label: {
+                show: true,
+                fontSize: 14,
+                fontWeight: 'bold'
+              }
+            },
+            labelLine: {
+              show: true
+            },
+            data: [
+              { value: 204, name: '事假' },
+              { value: 109, name: '病假' },
+              { value: 131, name: '年休假' }
+            ]
           }
         ]
       };
@@ -478,21 +584,19 @@ export default {
             name: '出差工时',
             type: 'scatter',
             symbolSize: 8,
-            itemStyle: { color: '#5470c6' },
             data: [[1, 25], [2, 5], [3, 12], [4, 12], [5, 13], [6, 5], [7, 16], [8, 24], [9, 5], [10, 17], [11, 22], [12, 3]]
           },
           {
             name: '培训工时',
             type: 'scatter',
             symbolSize: 8,
-            itemStyle: { color: '#ee6666' },
             data: [[1, 1], [2, 11], [3, 5], [4, 3], [5, 5], [6, 15], [7, 8], [8, 0], [9, 11], [10, 5], [11, 1], [12, 10]]
           },
           {
             name: '线性(出差工时)',
             type: 'line',
             smooth: false,
-            lineStyle: { type: 'dotted', color: '#5470c6' },
+            lineStyle: { type: 'dotted' },
             data: [[0, 13], [14, 13]],
             symbol: 'none'
           },
@@ -500,7 +604,7 @@ export default {
             name: '线性(培训工时)',
             type: 'line',
             smooth: false,
-            lineStyle: { type: 'dotted', color: '#ee6666' },
+            lineStyle: { type: 'dotted' },
             data: [[0, 5], [14, 7]],
             symbol: 'none'
           }
@@ -539,13 +643,11 @@ export default {
               {
                 value: [120, 80, 60, 100, 90],
                 name: '作业工时时长',
-                itemStyle: { color: '#91cc75' },
                 areaStyle: { opacity: 0.3 }
               },
               {
                 value: [100, 120, 80, 110, 100],
                 name: '出勤工时',
-                itemStyle: { color: '#5470c6' },
                 areaStyle: { opacity: 0.3 }
               }
             ]
@@ -590,12 +692,6 @@ export default {
             type: 'scatter',
             symbolSize: function(data) {
               return Math.sqrt(data[2]) * 5;
-            },
-            itemStyle: {
-              color: function(params) {
-                const colors = ['#5470c6', '#91cc75', '#fac858', '#ee6666', '#73c0de'];
-                return colors[params.dataIndex % colors.length];
-              }
             },
             data: [
               [55, 220, 100],
@@ -673,7 +769,7 @@ export default {
 
 <style scoped>
 .employee-overview-container {
-  padding: 16px;
+  padding: 20px;
   background: #f5f7fa;
   min-height: calc(100vh - 100px);
 }
@@ -681,38 +777,37 @@ export default {
 /* 查询栏 */
 .query-bar {
   background: #fff;
-  padding: 16px;
-  margin-bottom: 16px;
+  padding: 20px;
+  margin-bottom: 20px;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #ebeef5;
 }
 
 /* 统计卡片 */
 .stats-cards {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .stat-card {
   flex: 1;
-  background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
-  padding: 20px;
+  background: #fff;
+  padding: 24px;
   border-radius: 4px;
   cursor: pointer;
   transition: all 0.3s;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+  border: 1px solid #ebeef5;
 }
 
 .stat-card:hover {
-  transform: translateY(-2px);
-  box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
 }
 
 .stat-label {
   font-size: 14px;
-  color: #606266;
-  margin-bottom: 8px;
+  color: #909399;
+  margin-bottom: 12px;
 }
 
 .stat-value {
@@ -721,35 +816,27 @@ export default {
   color: #303133;
 }
 
-.stat-value.highlight {
-  color: #409EFF;
-}
-
-.stat-value.success {
-  color: #67C23A;
-}
-
 .comparison-card {
   display: flex;
   flex-direction: column;
   justify-content: center;
   align-items: center;
-  background: #f5f7fa;
 }
 
 .comparison-title {
   font-size: 14px;
   color: #606266;
-  margin-bottom: 12px;
+  margin-bottom: 16px;
+  font-weight: 600;
 }
 
 /* 图表区域 */
 .chart-section {
   background: #fff;
-  padding: 16px;
+  padding: 20px;
   border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  margin-bottom: 16px;
+  border: 1px solid #ebeef5;
+  margin-bottom: 20px;
 }
 
 .chart-header {
@@ -758,7 +845,7 @@ export default {
   align-items: center;
   margin-bottom: 16px;
   padding-bottom: 12px;
-  border-bottom: 1px solid #e4e7ed;
+  border-bottom: 1px solid #ebeef5;
 }
 
 .chart-title {
@@ -775,8 +862,8 @@ export default {
 /* 图表行 */
 .chart-row {
   display: flex;
-  gap: 16px;
-  margin-bottom: 16px;
+  gap: 20px;
+  margin-bottom: 20px;
 }
 
 .chart-row .chart-section {
@@ -799,7 +886,21 @@ export default {
   }
   
   .stat-card {
-    min-width: calc(50% - 8px);
+    min-width: calc(50% - 10px);
+  }
+}
+
+@media (max-width: 768px) {
+  .stat-card {
+    min-width: 100%;
+  }
+  
+  .stat-value {
+    font-size: 22px;
+  }
+  
+  .chart-title {
+    font-size: 14px;
   }
 }
 </style>
