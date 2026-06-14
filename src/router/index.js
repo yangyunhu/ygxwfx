@@ -39,6 +39,7 @@ import EmployeeAttendanceData from '../views/EmployeeAttendanceData.vue';
 import AttendanceGroupManagement from '../views/AttendanceGroupManagement.vue';
 import AbnormalDataManagement from '../views/AbnormalDataManagement.vue';
 import AttendanceConfigManagement from '../views/AttendanceConfigManagement.vue';
+import AttendanceStatistics from '../views/AttendanceStatistics.vue';
 
 Vue.use(Router);
 
@@ -71,7 +72,7 @@ export default new Router({
     {
       path: '/behavior-visual-dashboard/attendance-stats',
       name: 'AttendanceStats',
-      component: ModulePlaceholder,
+      component: AttendanceStatistics,
       meta: { title: '出勤情况统计', description: '员工出勤情况统计页面，展示各类出勤数据统计与分析。' }
     },
     {
