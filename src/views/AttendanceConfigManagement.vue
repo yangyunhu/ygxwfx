@@ -311,7 +311,7 @@
                 </el-tag>
               </template>
             </el-table-column>
-            <el-table-column label="操作" width="180" align="center">
+            <el-table-column label="操作" width="240" align="center">
               <template slot-scope="scope">
                 <el-button 
                   type="text" 
@@ -328,6 +328,15 @@
                   @click="handleWarningDisableRow(scope.row)"
                 >
                   停用
+                </el-button>
+                <el-button 
+                  type="text" 
+                  size="small" 
+                  icon="el-icon-delete"
+                  style="color: #f56c6c;"
+                  @click="handleWarningDeleteRow(scope.row, scope.$index)"
+                >
+                  删除
                 </el-button>
               </template>
             </el-table-column>
@@ -443,6 +452,54 @@
         <el-button type="primary" @click="handleShiftEditSubmit">确定</el-button>
       </div>
     </el-dialog>
+
+    <!-- 异常预警配置新增对话框 -->
+    <el-dialog
+      title="新增预警项"
+      :visible.sync="warningAddDialogVisible"
+      width="50%"
+      top="10vh"
+      @close="handleWarningAddDialogClose"
+    >
+      <el-form :model="warningAddForm" label-width="120px" size="small">
+        <el-form-item label="序号：">
+          <span>{{ warningAddForm.order }}</span>
+        </el-form-item>
+        
+        <el-form-item label="预警数据类型：" required>
+          <el-input
+            v-model="warningAddForm.warningType"
+            placeholder="请输入预警数据类型"
+            maxlength="50"
+            show-word-limit
+          ></el-input>
+        </el-form-item>
+        
+        <el-form-item label="阈值区间（下限）：">
+          <el-input
+            v-model="warningAddForm.thresholdLower"
+            placeholder="请输入下限值"
+            maxlength="50"
+          ></el-input>
+        </el-form-item>
+        
+        <el-form-item label="阈值区间（上线）：">
+          <el-input
+            v-model="warningAddForm.thresholdUpper"
+            placeholder="请输入上限值"
+            maxlength="50"
+          ></el-input>
+        </el-form-item>
+        
+        <el-form-item label="状态：">
+          <el-tag type="info" size="small">停用</el-tag>
+        </el-form-item>
+      </el-form>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="warningAddDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="handleWarningAddSubmit">确定</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -523,6 +580,14 @@ export default {
       shiftCurrentPage: 1,
       
       // 异常预警配置相关
+      warningAddDialogVisible: false,       // 新增对话框显示状态
+      warningAddForm: {                     // 新增表单数据
+        order: 0,
+        warningType: '',
+        thresholdLower: '',
+        thresholdUpper: '',
+        status: '停用'
+      },
       warningTableData: [
         {
           order: 1,
@@ -1285,7 +1350,7 @@ export default {
       this.warningSelectedRows = selection;
     },
 
-    // 新增一行
+    // 新增（打开对话框）
     handleWarningAddRow() {
       console.log('=== 异常预警配置-新增 ===');
       
@@ -1294,16 +1359,46 @@ export default {
         ? Math.max(...this.warningTableData.map(item => item.order)) : 0;
       const newOrder = maxOrder + 1;
       
-      // 添加新行
-      this.warningTableData.push({
+      // 重置表单数据
+      this.warningAddForm = {
         order: newOrder,
         warningType: '',
         thresholdLower: '',
         thresholdUpper: '',
         status: '停用'
-      });
+      };
       
-      this.$message.success('已添加新的一行');
+      // 打开对话框
+      this.warningAddDialogVisible = true;
+    },
+
+    // 新增对话框关闭
+    handleWarningAddDialogClose() {
+      // 重置表单数据
+      this.warningAddForm = {
+        order: 0,
+        warningType: '',
+        thresholdLower: '',
+        thresholdUpper: '',
+        status: '停用'
+      };
+    },
+
+    // 新增对话框提交
+    handleWarningAddSubmit() {
+      // 验证必填字段
+      if (!this.warningAddForm.warningType || !this.warningAddForm.warningType.trim()) {
+        this.$message.warning('请填写预警数据类型');
+        return;
+      }
+      
+      // 添加到表格
+      this.warningTableData.push({ ...this.warningAddForm });
+      
+      this.$message.success(`已新增"${this.warningAddForm.warningType}"预警项`);
+      
+      // 关闭对话框
+      this.warningAddDialogVisible = false;
     },
 
     // 行内启用
@@ -1334,6 +1429,31 @@ export default {
       // 模拟停用操作
       console.log('停用的数据:', row);
       this.$message.success(`已停用"${row.warningType}"预警项`);
+    },
+
+    // 行内删除
+    handleWarningDeleteRow(row, index) {
+      console.log('=== 异常预警配置-行内删除 ===', row);
+      
+      this.$confirm(`确定要删除"${row.warningType || '该'}"预警项吗？`, "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "warning"
+      })
+        .then(() => {
+          // 从表格中删除该行
+          this.warningTableData.splice(index, 1);
+          
+          // 重新排序序号
+          this.warningTableData.forEach((item, idx) => {
+            item.order = idx + 1;
+          });
+          
+          this.$message.success('删除成功');
+        })
+        .catch(() => {
+          // 用户取消删除
+        });
     },
   }
 };
