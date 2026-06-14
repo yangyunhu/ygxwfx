@@ -38,6 +38,7 @@ import ModulePlaceholder from '../views/ModulePlaceholder.vue';
 import EmployeeAttendanceData from '../views/EmployeeAttendanceData.vue';
 import AttendanceGroupManagement from '../views/AttendanceGroupManagement.vue';
 import AbnormalDataManagement from '../views/AbnormalDataManagement.vue';
+import AttendanceConfigManagement from '../views/AttendanceConfigManagement.vue';
 
 Vue.use(Router);
 
@@ -58,8 +59,8 @@ export default new Router({
     {
       path: '/employee-attendance-behavior/config',
       name: 'EmployeeAttendanceConfigManagement',
-      component: ModulePlaceholder,
-      meta: { title: '出勤配置管理', description: '出勤配置管理模块页面，后续承载出勤规则与参数配置功能。' }
+      component: AttendanceConfigManagement,
+      meta: { title: '出勤配置管理', description: '出勤配置管理模块页面，包含出勤数据计算模型、异常预警配置和打卡人员设置功能。' }
     },
     {
       path: '/employee-attendance-behavior/group-management',
