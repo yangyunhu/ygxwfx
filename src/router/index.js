@@ -47,6 +47,8 @@ import CreditEvaluationStandard from '../views/CreditEvaluationStandard.vue';
 import CreditRatingData from '../views/CreditRatingData.vue';
 import CreditProfileDisplay from '../views/CreditProfileDisplay.vue';
 import PersonalAttendanceSettings from '../views/PersonalAttendanceSettings.vue';
+import PersonalAttendanceStats from '../views/PersonalAttendanceStats.vue';
+import PersonalAttendanceHome from '../views/PersonalAttendanceHome.vue';
 
 Vue.use(Router);
 
@@ -312,14 +314,14 @@ export default new Router({
     {
       path: '/personal-attendance-app/attendance-stats',
       name: 'PersonalAttendanceStats',
-      component: ModulePlaceholder,
+      component: PersonalAttendanceStats,
       meta: { title: '出勤统计', description: '个人出勤统计页面，展示个人出勤数据统计与分析。' }
     },
     {
       path: '/personal-attendance-app/home',
       name: 'PersonalAttendanceHome',
-      component: ModulePlaceholder,
-      meta: { title: '首页', description: '个人出勤管理APP首页，展示个人出勤概览信息。' }
+      component: PersonalAttendanceHome,
+      meta: { title: '首页', description: '个人出勤管理APP首页，展示出勤日历、打卡与个人考勤统计。' }
     },
     {
       path: '/team-behavior-portrait/attendance-stability',
