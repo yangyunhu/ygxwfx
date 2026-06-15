@@ -84,7 +84,7 @@
           点击上方 KPI 卡片可切换主图展示指标；
           横轴为{{ snapshot.dimensionLabel }}名称，点击「查询」联动刷新全部图表。
         </span>
-        <el-button type="primary" plain size="mini" icon="el-icon-download" @click="openExportDialog()">
+        <el-button type="primary" plain size="mini" icon="el-icon-download" @click="handleDirectExport('main')">
           导出明细
         </el-button>
       </div>
@@ -102,7 +102,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">按时出勤 &amp; 迟到早退率</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('punctuality')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('punctuality')">
               导出明细
             </el-button>
           </div>
@@ -112,7 +112,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">迟到早退人数</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('lateEarly')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('lateEarly')">
               导出明细
             </el-button>
           </div>
@@ -122,7 +122,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">请假趋势变化情况</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('leaveTrend')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('leaveTrend')">
               导出明细
             </el-button>
           </div>
@@ -132,7 +132,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">请假类型分布情况</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('leaveType')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('leaveType')">
               导出明细
             </el-button>
           </div>
@@ -142,7 +142,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">出差 &amp; 培训工时与专业相关性</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('businessTraining')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('businessTraining')">
               导出明细
             </el-button>
           </div>
@@ -152,7 +152,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">专业与作业工时相关性</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('specialty')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('specialty')">
               导出明细
             </el-button>
           </div>
@@ -186,7 +186,7 @@
                 />
               </el-form-item>
             </el-form>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('leaveDistribution')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('leaveDistribution')">
               导出明细
             </el-button>
           </div>
@@ -203,12 +203,7 @@
       </section>
     </div>
 
-    <div v-show="activeTab === 'warning'" class="warning-placeholder">
-      <div class="placeholder-card">
-        <h3>异常预警</h3>
-        <p>异常预警统计图表建设中，后续将展示预警趋势与分布分析。</p>
-      </div>
-    </div>
+    <warning-overview-panel v-show="activeTab === 'warning'" :active="activeTab === 'warning'" />
 
     <!-- 统计模块导出 -->
     <el-dialog
@@ -256,6 +251,7 @@
 import * as echarts from "echarts";
 import {
   LEAVE_TYPE_COLORS,
+  LEAVE_TYPE_PIE_COLORS,
   BUBBLE_COLORS,
   baseChartOption,
   legendBottomCenter,
@@ -274,7 +270,9 @@ import {
 import {
   OVERVIEW_EXPORT_MODULES,
   exportOverviewModules,
+  getOverviewExportModuleLabel,
 } from "../utils/behaviorOverviewExport";
+import WarningOverviewPanel from "../components/WarningOverviewPanel.vue";
 
 const RADAR_INDICATORS = [
   { name: "输电", max: 150 },
@@ -286,6 +284,7 @@ const RADAR_INDICATORS = [
 
 export default {
   name: "EmployeeBehaviorOverview",
+  components: { WarningOverviewPanel },
   data() {
     return {
       activeTab: "attendance",
@@ -332,6 +331,15 @@ export default {
       };
       window.addEventListener("resize", this.resizeHandler);
     });
+  },
+  watch: {
+    activeTab(val) {
+      if (val === "attendance") {
+        this.$nextTick(() => {
+          Object.values(this.charts).forEach((c) => c && c.resize());
+        });
+      }
+    },
   },
   beforeDestroy() {
     if (this.resizeHandler) window.removeEventListener("resize", this.resizeHandler);
@@ -813,7 +821,7 @@ export default {
               labelLine: { length: 10, length2: 8, lineStyle: { color: "#C0C4CC" } },
               data: pieData.map((d) => ({
                 ...d,
-                itemStyle: { color: LEAVE_TYPE_COLORS[d.name] },
+                itemStyle: { color: LEAVE_TYPE_PIE_COLORS[d.name] },
               })),
             },
           ],
@@ -1012,14 +1020,20 @@ export default {
       this.$message.info("查看考勤数据对比详情功能待开发");
     },
 
-    openExportDialog(moduleKey) {
-      if (moduleKey) {
-        this.selectedExportModules = [moduleKey];
-      } else {
-        this.selectedExportModules = this.exportModules.map((m) => m.key);
-      }
+    openExportDialog() {
+      this.selectedExportModules = this.exportModules.map((m) => m.key);
       this.syncExportCheckAll(this.selectedExportModules);
       this.exportDialogVisible = true;
+    },
+
+    handleDirectExport(moduleKey) {
+      exportOverviewModules(
+        [moduleKey],
+        this.snapshot,
+        this.queryParams,
+        this.leaveQueryParams
+      );
+      this.$message.success(`已导出「${getOverviewExportModuleLabel(moduleKey)}」明细`);
     },
 
     resetExportDialog() {
@@ -1064,6 +1078,8 @@ export default {
   padding: 12px 16px 20px;
   background: #f5f5f5;
   box-sizing: border-box;
+  min-width: 0;
+  max-width: 100%;
 }
 
 .page-tabs {
@@ -1295,30 +1311,6 @@ export default {
   padding: 7px 0;
 }
 
-/* 异常预警占位 */
-.warning-placeholder {
-  padding: 20px 0;
-}
-
-.placeholder-card {
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  padding: 40px 24px;
-  text-align: center;
-}
-
-.placeholder-card h3 {
-  margin: 0 0 8px;
-  font-size: 16px;
-  color: #303133;
-}
-
-.placeholder-card p {
-  margin: 0;
-  font-size: 13px;
-  color: #909399;
-}
 
 @media (max-width: 1200px) {
   .chart-grid {
@@ -1342,6 +1334,10 @@ export default {
 
   .stat-value {
     font-size: 22px;
+  }
+
+  .query-export {
+    margin-left: 0;
   }
 
   .query-actions {
