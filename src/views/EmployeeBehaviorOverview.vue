@@ -42,6 +42,11 @@
               />
             </el-select>
           </el-form-item>
+          <el-form-item class="query-export">
+            <el-button type="success" plain icon="el-icon-download" @click="openExportDialog()">
+              导出
+            </el-button>
+          </el-form-item>
           <el-form-item class="query-actions">
             <el-button type="primary" icon="el-icon-search" @click="handleQuery">查询</el-button>
             <el-button icon="el-icon-refresh" @click="handleReset">重置</el-button>
@@ -79,7 +84,7 @@
           点击上方 KPI 卡片可切换主图展示指标；
           横轴为{{ snapshot.dimensionLabel }}名称，点击「查询」联动刷新全部图表。
         </span>
-        <el-button type="primary" plain size="mini" icon="el-icon-download" @click="handleExportDetail">
+        <el-button type="primary" plain size="mini" icon="el-icon-download" @click="openExportDialog()">
           导出明细
         </el-button>
       </div>
@@ -97,7 +102,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">按时出勤 &amp; 迟到早退率</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('punctuality')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('punctuality')">
               导出明细
             </el-button>
           </div>
@@ -107,7 +112,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">迟到早退人数</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('lateEarly')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('lateEarly')">
               导出明细
             </el-button>
           </div>
@@ -117,7 +122,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">请假趋势变化情况</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('leaveTrend')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('leaveTrend')">
               导出明细
             </el-button>
           </div>
@@ -127,7 +132,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">请假类型分布情况</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('leaveType')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('leaveType')">
               导出明细
             </el-button>
           </div>
@@ -137,7 +142,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">出差 &amp; 培训工时与专业相关性</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('businessTraining')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('businessTraining')">
               导出明细
             </el-button>
           </div>
@@ -147,7 +152,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">专业与作业工时相关性</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('specialty')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('specialty')">
               导出明细
             </el-button>
           </div>
@@ -181,7 +186,7 @@
                 />
               </el-form-item>
             </el-form>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('leaveDistribution')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="openExportDialog('leaveDistribution')">
               导出明细
             </el-button>
           </div>
@@ -204,6 +209,46 @@
         <p>异常预警统计图表建设中，后续将展示预警趋势与分布分析。</p>
       </div>
     </div>
+
+    <!-- 统计模块导出 -->
+    <el-dialog
+      title="导出统计明细"
+      :visible.sync="exportDialogVisible"
+      width="640px"
+      append-to-body
+      class="export-module-dialog"
+      @closed="resetExportDialog"
+    >
+      <p class="export-dialog-tip">
+        请选择需要导出的统计模块，系统将按当前筛选条件生成对应明细表（CSV）。已选
+        <strong>{{ selectedExportCount }}</strong> / {{ exportModules.length }} 项。
+      </p>
+      <div class="export-module-toolbar">
+        <el-checkbox
+          :indeterminate="exportIndeterminate"
+          v-model="exportCheckAll"
+          @change="handleExportCheckAll"
+        >
+          全选
+        </el-checkbox>
+      </div>
+      <el-checkbox-group v-model="selectedExportModules" class="export-module-list" @change="syncExportCheckAll">
+        <div
+          v-for="mod in exportModules"
+          :key="mod.key"
+          class="export-module-item"
+        >
+          <el-checkbox :label="mod.key">{{ mod.label }}</el-checkbox>
+          <span class="export-module-desc">{{ mod.desc }}</span>
+        </div>
+      </el-checkbox-group>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="exportDialogVisible = false">取消</el-button>
+        <el-button type="primary" icon="el-icon-download" :disabled="!selectedExportCount" @click="confirmExportModules">
+          确认导出
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -226,6 +271,10 @@ import {
   buildOverviewSnapshot,
   getMainChartSeriesMode,
 } from "../utils/behaviorOverviewData";
+import {
+  OVERVIEW_EXPORT_MODULES,
+  exportOverviewModules,
+} from "../utils/behaviorOverviewExport";
 
 const RADAR_INDICATORS = [
   { name: "输电", max: 150 },
@@ -248,6 +297,11 @@ export default {
       leaveTableData: [],
       charts: {},
       resizeHandler: null,
+      exportDialogVisible: false,
+      exportModules: OVERVIEW_EXPORT_MODULES,
+      selectedExportModules: [],
+      exportCheckAll: false,
+      exportIndeterminate: false,
     };
   },
   computed: {
@@ -263,6 +317,9 @@ export default {
         { key: "leave", label: "请假时长", value: d.leaveDuration, valueClass: "" },
         { key: "comparison", label: "考勤数据对比", value: "", valueClass: "" },
       ];
+    },
+    selectedExportCount() {
+      return this.selectedExportModules.length;
     },
   },
   mounted() {
@@ -661,25 +718,75 @@ export default {
       const s = this.snapshot;
       const leaveNames = ["事假", "病假", "年休假"];
       const datasets = [s.leaveTrend.personal, s.leaveTrend.sick, s.leaveTrend.annual];
-      const yMax = Math.max(10, ...datasets.flat()) + 5;
+
       chart.setOption(
-        baseChartOption({
-          legend: legendBottomCenter(leaveNames),
-          grid: { bottom: "16%", top: "12%" },
-          xAxis: {
-            data: s.categories,
-            axisLabel: { rotate: s.categories.length > 8 ? 35 : 0, fontSize: 10, interval: 0 },
+        {
+          textStyle: { color: "#606266", fontSize: 11 },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            backgroundColor: "rgba(255,255,255,0.98)",
+            borderColor: "#E8E8E8",
+            borderWidth: 1,
+            padding: [10, 14],
+            textStyle: { color: "#303133", fontSize: 12 },
+            extraCssText: "box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-radius: 4px;",
+            formatter(params) {
+              if (!params || !params.length) return "";
+              const title = params[0].axisValue;
+              const rows = params
+                .map((p) => {
+                  const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>`;
+                  return `<div style="display:flex;justify-content:space-between;gap:24px;margin-top:4px;">
+                    <span>${dot}${p.seriesName}</span><span style="font-weight:500;">${p.value}</span></div>`;
+                })
+                .join("");
+              return `<div style="font-weight:600;margin-bottom:4px;">${title}</div>${rows}`;
+            },
           },
-          yAxis: { max: yMax, min: 0 },
+          legend: {
+            data: leaveNames,
+            bottom: 0,
+            left: "center",
+            icon: "rect",
+            itemWidth: 12,
+            itemHeight: 8,
+            itemGap: 24,
+            textStyle: { color: "#606266", fontSize: 11 },
+          },
+          grid: { left: "2%", right: "3%", top: "10%", bottom: "14%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: s.categories,
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            axisTick: { show: false },
+            axisLabel: {
+              color: "#606266",
+              fontSize: 10,
+              interval: 0,
+              rotate: s.categories.length > 8 ? 45 : 0,
+            },
+          },
+          yAxis: {
+            type: "value",
+            min: 0,
+            max: 60,
+            interval: 10,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: "#909399", fontSize: 10 },
+            splitLine: { lineStyle: { color: "#EEEEEE", type: "solid" } },
+          },
           series: leaveNames.map((name, i) => ({
             name,
             type: "bar",
             stack: "leave",
-            barMaxWidth: 22,
+            barMaxWidth: 26,
             itemStyle: { color: LEAVE_TYPE_COLORS[name] },
+            emphasis: { focus: "series" },
             data: datasets[i],
           })),
-        }),
+        },
         true
       );
     },
@@ -905,18 +1012,47 @@ export default {
       this.$message.info("查看考勤数据对比详情功能待开发");
     },
 
-    handleExportDetail() {
-      this.$confirm("确定要导出当前筛选条件下的数据吗？", "提示", {
-        confirmButtonText: "确定",
-        cancelButtonText: "取消",
-        type: "info",
-      })
-        .then(() => this.$message.success("导出成功"))
-        .catch(() => {});
+    openExportDialog(moduleKey) {
+      if (moduleKey) {
+        this.selectedExportModules = [moduleKey];
+      } else {
+        this.selectedExportModules = this.exportModules.map((m) => m.key);
+      }
+      this.syncExportCheckAll(this.selectedExportModules);
+      this.exportDialogVisible = true;
     },
 
-    handleExportChart(chartType) {
-      this.$message.success(`已导出 ${chartType} 图表数据（当前筛选条件）`);
+    resetExportDialog() {
+      this.selectedExportModules = [];
+      this.exportCheckAll = false;
+      this.exportIndeterminate = false;
+    },
+
+    handleExportCheckAll(checked) {
+      this.selectedExportModules = checked ? this.exportModules.map((m) => m.key) : [];
+      this.exportIndeterminate = false;
+    },
+
+    syncExportCheckAll(value) {
+      const count = value.length;
+      const total = this.exportModules.length;
+      this.exportCheckAll = count === total;
+      this.exportIndeterminate = count > 0 && count < total;
+    },
+
+    confirmExportModules() {
+      if (!this.selectedExportModules.length) {
+        this.$message.warning("请至少选择一个统计模块");
+        return;
+      }
+      const count = exportOverviewModules(
+        this.selectedExportModules,
+        this.snapshot,
+        this.queryParams,
+        this.leaveQueryParams
+      );
+      this.exportDialogVisible = false;
+      this.$message.success(`已开始导出 ${count} 个统计模块明细，请留意浏览器下载`);
     },
   },
 };
@@ -976,6 +1112,10 @@ export default {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+}
+
+.query-export {
+  margin-right: 8px;
 }
 
 .query-actions {
@@ -1208,5 +1348,52 @@ export default {
     margin-left: 0;
     width: 100%;
   }
+}
+
+.export-dialog-tip {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.export-dialog-tip strong {
+  color: #1890ff;
+}
+
+.export-module-toolbar {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.export-module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.export-module-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.export-module-item >>> .el-checkbox__label {
+  font-weight: 600;
+  color: #303133;
+}
+
+.export-module-desc {
+  font-size: 12px;
+  color: #909399;
+  padding-left: 24px;
+  line-height: 1.5;
 }
 </style>

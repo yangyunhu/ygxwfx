@@ -42,11 +42,11 @@ export const CHART_PALETTE = [
   PROTOTYPE_COLORS.blueDark,
 ];
 
-/** 请假类型 — 事假蓝 / 病假浅蓝 / 年休假深蓝 */
+/** 请假类型 — 对齐图一：事假浅蓝 / 病假青绿 / 年休假深蓝 */
 export const LEAVE_TYPE_COLORS = {
-  事假: PROTOTYPE_COLORS.blue,
-  病假: PROTOTYPE_COLORS.blueLight,
-  年休假: PROTOTYPE_COLORS.blueDark,
+  事假: "#549CF0",
+  病假: "#33C3A1",
+  年休假: "#1A558E",
 };
 
 const AXIS = {
