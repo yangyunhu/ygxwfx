@@ -12,6 +12,7 @@ const UNIT_META = UNIT_OPTIONS.filter((u) => u.value !== "all").map((u) => ({
 }));
 
 const DEPARTMENTS = ["安监部", "财务部", "人力资源部", "市场营销部", "生产技术部", "数字化部"];
+const COUNTY_DEPARTMENTS = ["运维", "营销", "调度", "综合", "安监"];
 const POSITIONS = ["变电检修", "线路运维", "营销专责", "安监专责", "人资专责", "综合管理员"];
 const NAMES = ["张三", "李四", "王五", "赵六", "陈静", "刘洋", "杨帆", "周婷", "吴磊", "孙浩"];
 const WARNING_STATUS = ["预警中", "处理中", "已处理", "提醒"];
@@ -141,7 +142,7 @@ function buildCountyTopList(metricKey, regionFilter, factor, countyMapData) {
     unitShort: c.name,
     county: c.name,
     countyFullName: c.fullName,
-    department: DEPARTMENTS[i % DEPARTMENTS.length],
+    department: COUNTY_DEPARTMENTS[i % COUNTY_DEPARTMENTS.length],
     count: c.count,
     countLabel,
     status: WARNING_STATUS[(i + c.name.charCodeAt(0)) % WARNING_STATUS.length],

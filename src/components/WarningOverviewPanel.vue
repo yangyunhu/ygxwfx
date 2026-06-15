@@ -67,6 +67,16 @@
               {{ m.label }}
             </el-radio-button>
           </el-radio-group>
+          <el-button
+            type="success"
+            size="mini"
+            plain
+            icon="el-icon-download"
+            class="map-toolbar-export"
+            @click="openExportDialog"
+          >
+            导出
+          </el-button>
           <div class="map-legend map-legend--inline">
             <div v-for="item in mapLevels" :key="item.label" class="map-legend__item">
               <span class="map-legend__color" :style="{ background: item.color }" />
@@ -87,8 +97,24 @@
       </div>
 
       <div class="warning-hero-grid">
-        <div class="map-chart-wrap">
-          <div ref="mapChart" v-loading="mapLoading" class="map-chart" />
+        <div class="warning-hero-main">
+          <div class="map-chart-wrap">
+            <div ref="mapChart" v-loading="mapLoading" class="map-chart" />
+          </div>
+
+          <div class="hero-abnormal">
+            <div class="hero-abnormal__header">
+              <h4 class="hero-abnormal__title">
+                异常变化情况
+                <span v-if="linkFilterLabel" class="section-filter-tip">（{{ linkFilterLabel }}）</span>
+              </h4>
+              <el-radio-group v-model="changeMode" size="mini" @change="handleChangeMode">
+                <el-radio-button label="unit">单位</el-radio-button>
+                <el-radio-button label="department">部门</el-radio-button>
+              </el-radio-group>
+            </div>
+            <div ref="abnormalChangeChart" class="hero-abnormal__chart" />
+          </div>
         </div>
 
         <aside class="warning-top5-side">
@@ -100,16 +126,19 @@
               </h4>
             </div>
             <div ref="lateTopChart" class="top5-chart" />
-            <el-table :data="warningSnapshot.lateTop5" border size="mini" class="top5-table">
-              <el-table-column prop="rank" label="#" width="32" align="center" />
-              <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
-              <el-table-column prop="count" label="迟到" width="40" align="center" />
-              <el-table-column prop="status" label="状态" min-width="56" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="top5-table-wrap">
+              <el-table :data="warningSnapshot.lateTop5" border size="mini" class="top5-table">
+                <el-table-column prop="rank" label="排名" width="42" align="center" />
+                <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
+                <el-table-column prop="department" label="部门" min-width="52" show-overflow-tooltip />
+                <el-table-column prop="count" label="迟到" width="46" align="center" />
+                <el-table-column prop="status" label="状态" min-width="62" align="center">
+                  <template slot-scope="{ row }">
+                    <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </section>
 
           <section class="top5-panel" :class="{ 'is-linked': mapMetric === 'early' }">
@@ -120,16 +149,19 @@
               </h4>
             </div>
             <div ref="earlyTopChart" class="top5-chart" />
-            <el-table :data="warningSnapshot.earlyTop5" border size="mini" class="top5-table">
-              <el-table-column prop="rank" label="#" width="32" align="center" />
-              <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
-              <el-table-column prop="count" label="早退" width="40" align="center" />
-              <el-table-column prop="status" label="状态" min-width="56" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="top5-table-wrap">
+              <el-table :data="warningSnapshot.earlyTop5" border size="mini" class="top5-table">
+                <el-table-column prop="rank" label="排名" width="42" align="center" />
+                <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
+                <el-table-column prop="department" label="部门" min-width="52" show-overflow-tooltip />
+                <el-table-column prop="count" label="早退" width="46" align="center" />
+                <el-table-column prop="status" label="状态" min-width="62" align="center">
+                  <template slot-scope="{ row }">
+                    <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </section>
 
           <section class="top5-panel" :class="{ 'is-linked': mapMetric === 'longAbsent' }">
@@ -140,34 +172,22 @@
               </h4>
             </div>
             <div ref="longAbsentTopChart" class="top5-chart" />
-            <el-table :data="warningSnapshot.longAbsentTop5" border size="mini" class="top5-table">
-              <el-table-column prop="rank" label="#" width="32" align="center" />
-              <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
-              <el-table-column prop="count" label="不在岗" width="48" align="center" />
-              <el-table-column prop="status" label="状态" min-width="56" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
+            <div class="top5-table-wrap">
+              <el-table :data="warningSnapshot.longAbsentTop5" border size="mini" class="top5-table">
+                <el-table-column prop="rank" label="排名" width="42" align="center" />
+                <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
+                <el-table-column prop="department" label="部门" min-width="52" show-overflow-tooltip />
+                <el-table-column prop="count" label="不在岗" width="50" align="center" />
+                <el-table-column prop="status" label="状态" min-width="62" align="center">
+                  <template slot-scope="{ row }">
+                    <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
+                  </template>
+                </el-table-column>
+              </el-table>
+            </div>
           </section>
         </aside>
       </div>
-    </section>
-
-    <!-- 异常变化情况 -->
-    <section class="chart-card">
-      <div class="chart-card__header">
-        <h3 class="chart-card__title">
-          异常变化情况
-          <span v-if="linkFilterLabel" class="section-filter-tip">（{{ linkFilterLabel }}）</span>
-        </h3>
-        <el-radio-group v-model="changeMode" size="mini" @change="handleChangeMode">
-          <el-radio-button label="unit">单位</el-radio-button>
-          <el-radio-button label="department">部门</el-radio-button>
-        </el-radio-group>
-      </div>
-      <div ref="abnormalChangeChart" class="chart-box chart-box--md" />
     </section>
 
     <!-- 全省异常预警明细 -->
@@ -177,9 +197,6 @@
           全省异常预警明细
           <span class="section-filter-tip">（{{ currentMapMetric.abnormalType }} · {{ linkFilterLabel || "全省" }}）</span>
         </h3>
-        <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportDetail">
-          导出
-        </el-button>
       </div>
       <el-table :data="pagedDetailTable" border stripe size="small" class="detail-table">
         <el-table-column type="index" :index="detailIndex" label="序号" width="60" align="center" />
@@ -209,6 +226,47 @@
         />
       </div>
     </section>
+
+    <!-- 统计模块导出 -->
+    <el-dialog
+      title="导出异常预警明细"
+      :visible.sync="exportDialogVisible"
+      width="640px"
+      append-to-body
+      class="export-module-dialog"
+      @closed="resetExportDialog"
+    >
+      <p class="export-dialog-tip">
+        请选择需要导出的统计模块，系统将按当前筛选条件生成对应明细表（CSV）。已选
+        <strong>{{ selectedExportCount }}</strong> / {{ exportModules.length }} 项。
+      </p>
+      <div class="export-module-toolbar">
+        <el-checkbox
+          :indeterminate="exportIndeterminate"
+          v-model="exportCheckAll"
+          @change="handleExportCheckAll"
+        >
+          全选
+        </el-checkbox>
+      </div>
+      <el-checkbox-group v-model="selectedExportModules" class="export-module-list" @change="syncExportCheckAll">
+        <div v-for="mod in exportModules" :key="mod.key" class="export-module-item">
+          <el-checkbox :label="mod.key">{{ mod.label }}</el-checkbox>
+          <span class="export-module-desc">{{ mod.desc }}</span>
+        </div>
+      </el-checkbox-group>
+      <div slot="footer" class="dialog-footer">
+        <el-button @click="exportDialogVisible = false">取消</el-button>
+        <el-button
+          type="primary"
+          icon="el-icon-download"
+          :disabled="!selectedExportCount"
+          @click="confirmExportModules"
+        >
+          确认导出
+        </el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
@@ -221,9 +279,11 @@ import {
   getMapMetricMeta,
   buildWarningSnapshot,
   ABNORMAL_CHANGE_COLORS,
-  buildWarningDetailExportRows,
-  WARNING_DETAIL_EXPORT_HEADERS,
 } from "../utils/warningOverviewData";
+import {
+  exportWarningModules,
+  WARNING_EXPORT_MODULES,
+} from "../utils/warningOverviewExport";
 import {
   getMapMetricConfig,
   fillMapSeriesData,
@@ -235,8 +295,6 @@ import {
   buildCountyMapData,
   getUnitMetaByKey,
 } from "../utils/yunnanDrilldown";
-import { downloadTableWithLog } from "../utils/exportLogger";
-
 export default {
   name: "WarningOverviewPanel",
   props: {
@@ -277,9 +335,16 @@ export default {
       inited: false,
       mapResizeObserver: null,
       mapResizeTimer: null,
-      chartResizeTimer: null,
+      sidebarResizeTimer: null,
       lastMapLayoutKey: "",
+      lastMapBoxSize: "",
+      topChartSignatures: {},
       windowResizeHandler: null,
+      exportDialogVisible: false,
+      exportModules: WARNING_EXPORT_MODULES,
+      selectedExportModules: [],
+      exportCheckAll: false,
+      exportIndeterminate: false,
     };
   },
   computed: {
@@ -299,6 +364,9 @@ export default {
       const start = (this.detailPage - 1) * this.detailPageSize;
       return this.warningSnapshot.detailTable.slice(start, start + this.detailPageSize);
     },
+    selectedExportCount() {
+      return this.selectedExportModules.length;
+    },
   },
   watch: {
     active(val) {
@@ -315,7 +383,10 @@ export default {
   },
   mounted() {
     this.windowResizeHandler = () => {
-      if (this.inited) this.scheduleMapContainerResize();
+      if (this.inited) {
+        this.scheduleMapContainerResize();
+        this.scheduleSidebarResize();
+      }
     };
     window.addEventListener("resize", this.windowResizeHandler);
     if (this.active) {
@@ -325,7 +396,7 @@ export default {
   beforeDestroy() {
     if (this.mapResizeObserver) this.mapResizeObserver.disconnect();
     if (this.mapResizeTimer) clearTimeout(this.mapResizeTimer);
-    if (this.chartResizeTimer) clearTimeout(this.chartResizeTimer);
+    if (this.sidebarResizeTimer) clearTimeout(this.sidebarResizeTimer);
     if (this.windowResizeHandler) {
       window.removeEventListener("resize", this.windowResizeHandler);
     }
@@ -368,6 +439,7 @@ export default {
       };
       this.selectedMapRegion = countyName || regionName || null;
       this.detailPage = 1;
+      this.topChartSignatures = {};
       this.rebuildSnapshot();
       this.renderLinkedCharts();
     },
@@ -384,12 +456,14 @@ export default {
         this.selectedMapRegion = null;
       }
       this.detailPage = 1;
+      this.topChartSignatures = {};
       this.rebuildSnapshot();
       this.renderLinkedCharts();
     },
 
     handleMapMetricChange() {
       this.mapLevels = getMapMetricConfig(this.mapMetric).levels;
+      this.topChartSignatures = {};
       if (this.mapDrill.level === "county" && this.mapDrill.counties.length) {
         this.mapDrill.mapData = buildCountyMapData(
           this.mapDrill.counties,
@@ -429,19 +503,24 @@ export default {
     bindMapResizeObserver() {
       if (typeof ResizeObserver === "undefined" || !this.$refs.mapChart) return;
       if (this.mapResizeObserver) this.mapResizeObserver.disconnect();
-      this.mapResizeObserver = new ResizeObserver(() => {
-        // 仅 resize 图表，避免 setOption 触发尺寸循环
-        this.scheduleChartResize();
+      this.mapResizeObserver = new ResizeObserver((entries) => {
+        const entry = entries && entries[0];
+        if (!entry) return;
+        const { width, height } = entry.contentRect;
+        const sizeKey = `${Math.round(width)}x${Math.round(height)}`;
+        if (!width || !height || sizeKey === this.lastMapBoxSize) return;
+        this.lastMapBoxSize = sizeKey;
+        this.scheduleMapContainerResize();
       });
       this.mapResizeObserver.observe(this.$refs.mapChart);
     },
 
-    scheduleChartResize() {
-      if (this.chartResizeTimer) clearTimeout(this.chartResizeTimer);
-      this.chartResizeTimer = setTimeout(() => {
-        this.chartResizeTimer = null;
-        this.resizeCharts();
-      }, 120);
+    scheduleSidebarResize() {
+      if (this.sidebarResizeTimer) clearTimeout(this.sidebarResizeTimer);
+      this.sidebarResizeTimer = setTimeout(() => {
+        this.sidebarResizeTimer = null;
+        this.resizeSidebarCharts();
+      }, 150);
     },
 
     scheduleMapContainerResize() {
@@ -449,29 +528,30 @@ export default {
       this.mapResizeTimer = setTimeout(() => {
         this.mapResizeTimer = null;
         this.handleMapContainerResize();
-      }, 120);
+      }, 150);
     },
 
     getMapLayoutKey() {
       const el = this.$refs.mapChart;
-      const w = el ? el.clientWidth : 0;
-      const h = el ? el.clientHeight : 0;
-      const geoLayout = this.getMapGeoLayout();
-      return `${this.mapDrill.mapName}|${this.mapDrill.level}|${w}x${h}|${JSON.stringify(geoLayout)}`;
+      const w = el ? Math.round(el.clientWidth) : 0;
+      const h = el ? Math.round(el.clientHeight) : 0;
+      const isCounty = this.mapDrill.level === "county";
+      const sizeBase = Math.floor(Math.min(h * 0.96, w * (isCounty ? 0.9 : 0.86)));
+      return `${this.mapDrill.mapName}|${this.mapDrill.level}|${w}x${h}|${sizeBase}`;
     },
 
     getMapGeoLayout() {
       const el = this.$refs.mapChart;
       const w = el ? el.clientWidth : 720;
-      const h = el ? el.clientHeight : 480;
+      const h = el ? el.clientHeight : 520;
       const ratio = w / Math.max(h, 1);
       const isCounty = this.mapDrill.level === "county";
-      const sizeBase = Math.floor(Math.min(h * 0.96, w * (isCounty ? 0.9 : 0.86)));
+      const sizeBase = Math.floor(Math.min(h * 0.98, w * (isCounty ? 0.94 : 0.9)));
 
       return {
         layoutCenter: ["50%", "50%"],
         layoutSize: sizeBase,
-        aspectScale: isCounty ? 0.88 : ratio > 1.6 ? 0.76 : 0.84,
+        aspectScale: isCounty ? 0.92 : ratio > 1.35 ? 0.86 : 0.92,
       };
     },
 
@@ -483,7 +563,7 @@ export default {
     },
 
     handleMapContainerResize() {
-      if (!this.charts.map) return;
+      if (!this.charts.map || this.charts.map.isDisposed()) return;
       const layoutKey = this.getMapLayoutKey();
       if (layoutKey !== this.lastMapLayoutKey) {
         this.lastMapLayoutKey = layoutKey;
@@ -495,16 +575,23 @@ export default {
           { lazyUpdate: true, silent: true }
         );
       }
-      this.scheduleChartResize();
+      this.charts.map.resize();
     },
 
-    resizeCharts() {
-      Object.values(this.charts).forEach((c) => {
-        if (c && !c.isDisposed()) c.resize();
+    resizeSidebarCharts() {
+      ["lateTop", "earlyTop", "longAbsentTop", "abnormalChange"].forEach((key) => {
+        const chart = this.charts[key];
+        if (chart && !chart.isDisposed()) chart.resize();
       });
     },
 
+    resizeCharts() {
+      this.handleMapContainerResize();
+      this.resizeSidebarCharts();
+    },
+
     refreshCharts() {
+      this.topChartSignatures = {};
       this.rebuildSnapshot();
       if (this.mapDrill.level === "province") {
         this.mapDrill.mapName = "yunnan";
@@ -514,8 +601,10 @@ export default {
       }
       this.renderLinkedCharts();
       this.lastMapLayoutKey = "";
+      this.lastMapBoxSize = "";
       this.$nextTick(() => {
         this.scheduleMapContainerResize();
+        this.scheduleSidebarResize();
       });
     },
 
@@ -538,6 +627,7 @@ export default {
       const isCounty = this.mapDrill.level === "county";
       chart.setOption(
         {
+          animation: false,
           tooltip: {
             trigger: "item",
             backgroundColor: "rgba(255,255,255,0.98)",
@@ -676,11 +766,16 @@ export default {
 
     renderTopChart(key, list, color) {
       const chart = this.charts[key];
-      if (!chart) return;
+      if (!chart || chart.isDisposed()) return;
       const names = list.map((d) => d.unitShort || d.unit.replace("供电局", "")).reverse();
       const values = list.map((d) => d.count).reverse();
+      const signature = `${names.join(",")}|${values.join(",")}|${color}`;
+      if (this.topChartSignatures[key] === signature) return;
+      this.topChartSignatures[key] = signature;
+
       chart.setOption(
         {
+          animation: false,
           grid: { left: 2, right: 28, top: 2, bottom: 2, containLabel: true },
           xAxis: {
             type: "value",
@@ -711,7 +806,7 @@ export default {
             },
           ],
         },
-        true
+        { replaceMerge: ["series"], lazyUpdate: true }
       );
     },
 
@@ -727,6 +822,7 @@ export default {
 
       chart.setOption(
         {
+          animation: false,
           tooltip: {
             trigger: "axis",
             axisPointer: { type: "shadow" },
@@ -741,7 +837,7 @@ export default {
             itemGap: 16,
             textStyle: { fontSize: 11, color: "#606266" },
           },
-          grid: { left: "2%", right: "4%", top: "6%", bottom: "14%", containLabel: true },
+          grid: { left: "2%", right: "4%", top: "6%", bottom: "20%", containLabel: true },
           xAxis: {
             type: "value",
             min: 0,
@@ -822,26 +918,55 @@ export default {
       this.detailPage = page;
     },
 
-    handleExportDetail() {
-      const rows = buildWarningDetailExportRows(this.warningSnapshot.detailTable);
-      if (!rows.length) {
-        this.$message.warning("没有可导出的数据");
+    getExportContext() {
+      return {
+        queryParams: this.warningQuery,
+        mapMetric: this.mapMetric,
+        drillLevel: this.mapDrill.level,
+        mapData: this.getCurrentMapData(),
+        linkFilterLabel: this.linkFilterLabel,
+        changeMode: this.changeMode,
+      };
+    },
+
+    openExportDialog() {
+      this.selectedExportModules = this.exportModules.map((m) => m.key);
+      this.syncExportCheckAll(this.selectedExportModules);
+      this.exportDialogVisible = true;
+    },
+
+    resetExportDialog() {
+      this.selectedExportModules = [];
+      this.exportCheckAll = false;
+      this.exportIndeterminate = false;
+    },
+
+    handleExportCheckAll(checked) {
+      this.selectedExportModules = checked ? this.exportModules.map((m) => m.key) : [];
+      this.exportIndeterminate = false;
+    },
+
+    syncExportCheckAll(value) {
+      const count = value.length;
+      const total = this.exportModules.length;
+      this.exportCheckAll = count === total;
+      this.exportIndeterminate = count > 0 && count < total;
+    },
+
+    confirmExportModules() {
+      if (!this.selectedExportModules.length) {
+        this.$message.warning("请至少选择一个统计模块");
         return;
       }
-      const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-      downloadTableWithLog({
-        headers: WARNING_DETAIL_EXPORT_HEADERS,
-        rows,
-        format: "csv",
-        baseFilename: `全省异常预警明细_${stamp}`,
-        meta: {
-          moduleCode: "behavior-overview-warning-detail",
-          moduleName: "员工行为总览-全省异常预警明细",
-          moduleGroup: "员工出勤行为管理",
-          rowCount: rows.length,
-        },
-      });
-      this.$message.success(`已导出 ${rows.length} 条异常预警明细`);
+      exportWarningModules(
+        this.selectedExportModules,
+        this.warningSnapshot,
+        this.getExportContext()
+      );
+      this.exportDialogVisible = false;
+      this.$message.success(
+        `已开始导出 ${this.selectedExportModules.length} 个统计模块明细，请留意浏览器下载`
+      );
     },
   },
 };
@@ -913,18 +1038,27 @@ export default {
 
 .warning-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
+  grid-template-columns: minmax(0, 1fr) minmax(400px, 500px);
   gap: 12px;
   align-items: stretch;
   min-width: 0;
-  min-height: 480px;
+  min-height: 720px;
+}
+
+.warning-hero-main {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+  min-height: 100%;
 }
 
 .map-chart-wrap {
+  flex: 1 1 auto;
   display: flex;
   min-width: 0;
   min-height: 480px;
-  padding: 8px;
+  padding: 10px;
   background: linear-gradient(180deg, #f7f9fc 0%, #fff 100%);
   border: 1px solid #eef2f7;
   border-radius: 4px;
@@ -934,23 +1068,52 @@ export default {
   flex: 1;
   width: 100%;
   min-width: 0;
-  min-height: 460px;
+  min-height: 440px;
   height: 100%;
+}
+
+.hero-abnormal {
+  flex: 0 0 auto;
+  padding: 10px 12px 8px;
+  background: #fafbfc;
+  border: 1px solid #eef0f3;
+  border-radius: 4px;
+}
+
+.hero-abnormal__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-bottom: 6px;
+}
+
+.hero-abnormal__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.hero-abnormal__chart {
+  height: 220px;
+  width: 100%;
 }
 
 .warning-top5-side {
   display: flex;
   flex-direction: column;
-  gap: 10px;
+  gap: 12px;
   min-width: 0;
+  min-height: 720px;
 }
 
 .top5-panel {
-  flex: 1;
+  flex: 1 1 230px;
   display: flex;
   flex-direction: column;
-  min-height: 0;
-  padding: 10px 10px 8px;
+  min-height: 230px;
+  padding: 10px 12px 10px;
   background: #fafbfc;
   border: 1px solid #eef0f3;
   border-radius: 4px;
@@ -964,6 +1127,10 @@ export default {
 
 .top5-panel__header {
   margin-bottom: 4px;
+}
+
+.map-toolbar-export {
+  flex-shrink: 0;
 }
 
 .top5-panel__title {
@@ -1117,9 +1284,9 @@ export default {
 }
 
 .warning-top5-side .top5-chart {
-  height: 72px;
+  height: 96px;
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
   flex-shrink: 0;
 }
 
@@ -1160,25 +1327,47 @@ export default {
 }
 
 .top5-chart {
-  height: 72px;
+  height: 88px;
   width: 100%;
-  margin-bottom: 6px;
+  margin-bottom: 8px;
+}
+
+.top5-table-wrap {
+  flex: 1;
+  min-width: 0;
+  min-height: 118px;
+  overflow-x: auto;
 }
 
 .top5-panel .top5-table {
-  flex: 1;
-  min-height: 0;
+  width: 100%;
+}
+
+.top5-panel >>> .el-table__body-wrapper {
+  overflow-y: hidden;
 }
 
 .top5-table >>> .el-table th {
-  background: #fafafa;
-  padding: 4px 0;
+  background: #ecf5ff;
+  padding: 7px 0;
   font-size: 11px;
+  font-weight: 600;
+  color: #303133;
 }
 
 .top5-table >>> .el-table td {
-  padding: 3px 0;
+  padding: 7px 0;
   font-size: 11px;
+}
+
+.top5-table >>> .el-table .cell {
+  line-height: 18px;
+  padding-left: 4px;
+  padding-right: 4px;
+}
+
+.status-text {
+  white-space: nowrap;
 }
 
 .chart-box--md {
@@ -1222,21 +1411,38 @@ export default {
     min-height: auto;
   }
 
+  .warning-top5-side {
+    min-height: auto;
+  }
+
+  .top5-panel {
+    min-height: 240px;
+  }
+
   .map-chart-wrap {
-    min-height: 400px;
+    min-height: 380px;
   }
 
   .chart-card--hero .map-chart {
-    min-height: 380px;
+    min-height: 360px;
+  }
+
+  .hero-abnormal__chart {
+    height: 260px;
   }
 
   .warning-top5-side {
     display: grid;
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    height: auto;
+  }
+
+  .top5-panel {
+    flex: none;
   }
 
   .warning-top5-side .top5-chart {
-    height: 96px;
+    height: 88px;
   }
 }
 
@@ -1261,5 +1467,52 @@ export default {
   .chart-card--hero .map-chart {
     min-height: 300px;
   }
+}
+
+.export-dialog-tip {
+  margin: 0 0 12px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.export-dialog-tip strong {
+  color: #1890ff;
+}
+
+.export-module-toolbar {
+  margin-bottom: 8px;
+  padding-bottom: 8px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.export-module-list {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  max-height: 360px;
+  overflow-y: auto;
+}
+
+.export-module-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  padding: 10px 12px;
+  background: #fafafa;
+  border: 1px solid #ebeef5;
+  border-radius: 4px;
+}
+
+.export-module-item >>> .el-checkbox__label {
+  font-weight: 600;
+  color: #303133;
+}
+
+.export-module-desc {
+  font-size: 12px;
+  color: #909399;
+  padding-left: 24px;
+  line-height: 1.5;
 }
 </style>
