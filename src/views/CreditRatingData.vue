@@ -9,7 +9,7 @@
 
       <div class="tab-body">
         <!-- Tab1: 员工信用基础数据维护 -->
-        <div v-show="activeTab === 'basicData'" class="tab-panel">
+        <div v-show="activeTab === 'basicData'" class="tab-panel tab-panel--with-tree">
           <div class="panel-layout">
             <aside class="org-sidebar">
               <div class="org-search">
@@ -76,6 +76,7 @@
                 <el-button type="primary" size="small" @click="$message.success('已提交执行评价')">执行评价</el-button>
               </div>
 
+              <div class="panel-table-body">
               <el-table
                 :data="pagedBasicRows"
                 border
@@ -112,6 +113,7 @@
                   </template>
                 </el-table-column>
               </el-table>
+              </div>
               <div class="pagination-wrap">
                 <el-pagination
                   :current-page="basicPage"
@@ -128,7 +130,7 @@
         </div>
 
         <!-- Tab2: 员工信用评级结果展示 -->
-        <div v-show="activeTab === 'ratingResult'" class="tab-panel">
+        <div v-show="activeTab === 'ratingResult'" class="tab-panel tab-panel--with-tree">
           <div class="panel-layout">
             <aside class="org-sidebar">
               <div class="org-search">
@@ -171,6 +173,7 @@
                 <el-tab-pane label="③-专业加扣分情况统计" name="profession" />
               </el-tabs>
 
+              <div class="right-panel__body">
               <!-- 台账查询 -->
               <div v-show="resultSubTab === 'ledger'" class="sub-panel">
                 <el-form :inline="true" size="small" class="filter-form">
@@ -195,6 +198,7 @@
                 <div class="action-bar action-bar--compact">
                   <el-button size="small" icon="el-icon-download" @click="exportResultLedger">导出</el-button>
                 </div>
+                <div class="panel-table-body">
                 <el-table
                   :data="pagedResultRows"
                   border
@@ -221,6 +225,7 @@
                     </template>
                   </el-table-column>
                 </el-table>
+                </div>
                 <div class="pagination-wrap">
                   <el-pagination
                     :current-page="resultPage"
@@ -258,6 +263,7 @@
                 <div class="action-bar action-bar--compact">
                   <el-button size="small" icon="el-icon-download" @click="exportPosNegStat">导出</el-button>
                 </div>
+                <div class="panel-table-body">
                 <el-table
                   :data="pagedPosNegRows"
                   border
@@ -292,6 +298,7 @@
                     </template>
                   </el-table-column>
                 </el-table>
+                </div>
                 <div class="pagination-wrap">
                   <el-pagination
                     :current-page="posNegPage"
@@ -329,6 +336,7 @@
                 <div class="action-bar action-bar--compact">
                   <el-button size="small" icon="el-icon-download" @click="exportProfessionStat">导出</el-button>
                 </div>
+                <div class="panel-table-body">
                 <el-table
                   :data="pagedProfessionRows"
                   border
@@ -356,6 +364,7 @@
                     </template>
                   </el-table-column>
                 </el-table>
+                </div>
                 <div class="pagination-wrap">
                   <el-pagination
                     :current-page="professionPage"
@@ -367,6 +376,7 @@
                     @current-change="(v) => { professionPage = v; }"
                   />
                 </div>
+              </div>
               </div>
             </div>
           </div>
@@ -866,53 +876,78 @@ export default {
 
 <style scoped>
 .credit-rating-data-page {
-  min-height: calc(100vh - 100px);
+  height: calc(100vh - 100px);
   padding: 0 4px 20px;
   background: #f5f5f5;
   box-sizing: border-box;
+  overflow: hidden;
 }
 
 .page-shell {
+  height: 100%;
   background: #fff;
   border: 1px solid #e8e8e8;
   border-radius: 4px;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-.main-tabs { padding: 0 16px; }
+.main-tabs { padding: 0 16px; flex-shrink: 0; }
 .main-tabs >>> .el-tabs__header { margin-bottom: 0; }
 .main-tabs >>> .el-tabs__nav-wrap::after { height: 1px; background: #e8e8e8; }
 .main-tabs >>> .el-tabs__item { height: 44px; line-height: 44px; font-size: 14px; color: #606266; }
 .main-tabs >>> .el-tabs__item.is-active { color: #1890ff; font-weight: 500; }
 .main-tabs >>> .el-tabs__active-bar { background-color: #1890ff; height: 2px; }
 
-.tab-body { min-height: 480px; padding: 16px; }
-.tab-panel { min-height: 440px; }
+.tab-body {
+  flex: 1;
+  min-height: 0;
+  padding: 16px;
+  box-sizing: border-box;
+  overflow: hidden;
+  position: relative;
+}
+
+.tab-panel--with-tree {
+  height: 100%;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  overflow: hidden;
+}
 
 .panel-layout {
+  flex: 1;
+  height: 100%;
+  min-height: 0;
   display: flex;
   gap: 12px;
   align-items: stretch;
+  overflow: hidden;
 }
 
 .org-sidebar {
   width: 280px;
   flex-shrink: 0;
+  align-self: stretch;
   background: #fff;
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
-  max-height: calc(100vh - 220px);
+  min-height: 0;
 }
 
 .org-search {
+  flex-shrink: 0;
   padding: 10px 12px;
   border-bottom: 1px solid #ebeef5;
 }
 
 .org-tree-toolbar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -930,8 +965,9 @@ export default {
 
 .org-tree-wrap {
   flex: 1;
-  min-height: 280px;
-  overflow: auto;
+  min-height: 0;
+  overflow-x: hidden;
+  overflow-y: auto;
   padding: 8px 4px;
 }
 
@@ -956,16 +992,47 @@ export default {
 .right-panel {
   flex: 1;
   min-width: 0;
+  min-height: 0;
+  align-self: stretch;
   display: flex;
   flex-direction: column;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 12px;
+  box-sizing: border-box;
+  overflow: hidden;
 }
 
-.sub-tabs { margin-bottom: 12px; }
-.sub-tabs >>> .el-tabs__header { margin-bottom: 0; }
-.sub-tabs >>> .el-tabs__item { height: 36px; line-height: 36px; font-size: 13px; }
-.sub-panel { min-height: 360px; }
+.right-panel__body {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.sub-tabs {
+  flex-shrink: 0;
+  margin-bottom: 12px;
+}
+
+.sub-panel {
+  flex: 1;
+  min-height: 0;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.panel-table-body {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+}
 
 .filter-form {
+  flex-shrink: 0;
   display: flex;
   flex-wrap: wrap;
   align-items: center;
@@ -978,6 +1045,7 @@ export default {
 .filter-form__actions { margin-left: auto; }
 
 .action-bar {
+  flex-shrink: 0;
   display: flex;
   align-items: center;
   justify-content: space-between;
@@ -993,7 +1061,15 @@ export default {
   font-weight: 500;
 }
 
-.pagination-wrap { margin-top: 14px; text-align: right; }
+.pagination-wrap {
+  flex-shrink: 0;
+  margin-top: auto;
+  padding-top: 14px;
+  text-align: right;
+}
+
+.sub-tabs >>> .el-tabs__header { margin-bottom: 0; }
+.sub-tabs >>> .el-tabs__item { height: 36px; line-height: 36px; font-size: 13px; }
 
 .required-col::after {
   content: "*";
@@ -1006,7 +1082,36 @@ export default {
 .danger-text { color: #f56c6c; }
 
 @media (max-width: 992px) {
-  .panel-layout { flex-direction: column; }
-  .org-sidebar { width: 100%; max-height: 320px; }
+  .credit-rating-data-page {
+    height: auto;
+    min-height: calc(100vh - 100px);
+    overflow: visible;
+  }
+
+  .page-shell {
+    height: auto;
+    min-height: calc(100vh - 120px);
+  }
+
+  .tab-body {
+    overflow: visible;
+  }
+
+  .panel-layout {
+    flex-direction: column;
+    height: auto;
+    min-height: 640px;
+  }
+
+  .org-sidebar {
+    width: 100%;
+    height: 320px;
+    flex-shrink: 0;
+  }
+
+  .right-panel {
+    height: auto;
+    min-height: 480px;
+  }
 }
 </style>
