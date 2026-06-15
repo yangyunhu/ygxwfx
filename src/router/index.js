@@ -41,6 +41,8 @@ import AbnormalDataManagement from '../views/AbnormalDataManagement.vue';
 import AttendanceConfigManagement from '../views/AttendanceConfigManagement.vue';
 import AttendanceStatistics from '../views/AttendanceStatistics.vue';
 import EmployeeBehaviorOverview from '../views/EmployeeBehaviorOverview.vue';
+import WorkSaturationAnalysis from '../views/WorkSaturationAnalysis.vue';
+import ModelManagement from '../views/ModelManagement.vue';
 
 Vue.use(Router);
 
@@ -85,13 +87,13 @@ export default new Router({
     {
       path: '/behavior-intelligence-scenarios/model-management',
       name: 'ModelManagement',
-      component: ModulePlaceholder,
+      component: ModelManagement,
       meta: { title: '智能分析模型管理', description: '智能分析模型管理页面，用于配置和管理各类行为分析模型。' }
     },
     {
       path: '/behavior-intelligence-scenarios/work-saturation',
       name: 'WorkSaturationAnalysis',
-      component: ModulePlaceholder,
+      component: WorkSaturationAnalysis,
       meta: { title: '员工工作饱和度分析', description: '员工工作饱和度分析页面，展示员工工作量与饱和度统计。' }
     },
     {
