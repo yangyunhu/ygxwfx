@@ -37,11 +37,11 @@
       </el-form>
     </section>
 
-    <!-- 地图 + TOP5 -->
-    <div class="warning-top-grid">
-      <section class="chart-card chart-card--map" :class="{ 'is-county': mapDrill.level === 'county' }">
-        <div class="chart-card__header chart-card__header--map">
-          <div class="map-header-main">
+    <!-- 地图 + TOP5：左大地图（中心）+ 右侧预警排名 -->
+    <section class="chart-card chart-card--hero" :class="{ 'is-county': mapDrill.level === 'county' }">
+      <div class="chart-card__header chart-card__header--map">
+        <div class="map-toolbar">
+          <div class="map-toolbar__primary">
             <h3 class="chart-card__title">各单位出勤数据横向对比</h3>
             <div class="map-breadcrumb">
               <span
@@ -56,66 +56,112 @@
                 <span class="map-crumb is-active">{{ mapDrill.unitName }}</span>
               </template>
             </div>
-            <span v-if="mapDrill.level === 'province'" class="map-drill-tip">点击地市下钻查看县区</span>
           </div>
-          <div class="map-legend">
-            <span class="map-legend__label">旷工人次</span>
+          <el-radio-group
+            v-model="mapMetric"
+            size="mini"
+            class="map-metric-tabs"
+            @change="handleMapMetricChange"
+          >
+            <el-radio-button v-for="m in mapMetrics" :key="m.key" :label="m.key">
+              {{ m.label }}
+            </el-radio-button>
+          </el-radio-group>
+          <div class="map-legend map-legend--inline">
             <div v-for="item in mapLevels" :key="item.label" class="map-legend__item">
               <span class="map-legend__color" :style="{ background: item.color }" />
               <span>{{ item.label }}</span>
             </div>
           </div>
         </div>
-        <div ref="mapChart" v-loading="mapLoading" class="map-chart" />
-      </section>
-
-      <div class="warning-top5-col">
-        <section class="chart-card">
-          <div class="chart-card__header">
-            <h3 class="chart-card__title">迟到预警 TOP5</h3>
-          </div>
-          <div ref="lateTopChart" class="top5-chart" />
-          <div class="top5-table-wrap">
-            <el-table :data="warningSnapshot.lateTop5" border size="mini" class="top5-table">
-              <el-table-column prop="rank" label="排名" width="48" align="center" />
-              <el-table-column prop="unitShort" label="单位" min-width="72" show-overflow-tooltip />
-              <el-table-column prop="department" label="部门" min-width="64" show-overflow-tooltip />
-              <el-table-column prop="count" label="迟到" width="48" align="center" />
-              <el-table-column prop="status" label="状态" width="68" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </section>
-
-        <section class="chart-card">
-          <div class="chart-card__header">
-            <h3 class="chart-card__title">早退预警 TOP5</h3>
-          </div>
-          <div ref="earlyTopChart" class="top5-chart" />
-          <div class="top5-table-wrap">
-            <el-table :data="warningSnapshot.earlyTop5" border size="mini" class="top5-table">
-              <el-table-column prop="rank" label="排名" width="48" align="center" />
-              <el-table-column prop="unitShort" label="单位" min-width="72" show-overflow-tooltip />
-              <el-table-column prop="department" label="部门" min-width="64" show-overflow-tooltip />
-              <el-table-column prop="count" label="早退" width="48" align="center" />
-              <el-table-column prop="status" label="状态" width="68" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
-                </template>
-              </el-table-column>
-            </el-table>
-          </div>
-        </section>
+        <div class="map-meta">
+          <span v-if="mapDrill.level === 'province'" class="map-drill-tip">
+            点击地市下钻县区，联动右侧统计
+          </span>
+          <span v-else class="map-drill-tip">点击县区筛选明细</span>
+          <span v-if="linkFilterLabel" class="map-link-tag">
+            {{ linkFilterLabel }}
+            <i class="el-icon-close map-link-clear" @click="clearRegionLink" />
+          </span>
+        </div>
       </div>
-    </div>
+
+      <div class="warning-hero-grid">
+        <div class="map-chart-wrap">
+          <div ref="mapChart" v-loading="mapLoading" class="map-chart" />
+        </div>
+
+        <aside class="warning-top5-side">
+          <section class="top5-panel" :class="{ 'is-linked': mapMetric === 'late' }">
+            <div class="top5-panel__header">
+              <h4 class="top5-panel__title">
+                迟到预警 TOP5
+                <span v-if="mapMetric === 'late'" class="linked-badge">联动</span>
+              </h4>
+            </div>
+            <div ref="lateTopChart" class="top5-chart" />
+            <el-table :data="warningSnapshot.lateTop5" border size="mini" class="top5-table">
+              <el-table-column prop="rank" label="#" width="32" align="center" />
+              <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
+              <el-table-column prop="count" label="迟到" width="40" align="center" />
+              <el-table-column prop="status" label="状态" min-width="56" align="center">
+                <template slot-scope="{ row }">
+                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </section>
+
+          <section class="top5-panel" :class="{ 'is-linked': mapMetric === 'early' }">
+            <div class="top5-panel__header">
+              <h4 class="top5-panel__title">
+                早退预警 TOP5
+                <span v-if="mapMetric === 'early'" class="linked-badge">联动</span>
+              </h4>
+            </div>
+            <div ref="earlyTopChart" class="top5-chart" />
+            <el-table :data="warningSnapshot.earlyTop5" border size="mini" class="top5-table">
+              <el-table-column prop="rank" label="#" width="32" align="center" />
+              <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
+              <el-table-column prop="count" label="早退" width="40" align="center" />
+              <el-table-column prop="status" label="状态" min-width="56" align="center">
+                <template slot-scope="{ row }">
+                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </section>
+
+          <section class="top5-panel" :class="{ 'is-linked': mapMetric === 'longAbsent' }">
+            <div class="top5-panel__header">
+              <h4 class="top5-panel__title">
+                长期不在岗 TOP5
+                <span v-if="mapMetric === 'longAbsent'" class="linked-badge">联动</span>
+              </h4>
+            </div>
+            <div ref="longAbsentTopChart" class="top5-chart" />
+            <el-table :data="warningSnapshot.longAbsentTop5" border size="mini" class="top5-table">
+              <el-table-column prop="rank" label="#" width="32" align="center" />
+              <el-table-column prop="unitShort" :label="top5RegionLabel" min-width="52" show-overflow-tooltip />
+              <el-table-column prop="count" label="不在岗" width="48" align="center" />
+              <el-table-column prop="status" label="状态" min-width="56" align="center">
+                <template slot-scope="{ row }">
+                  <span :class="['status-text', statusClass(row.status)]">{{ row.status }}</span>
+                </template>
+              </el-table-column>
+            </el-table>
+          </section>
+        </aside>
+      </div>
+    </section>
 
     <!-- 异常变化情况 -->
     <section class="chart-card">
       <div class="chart-card__header">
-        <h3 class="chart-card__title">异常变化情况</h3>
+        <h3 class="chart-card__title">
+          异常变化情况
+          <span v-if="linkFilterLabel" class="section-filter-tip">（{{ linkFilterLabel }}）</span>
+        </h3>
         <el-radio-group v-model="changeMode" size="mini" @change="handleChangeMode">
           <el-radio-button label="unit">单位</el-radio-button>
           <el-radio-button label="department">部门</el-radio-button>
@@ -127,7 +173,10 @@
     <!-- 全省异常预警明细 -->
     <section class="chart-card">
       <div class="chart-card__header">
-        <h3 class="chart-card__title">全省异常预警明细</h3>
+        <h3 class="chart-card__title">
+          全省异常预警明细
+          <span class="section-filter-tip">（{{ currentMapMetric.abnormalType }} · {{ linkFilterLabel || "全省" }}）</span>
+        </h3>
         <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportDetail">
           导出
         </el-button>
@@ -135,6 +184,7 @@
       <el-table :data="pagedDetailTable" border stripe size="small" class="detail-table">
         <el-table-column type="index" :index="detailIndex" label="序号" width="60" align="center" />
         <el-table-column prop="unit" label="单位" min-width="120" show-overflow-tooltip />
+        <el-table-column prop="county" label="县区" width="80" align="center" show-overflow-tooltip />
         <el-table-column prop="department" label="部门" min-width="100" show-overflow-tooltip />
         <el-table-column prop="position" label="岗位" min-width="100" show-overflow-tooltip />
         <el-table-column prop="name" label="姓名" width="80" align="center" />
@@ -167,16 +217,15 @@ import * as echarts from "echarts";
 import { UNIT_OPTIONS } from "../utils/behaviorOverviewData";
 import {
   DEFAULT_WARNING_QUERY,
+  MAP_METRICS,
+  getMapMetricMeta,
   buildWarningSnapshot,
   ABNORMAL_CHANGE_COLORS,
   buildWarningDetailExportRows,
   WARNING_DETAIL_EXPORT_HEADERS,
 } from "../utils/warningOverviewData";
 import {
-  ABSENTEE_MAP_LEVELS,
-  MAP_VISUAL_PIECES,
-  MAP_GEO_ITEM_STYLE,
-  MAP_EMPHASIS_ITEM_STYLE,
+  getMapMetricConfig,
   fillMapSeriesData,
   registerYunnanMap,
 } from "../utils/yunnanGeo";
@@ -201,14 +250,24 @@ export default {
       unitOptions: UNIT_OPTIONS,
       warningQuery: { ...DEFAULT_WARNING_QUERY },
       changeMode: "unit",
-      warningSnapshot: buildWarningSnapshot(DEFAULT_WARNING_QUERY, "unit"),
-      mapLevels: ABSENTEE_MAP_LEVELS,
+      mapMetric: "late",
+      mapMetrics: MAP_METRICS,
+      linkContext: {
+        unitKey: null,
+        regionName: null,
+        countyName: null,
+      },
+      selectedMapRegion: null,
+      warningSnapshot: buildWarningSnapshot(DEFAULT_WARNING_QUERY, "unit", { mapMetric: "late" }),
+      mapLevels: getMapMetricConfig("late").levels,
       mapDrill: {
         level: "province",
         unitKey: null,
         unitName: "",
         mapName: "yunnan",
         mapData: [],
+        counties: [],
+        parentValues: {},
       },
       mapLoading: false,
       mapClickBound: false,
@@ -217,10 +276,25 @@ export default {
       detailPageSize: 10,
       inited: false,
       mapResizeObserver: null,
+      mapResizeTimer: null,
+      chartResizeTimer: null,
+      lastMapLayoutKey: "",
       windowResizeHandler: null,
     };
   },
   computed: {
+    currentMapMetric() {
+      return getMapMetricMeta(this.mapMetric);
+    },
+    linkFilterLabel() {
+      const parts = [];
+      if (this.linkContext.regionName) parts.push(this.linkContext.regionName);
+      if (this.linkContext.countyName) parts.push(this.linkContext.countyName);
+      return parts.length ? parts.join(" · ") : "";
+    },
+    top5RegionLabel() {
+      return this.mapDrill.level === "county" ? "县区" : "单位";
+    },
     pagedDetailTable() {
       const start = (this.detailPage - 1) * this.detailPageSize;
       return this.warningSnapshot.detailTable.slice(start, start + this.detailPageSize);
@@ -233,7 +307,7 @@ export default {
           if (!this.inited) {
             this.initCharts();
           } else {
-            this.handleMapContainerResize();
+            this.scheduleMapContainerResize();
           }
         });
       }
@@ -241,7 +315,7 @@ export default {
   },
   mounted() {
     this.windowResizeHandler = () => {
-      if (this.inited) this.handleMapContainerResize();
+      if (this.inited) this.scheduleMapContainerResize();
     };
     window.addEventListener("resize", this.windowResizeHandler);
     if (this.active) {
@@ -250,6 +324,8 @@ export default {
   },
   beforeDestroy() {
     if (this.mapResizeObserver) this.mapResizeObserver.disconnect();
+    if (this.mapResizeTimer) clearTimeout(this.mapResizeTimer);
+    if (this.chartResizeTimer) clearTimeout(this.chartResizeTimer);
     if (this.windowResizeHandler) {
       window.removeEventListener("resize", this.windowResizeHandler);
     }
@@ -267,7 +343,63 @@ export default {
     },
 
     rebuildSnapshot() {
-      this.warningSnapshot = buildWarningSnapshot(this.warningQuery, this.changeMode);
+      this.warningSnapshot = buildWarningSnapshot(this.warningQuery, this.changeMode, {
+        mapMetric: this.mapMetric,
+        drillLevel: this.mapDrill.level,
+        ...this.linkContext,
+        countyList: this.mapDrill.counties || [],
+        parentValues: this.mapDrill.parentValues || {},
+      });
+    },
+
+    getLinkContextPayload() {
+      return {
+        mapMetric: this.mapMetric,
+        ...this.linkContext,
+        countyList: this.mapDrill.counties || [],
+      };
+    },
+
+    applyRegionLink(unitKey, regionName, countyName = null) {
+      this.linkContext = {
+        unitKey: unitKey || null,
+        regionName: regionName || null,
+        countyName: countyName || null,
+      };
+      this.selectedMapRegion = countyName || regionName || null;
+      this.detailPage = 1;
+      this.rebuildSnapshot();
+      this.renderLinkedCharts();
+    },
+
+    clearRegionLink() {
+      if (this.mapDrill.level === "county" && this.linkContext.countyName) {
+        this.linkContext = {
+          ...this.linkContext,
+          countyName: null,
+        };
+        this.selectedMapRegion = null;
+      } else {
+        this.linkContext = { unitKey: null, regionName: null, countyName: null };
+        this.selectedMapRegion = null;
+      }
+      this.detailPage = 1;
+      this.rebuildSnapshot();
+      this.renderLinkedCharts();
+    },
+
+    handleMapMetricChange() {
+      this.mapLevels = getMapMetricConfig(this.mapMetric).levels;
+      if (this.mapDrill.level === "county" && this.mapDrill.counties.length) {
+        this.mapDrill.mapData = buildCountyMapData(
+          this.mapDrill.counties,
+          this.mapDrill.parentValues[this.mapMetric] || 10,
+          this.warningSnapshot.factor,
+          this.mapMetric
+        );
+      }
+      this.rebuildSnapshot();
+      this.renderLinkedCharts();
     },
 
     initCharts() {
@@ -276,6 +408,7 @@ export default {
         map: "mapChart",
         lateTop: "lateTopChart",
         earlyTop: "earlyTopChart",
+        longAbsentTop: "longAbsentTopChart",
         abnormalChange: "abnormalChangeChart",
       };
       Object.keys(refs).forEach((key) => {
@@ -297,27 +430,48 @@ export default {
       if (typeof ResizeObserver === "undefined" || !this.$refs.mapChart) return;
       if (this.mapResizeObserver) this.mapResizeObserver.disconnect();
       this.mapResizeObserver = new ResizeObserver(() => {
-        this.handleMapContainerResize();
+        // 仅 resize 图表，避免 setOption 触发尺寸循环
+        this.scheduleChartResize();
       });
       this.mapResizeObserver.observe(this.$refs.mapChart);
     },
 
+    scheduleChartResize() {
+      if (this.chartResizeTimer) clearTimeout(this.chartResizeTimer);
+      this.chartResizeTimer = setTimeout(() => {
+        this.chartResizeTimer = null;
+        this.resizeCharts();
+      }, 120);
+    },
+
+    scheduleMapContainerResize() {
+      if (this.mapResizeTimer) clearTimeout(this.mapResizeTimer);
+      this.mapResizeTimer = setTimeout(() => {
+        this.mapResizeTimer = null;
+        this.handleMapContainerResize();
+      }, 120);
+    },
+
+    getMapLayoutKey() {
+      const el = this.$refs.mapChart;
+      const w = el ? el.clientWidth : 0;
+      const h = el ? el.clientHeight : 0;
+      const geoLayout = this.getMapGeoLayout();
+      return `${this.mapDrill.mapName}|${this.mapDrill.level}|${w}x${h}|${JSON.stringify(geoLayout)}`;
+    },
+
     getMapGeoLayout() {
       const el = this.$refs.mapChart;
-      const w = el ? el.clientWidth : 600;
+      const w = el ? el.clientWidth : 720;
       const h = el ? el.clientHeight : 480;
       const ratio = w / Math.max(h, 1);
       const isCounty = this.mapDrill.level === "county";
-      let sidePad = isCounty ? "6%" : "7%";
-      if (w < 360) sidePad = isCounty ? "10%" : "14%";
-      else if (w < 480) sidePad = isCounty ? "8%" : "11%";
-      else if (w < 620) sidePad = isCounty ? "7%" : "9%";
+      const sizeBase = Math.floor(Math.min(h * 0.96, w * (isCounty ? 0.9 : 0.86)));
+
       return {
-        left: sidePad,
-        right: sidePad,
-        top: ratio > 1.15 ? "10%" : "8%",
-        bottom: ratio > 1.15 ? "8%" : "6%",
-        aspectScale: isCounty ? 0.92 : ratio > 1.25 ? 0.78 : ratio > 1.05 ? 0.84 : 0.88,
+        layoutCenter: ["50%", "50%"],
+        layoutSize: sizeBase,
+        aspectScale: isCounty ? 0.88 : ratio > 1.6 ? 0.76 : 0.84,
       };
     },
 
@@ -330,15 +484,24 @@ export default {
 
     handleMapContainerResize() {
       if (!this.charts.map) return;
-      const geoLayout = this.getMapGeoLayout();
-      this.charts.map.setOption({
-        geo: { ...geoLayout, map: this.mapDrill.mapName },
-      });
-      this.resizeCharts();
+      const layoutKey = this.getMapLayoutKey();
+      if (layoutKey !== this.lastMapLayoutKey) {
+        this.lastMapLayoutKey = layoutKey;
+        const geoLayout = this.getMapGeoLayout();
+        this.charts.map.setOption(
+          {
+            geo: { ...geoLayout, map: this.mapDrill.mapName },
+          },
+          { lazyUpdate: true, silent: true }
+        );
+      }
+      this.scheduleChartResize();
     },
 
     resizeCharts() {
-      Object.values(this.charts).forEach((c) => c && c.resize());
+      Object.values(this.charts).forEach((c) => {
+        if (c && !c.isDisposed()) c.resize();
+      });
     },
 
     refreshCharts() {
@@ -346,22 +509,30 @@ export default {
       if (this.mapDrill.level === "province") {
         this.mapDrill.mapName = "yunnan";
         this.mapDrill.mapData = [];
+        this.mapDrill.counties = [];
+        this.mapDrill.parentValues = {};
       }
-      this.renderMapChart();
-      this.renderTopChart("lateTop", this.warningSnapshot.lateTop5, "#FA8C16");
-      this.renderTopChart("earlyTop", this.warningSnapshot.earlyTop5, "#1890FF");
-      this.renderAbnormalChangeChart();
+      this.renderLinkedCharts();
+      this.lastMapLayoutKey = "";
       this.$nextTick(() => {
-        this.resizeCharts();
-        // 地图容器高度随右侧 TOP5 拉伸后需二次 resize
-        setTimeout(() => this.resizeCharts(), 80);
+        this.scheduleMapContainerResize();
       });
+    },
+
+    renderLinkedCharts() {
+      this.renderMapChart();
+      this.renderTopChart("lateTop", this.warningSnapshot.lateTop5, "#1890FF");
+      this.renderTopChart("earlyTop", this.warningSnapshot.earlyTop5, "#FA8C16");
+      this.renderTopChart("longAbsentTop", this.warningSnapshot.longAbsentTop5, "#722ED1");
+      this.renderAbnormalChangeChart();
     },
 
     renderMapChart() {
       const chart = this.charts.map;
       if (!chart) return;
       const mapName = this.mapDrill.mapName;
+      const metricConfig = getMapMetricConfig(this.mapMetric);
+      const metricMeta = this.currentMapMetric;
       const data = fillMapSeriesData(mapName, this.getCurrentMapData(), echarts);
       const geoLayout = this.getMapGeoLayout();
       const isCounty = this.mapDrill.level === "county";
@@ -376,13 +547,13 @@ export default {
             formatter: (p) => {
               const label = (p.data && p.data.fullName) || p.name;
               const val = p.value != null ? p.value : 0;
-              return `<div style="font-weight:600;">${label}</div><div style="margin-top:4px;">旷工人次：<strong>${val}</strong></div>`;
+              return `<div style="font-weight:600;">${label}</div><div style="margin-top:4px;">${metricMeta.label}：<strong>${val}</strong> ${metricMeta.valueUnit}</div>`;
             },
           },
           visualMap: {
             type: "piecewise",
             show: false,
-            pieces: MAP_VISUAL_PIECES,
+            pieces: metricConfig.pieces,
           },
           geo: {
             map: mapName,
@@ -395,20 +566,31 @@ export default {
             },
             emphasis: {
               label: { show: true, color: "#303133", fontWeight: 600 },
-              itemStyle: MAP_EMPHASIS_ITEM_STYLE,
+              itemStyle: metricConfig.emphasisItemStyle,
             },
-            itemStyle: MAP_GEO_ITEM_STYLE,
+            itemStyle: metricConfig.geoItemStyle,
           },
           series: [
             {
               type: "map",
               map: mapName,
               geoIndex: 0,
-              selectedMode: false,
+              selectedMode: "single",
+              select: {
+                itemStyle: {
+                  areaColor: metricConfig.emphasisItemStyle.areaColor,
+                  borderColor: metricMeta.highlightColor,
+                  borderWidth: 3,
+                  shadowBlur: 10,
+                  shadowColor: "rgba(24,144,255,0.25)",
+                },
+                label: { show: true, fontWeight: 700 },
+              },
               data: data.map((d) => ({
                 name: d.name,
                 value: d.value != null ? d.value : 0,
                 fullName: d.fullName,
+                selected: this.selectedMapRegion === d.name,
               })),
             },
           ],
@@ -418,13 +600,19 @@ export default {
     },
 
     async handleMapClick(params) {
-      if (this.mapDrill.level !== "province") return;
       const regionName = params.name;
+      if (this.mapDrill.level === "county") {
+        this.applyRegionLink(this.mapDrill.unitKey, this.mapDrill.unitName, regionName);
+        this.renderMapChart();
+        return;
+      }
+
       const unitKey = resolveUnitKeyByRegionName(regionName);
       if (!unitKey) {
         this.$message.warning("暂不支持该地区下钻");
         return;
       }
+      this.applyRegionLink(unitKey, regionName);
       await this.drillToCounty(unitKey, regionName);
     },
 
@@ -432,8 +620,12 @@ export default {
       const meta = getUnitMetaByKey(unitKey);
       if (!meta) return;
 
-      const parentRow = this.warningSnapshot.mapData.find((d) => d.name === meta.shortName);
-      const parentValue = parentRow ? parentRow.value : 20;
+      const parentValues = {};
+      MAP_METRICS.forEach((m) => {
+        const row = this.warningSnapshot.mapDataByMetric[m.key].find((d) => d.name === meta.shortName);
+        parentValues[m.key] = row ? row.value : 10;
+      });
+      const parentValue = parentValues[this.mapMetric] || 10;
 
       this.mapLoading = true;
       try {
@@ -441,7 +633,8 @@ export default {
         const countyData = buildCountyMapData(
           countyMap.counties,
           parentValue,
-          this.warningSnapshot.factor
+          this.warningSnapshot.factor,
+          this.mapMetric
         );
         this.mapDrill = {
           level: "county",
@@ -449,10 +642,14 @@ export default {
           unitName: meta.shortName,
           mapName: countyMap.mapName,
           mapData: countyData,
+          counties: countyMap.counties,
+          parentValues,
         };
-        this.renderMapChart();
-        this.$nextTick(() => this.handleMapContainerResize());
-        this.$message.success(`已进入${meta.shortName}县区视图`);
+        this.selectedMapRegion = null;
+        this.rebuildSnapshot();
+        this.renderLinkedCharts();
+        this.lastMapLayoutKey = "";
+        this.$nextTick(() => this.scheduleMapContainerResize());
       } catch (err) {
         this.$message.error("县级地图加载失败，请稍后重试");
       } finally {
@@ -468,38 +665,42 @@ export default {
         unitName: "",
         mapName: "yunnan",
         mapData: [],
+        counties: [],
+        parentValues: {},
       };
+      this.clearRegionLink();
+      this.lastMapLayoutKey = "";
       this.renderMapChart();
-      this.$nextTick(() => this.handleMapContainerResize());
+      this.$nextTick(() => this.scheduleMapContainerResize());
     },
 
     renderTopChart(key, list, color) {
       const chart = this.charts[key];
       if (!chart) return;
-      const names = list.map((d) => d.unit.replace("供电局", "")).reverse();
+      const names = list.map((d) => d.unitShort || d.unit.replace("供电局", "")).reverse();
       const values = list.map((d) => d.count).reverse();
       chart.setOption(
         {
-          grid: { left: "4%", right: "8%", top: "4%", bottom: "4%", containLabel: true },
+          grid: { left: 2, right: 28, top: 2, bottom: 2, containLabel: true },
           xAxis: {
             type: "value",
             axisLine: { show: false },
             axisTick: { show: false },
-            splitLine: { lineStyle: { color: "#F0F0F0" } },
-            axisLabel: { fontSize: 10, color: "#909399" },
+            splitLine: { show: false },
+            axisLabel: { show: false },
           },
           yAxis: {
             type: "category",
             data: names,
             axisLine: { show: false },
             axisTick: { show: false },
-            axisLabel: { fontSize: 10, color: "#606266" },
+            axisLabel: { fontSize: 11, color: "#606266", width: 48, overflow: "truncate" },
           },
           series: [
             {
               type: "bar",
               data: values,
-              barWidth: 12,
+              barWidth: 10,
               itemStyle: { color, borderRadius: [0, 2, 2, 0] },
               label: {
                 show: true,
@@ -518,8 +719,12 @@ export default {
       const chart = this.charts.abnormalChange;
       if (!chart) return;
       const ac = this.warningSnapshot.abnormalChange;
-      const seriesNames = ["迟到", "早退", "在岗证据不足", "旷工"];
-      const datasets = [ac.late, ac.early, ac.evidence, ac.absentee];
+      const seriesNames = ["迟到", "早退", "在岗证据不足", "旷工", "长期不在岗"];
+      const datasets = [ac.late, ac.early, ac.evidence, ac.absentee, ac.longAbsent];
+      const activeType = this.currentMapMetric.abnormalType;
+      const maxVal = Math.max(...datasets.flat(), 10);
+      const axisMax = Math.ceil(maxVal / 10) * 10 + 10;
+
       chart.setOption(
         {
           tooltip: {
@@ -533,15 +738,15 @@ export default {
             icon: "rect",
             itemWidth: 12,
             itemHeight: 8,
-            itemGap: 20,
+            itemGap: 16,
             textStyle: { fontSize: 11, color: "#606266" },
           },
-          grid: { left: "2%", right: "4%", top: "6%", bottom: "12%", containLabel: true },
+          grid: { left: "2%", right: "4%", top: "6%", bottom: "14%", containLabel: true },
           xAxis: {
             type: "value",
             min: 0,
-            max: 60,
-            interval: 10,
+            max: axisMax,
+            interval: Math.max(10, Math.round(axisMax / 6)),
             axisLine: { show: false },
             axisTick: { show: false },
             splitLine: { lineStyle: { color: "#F0F0F0" } },
@@ -559,7 +764,12 @@ export default {
             type: "bar",
             stack: "abnormal",
             barMaxWidth: 16,
-            itemStyle: { color: ABNORMAL_CHANGE_COLORS[name] },
+            itemStyle: {
+              color: ABNORMAL_CHANGE_COLORS[name],
+              opacity: name === activeType ? 1 : 0.35,
+              borderColor: name === activeType ? ABNORMAL_CHANGE_COLORS[name] : "transparent",
+              borderWidth: name === activeType ? 1 : 0,
+            },
             data: datasets[i],
           })),
         },
@@ -575,6 +785,8 @@ export default {
         }
       }
       this.detailPage = 1;
+      this.linkContext = { unitKey: null, regionName: null, countyName: null };
+      this.selectedMapRegion = null;
       this.drillToProvince();
       this.refreshCharts();
       this.$message.success("查询成功，异常预警数据已刷新");
@@ -583,7 +795,11 @@ export default {
     handleReset() {
       this.warningQuery = { ...DEFAULT_WARNING_QUERY };
       this.changeMode = "unit";
+      this.mapMetric = "late";
+      this.mapLevels = getMapMetricConfig("late").levels;
       this.detailPage = 1;
+      this.linkContext = { unitKey: null, regionName: null, countyName: null };
+      this.selectedMapRegion = null;
       this.drillToProvince();
       this.refreshCharts();
       this.$message.info("已重置查询条件");
@@ -684,37 +900,172 @@ export default {
   color: #303133;
 }
 
-.warning-top-grid {
+.warning-top-stack {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.chart-card--hero {
+  padding-bottom: 12px;
+}
+
+.warning-hero-grid {
   display: grid;
-  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  grid-template-columns: minmax(0, 1fr) minmax(340px, 420px);
   gap: 12px;
   align-items: stretch;
   min-width: 0;
+  min-height: 480px;
 }
 
-.chart-card--map {
+.map-chart-wrap {
   display: flex;
-  flex-direction: column;
   min-width: 0;
-  min-height: 0;
+  min-height: 480px;
+  padding: 8px;
+  background: linear-gradient(180deg, #f7f9fc 0%, #fff 100%);
+  border: 1px solid #eef2f7;
+  border-radius: 4px;
 }
 
-.chart-card--map .map-chart {
+.chart-card--hero .map-chart {
   flex: 1;
   width: 100%;
   min-width: 0;
-  min-height: 420px;
+  min-height: 460px;
   height: 100%;
-  background: #f7f9fc;
-  border-radius: 2px;
+}
+
+.warning-top5-side {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  min-width: 0;
+}
+
+.top5-panel {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  min-height: 0;
+  padding: 10px 10px 8px;
+  background: #fafbfc;
+  border: 1px solid #eef0f3;
+  border-radius: 4px;
+}
+
+.top5-panel.is-linked {
+  border-color: #91d5ff;
+  background: #f6fbff;
+  box-shadow: inset 3px 0 0 #1890ff;
+}
+
+.top5-panel__header {
+  margin-bottom: 4px;
+}
+
+.top5-panel__title {
+  margin: 0;
+  font-size: 12px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.chart-card--map {
+  padding-bottom: 10px;
 }
 
 .chart-card__header--map {
-  flex-wrap: wrap;
-  gap: 8px 16px;
-  margin-bottom: 4px;
-  padding-bottom: 10px;
+  flex-direction: column;
+  align-items: stretch;
+  gap: 6px;
+  margin-bottom: 0;
+  padding-bottom: 8px;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.map-toolbar {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 10px 16px;
+}
+
+.map-toolbar__primary {
+  display: flex;
+  align-items: baseline;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-width: 0;
+}
+
+.map-meta {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px 12px;
+  min-height: 20px;
+}
+
+.map-metric-tabs {
+  flex-shrink: 0;
+}
+
+.map-metric-tabs >>> .el-radio-button__inner {
+  padding: 5px 10px;
+  font-size: 12px;
+}
+
+.map-link-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 2px 8px;
+  font-size: 11px;
+  color: #1890ff;
+  background: #ecf5ff;
+  border: 1px solid #b3d8ff;
+  border-radius: 2px;
+}
+
+.map-link-clear {
+  cursor: pointer;
+  font-size: 12px;
+}
+
+.map-link-clear:hover {
+  color: #f5222d;
+}
+
+.linked-badge {
+  margin-left: 6px;
+  padding: 1px 6px;
+  font-size: 10px;
+  font-weight: 500;
+  color: #1890ff;
+  background: #ecf5ff;
+  border-radius: 2px;
+  vertical-align: middle;
+}
+
+.chart-card.is-linked {
+  border-color: #91d5ff;
+  box-shadow: inset 3px 0 0 #1890ff;
+}
+
+.top5-panel.is-linked {
+  border-color: #91d5ff;
+  background: #f6fbff;
+  box-shadow: inset 3px 0 0 #1890ff;
+}
+
+.section-filter-tip {
+  margin-left: 6px;
+  font-size: 11px;
+  font-weight: 400;
+  color: #909399;
 }
 
 .map-header-main {
@@ -725,7 +1076,7 @@ export default {
 }
 
 .map-breadcrumb {
-  display: flex;
+  display: inline-flex;
   align-items: center;
   flex-wrap: wrap;
   gap: 4px;
@@ -761,31 +1112,29 @@ export default {
   cursor: default;
 }
 
-.chart-card--map:not(.is-county) .map-chart {
+.chart-card--hero:not(.is-county) .map-chart {
   cursor: pointer;
 }
 
-.warning-top5-col {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
-  min-width: 0;
-}
-
-.top5-table-wrap {
-  min-width: 0;
-  max-width: 100%;
-  overflow-x: auto;
+.warning-top5-side .top5-chart {
+  height: 72px;
+  width: 100%;
+  margin-bottom: 6px;
+  flex-shrink: 0;
 }
 
 .map-legend {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
-  gap: 6px 14px;
+  gap: 6px 12px;
   margin-left: auto;
   font-size: 11px;
   color: #606266;
+}
+
+.map-legend--inline {
+  margin-left: auto;
 }
 
 .map-legend__label {
@@ -811,20 +1160,25 @@ export default {
 }
 
 .top5-chart {
-  height: 140px;
+  height: 72px;
   width: 100%;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
+}
+
+.top5-panel .top5-table {
+  flex: 1;
+  min-height: 0;
 }
 
 .top5-table >>> .el-table th {
   background: #fafafa;
-  padding: 6px 0;
-  font-size: 12px;
+  padding: 4px 0;
+  font-size: 11px;
 }
 
 .top5-table >>> .el-table td {
-  padding: 5px 0;
-  font-size: 12px;
+  padding: 3px 0;
+  font-size: 11px;
 }
 
 .chart-box--md {
@@ -862,28 +1216,50 @@ export default {
   color: #909399;
 }
 
-@media (max-width: 1400px) {
-  .warning-top-grid {
+@media (max-width: 1280px) {
+  .warning-hero-grid {
     grid-template-columns: 1fr;
+    min-height: auto;
   }
 
-  .chart-card--map .map-chart {
-    min-height: 460px;
+  .map-chart-wrap {
+    min-height: 400px;
+  }
+
+  .chart-card--hero .map-chart {
+    min-height: 380px;
+  }
+
+  .warning-top5-side {
+    display: grid;
+    grid-template-columns: repeat(3, minmax(0, 1fr));
+  }
+
+  .warning-top5-side .top5-chart {
+    height: 96px;
   }
 }
 
-@media (max-width: 1200px) {
-  .map-chart {
-    min-height: 420px;
-  }
-
-  .chart-card__header--map {
+@media (max-width: 900px) {
+  .map-toolbar {
     flex-direction: column;
     align-items: flex-start;
   }
 
-  .map-legend {
+  .map-legend--inline {
     margin-left: 0;
+  }
+
+  .warning-top5-side {
+    grid-template-columns: 1fr;
+  }
+
+  .map-chart-wrap {
+    min-height: 320px;
+  }
+
+  .chart-card--hero .map-chart {
+    min-height: 300px;
   }
 }
 </style>

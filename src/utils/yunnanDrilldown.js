@@ -116,17 +116,22 @@ export async function loadCountyMap(echarts, unitKey) {
   return payload;
 }
 
-/** 生成县级旷工人次 mock 数据（含 0 人次县区） */
-export function buildCountyMapData(counties, parentValue, factor = 1) {
+/** 生成县级 mock 数据（含 0 值县区，按统计维度区分） */
+export function buildCountyMapData(counties, parentValue, factor = 1, metricKey = "late") {
   const n = Math.max(counties.length, 1);
-  const base = Math.max(3, Math.round((Number(parentValue) || 20) / n));
+  const base = Math.max(metricKey === "longAbsent" ? 1 : 3, Math.round((Number(parentValue) || 20) / n));
+  const zeroMod = metricKey === "longAbsent" ? 4 : 5;
+
   return counties.map((c, i) => {
-    const seed = i + 1;
-    if (seed % 5 === 0) {
+    const seed = i + 1 + (metricKey === "early" ? 2 : metricKey === "longAbsent" ? 4 : 0);
+    if (seed % zeroMod === 0) {
       return { name: c.name, fullName: c.fullName, value: 0 };
     }
-    const raw = Math.round(base * (0.5 + (seed % 6) * 0.18) * factor);
-    const value = Math.max(1, Math.min(55, raw));
+    const spread = metricKey === "longAbsent" ? 0.35 + (seed % 5) * 0.12 : 0.5 + (seed % 6) * 0.18;
+    const raw = Math.round(base * spread * factor);
+    const cap = metricKey === "longAbsent" ? 18 : 55;
+    const floor = metricKey === "longAbsent" ? 0 : 1;
+    const value = Math.max(floor, Math.min(cap, raw));
     return { name: c.name, fullName: c.fullName, value };
   });
 }

@@ -11,6 +11,16 @@ Vue.use(ElementUI, { locale });
 
 Vue.config.productionTip = false;
 
+// ResizeObserver 与 ECharts resize 叠加时浏览器可能误报，开发环境屏蔽 overlay
+if (process.env.NODE_ENV !== 'production') {
+  window.addEventListener('error', (event) => {
+    const msg = event.message || '';
+    if (msg.includes('ResizeObserver loop')) {
+      event.stopImmediatePropagation();
+    }
+  });
+}
+
 new Vue({
   router,
   render: h => h(App)
