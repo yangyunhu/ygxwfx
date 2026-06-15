@@ -36,10 +36,6 @@ const EMPLOYEES = [
   { name: "王二", department: "市场营销部", position: "客户经理" },
 ];
 
-const MONTH_LABELS = [
-  "1月", "2月", "3月", "4月", "5月", "6月",
-  "7月", "8月", "9月", "10月", "11月", "12月",
-];
 
 function hashSeed(str) {
   let h = 0;
@@ -107,59 +103,94 @@ function buildEmployeeRow(emp, seed, factor, unitKey) {
   };
 }
 
-function buildPrediction(query, deptStats, empStats) {
-  const factor = unitFactor(query.unit) * dateFactor(query.startDate, query.endDate);
-  const seed = hashSeed(`${query.unit}-${query.startDate}`);
-  const avgSat =
-    empStats.reduce((s, e) => s + e.saturation, 0) / Math.max(empStats.length, 1);
+function roundProb(val) {
+  return Math.round(val * 10) / 10;
+}
 
-  const actualSaturation = MONTH_LABELS.map((_, i) => {
-    const wave = Math.sin((i / 12) * Math.PI * 2) * 4;
-    return Math.round(Math.min(95, Math.max(55, avgSat - 8 + i * 0.6 + wave + (seed % 5))));
-  });
+/** 基于历史异常率推算未来概率，控制在合理区间 */
+function buildLateProb(lateRate, seed) {
+  const wave = Math.sin((seed % 8) * 0.75) * 0.8;
+  const val = lateRate * 1.2 + 1.5 + wave + (seed % 5) * 0.25;
+  return roundProb(Math.min(18, Math.max(1.2, val)));
+}
 
-  const predictedSaturation = MONTH_LABELS.map((_, i) => {
-    if (i < 9) return null;
-    const base = actualSaturation[i - 1] || avgSat;
-    return Math.round(Math.min(96, base + 1.5 + (seed % 3) + (i - 9) * 0.8));
-  });
+function buildEarlyProb(earlyRate, seed) {
+  const wave = Math.sin((seed % 7) * 0.8) * 0.6;
+  const val = earlyRate * 1.15 + 0.8 + wave + (seed % 4) * 0.2;
+  return roundProb(Math.min(12, Math.max(0.6, val)));
+}
 
-  const forecastTable = deptStats.slice(0, 6).map((d, i) => {
-    const next = Math.min(98, d.saturation + 2 + (i % 4));
-    const trend = next >= d.saturation ? "上升" : "下降";
+function buildAbsenteeProb(mix, seed) {
+  const wave = Math.sin((seed % 6) * 0.9) * 0.3;
+  const val = mix * 0.25 + 0.35 + wave + (seed % 3) * 0.12;
+  return roundProb(Math.min(6, Math.max(0.2, val)));
+}
+
+function buildDimensionProbItems(stats, isDept, seedBase) {
+  return stats.map((item, i) => {
+    const seed = seedBase + i * 13;
+    const name = isDept ? item.name : item.name;
+    const shortName = isDept ? item.name.replace(/部$/, "") : item.name;
+    const mix = item.lateRate * 0.55 + item.earlyRate * 0.45;
     return {
-      dimension: d.name,
-      dimensionType: "部门",
-      currentSaturation: d.saturation,
-      forecastSaturation: next,
-      trend,
-      riskLevel: next >= 88 ? "高" : next >= 75 ? "中" : "低",
-      suggestion: next >= 88 ? "建议优化排班或增补人手" : "维持现有负荷水平",
+      name,
+      shortName,
+      department: isDept ? name : item.department,
+      lateProb: buildLateProb(item.lateRate, seed),
+      earlyProb: buildEarlyProb(item.earlyRate, seed + 3),
+      absenteeProb: buildAbsenteeProb(mix, seed + 7),
     };
   });
+}
 
-  const riskAlerts = empStats
-    .filter((e) => e.saturation >= 85)
-    .slice(0, 5)
-    .map((e) => ({
-      name: e.name,
-      department: e.department,
-      saturation: e.saturation,
-      level: e.saturation >= 92 ? "高风险" : "关注",
-      message: `${e.name}（${e.department}）工作饱和度 ${e.saturation}%，建议关注负荷分配`,
-    }));
+function buildPrediction(query, deptStats, empStats) {
+  const factor = unitFactor(query.unit) * dateFactor(query.startDate, query.endDate);
+  const seed = hashSeed(`${query.unit}-${query.startDate}-${query.endDate}`);
+
+  const byDepartment = buildDimensionProbItems(deptStats, true, seed);
+  const byEmployee = buildDimensionProbItems(empStats, false, seed + 500);
+
+  const avg = (items, key) =>
+    items.length
+      ? Math.round(items.reduce((s, r) => s + r[key], 0) / items.length)
+      : 0;
 
   return {
-    months: MONTH_LABELS,
-    actualSaturation,
-    predictedSaturation,
-    forecastTable,
-    riskAlerts,
-    avgForecast: Math.round(
-      forecastTable.reduce((s, r) => s + r.forecastSaturation, 0) / Math.max(forecastTable.length, 1)
-    ),
+    byDepartment: {
+      dimensionLabel: "部门",
+      items: byDepartment,
+      categories: byDepartment.map((d) => d.shortName),
+      lateProb: byDepartment.map((d) => d.lateProb),
+      earlyProb: byDepartment.map((d) => d.earlyProb),
+      absenteeProb: byDepartment.map((d) => d.absenteeProb),
+    },
+    byEmployee: {
+      dimensionLabel: "员工",
+      items: byEmployee,
+      categories: byEmployee.map((d) => d.shortName),
+      lateProb: byEmployee.map((d) => d.lateProb),
+      earlyProb: byEmployee.map((d) => d.earlyProb),
+      absenteeProb: byEmployee.map((d) => d.absenteeProb),
+    },
     modelAccuracy: Math.round(88 + (seed % 8) + factor * 2),
+    avgLateProb: avg(byDepartment, "lateProb"),
+    avgEarlyProb: avg(byDepartment, "earlyProb"),
+    avgAbsenteeProb: avg(byDepartment, "absenteeProb"),
   };
+}
+
+export function getPredictionDimensionData(prediction, dimension = "department") {
+  if (!prediction) {
+    return {
+      dimensionLabel: dimension === "employee" ? "员工" : "部门",
+      categories: [],
+      items: [],
+      lateProb: [],
+      earlyProb: [],
+      absenteeProb: [],
+    };
+  }
+  return dimension === "employee" ? prediction.byEmployee : prediction.byDepartment;
 }
 
 export function buildWorkSaturationSnapshot(query = DEFAULT_SATURATION_QUERY) {

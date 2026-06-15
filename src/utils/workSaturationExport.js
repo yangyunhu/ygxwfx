@@ -4,6 +4,7 @@
 
 import { downloadTableWithLog } from "./exportLogger";
 import { UNIT_OPTIONS } from "./behaviorOverviewData";
+import { getPredictionDimensionData } from "./workSaturationData";
 
 /** 基本统计指标页 — 可导出模块 */
 export const SATURATION_BASIC_EXPORT_MODULES = [
@@ -22,9 +23,19 @@ export const SATURATION_BASIC_EXPORT_MODULES = [
 /** 预测分析页 — 可导出模块 */
 export const SATURATION_PREDICTION_EXPORT_MODULES = [
   {
-    key: "prediction",
-    label: "预测分析",
-    desc: "部门饱和度预测、风险预警及月度趋势数据",
+    key: "predictionLate",
+    label: "迟到概率预测",
+    desc: "按当前维度统计的迟到概率预测明细",
+  },
+  {
+    key: "predictionEarly",
+    label: "早退概率预测",
+    desc: "按当前维度统计的早退概率预测明细",
+  },
+  {
+    key: "predictionAbsentee",
+    label: "旷工概率预测",
+    desc: "按当前维度统计的旷工概率预测明细",
   },
 ];
 
@@ -38,12 +49,16 @@ function unitFilterLabel(unit) {
   return opt ? opt.label : "全部单位";
 }
 
-function buildCriteria(snapshot) {
+function buildCriteria(snapshot, options = {}) {
   const q = snapshot.query || {};
-  return [
+  const parts = [
     `单位:${unitFilterLabel(q.unit)}`,
     `日期:${snapshot.periodLabel || "全部日期"}`,
-  ].join("; ");
+  ];
+  if (options.predictionDimension) {
+    parts.push(`维度:${options.predictionDimension === "employee" ? "按员工" : "按部门"}`);
+  }
+  return parts.join("; ");
 }
 
 function buildDepartmentExport(snapshot) {
@@ -108,93 +123,63 @@ function buildEmployeeExport(snapshot) {
   };
 }
 
-function buildPredictionExport(snapshot) {
-  const p = snapshot.prediction;
-  const trendHeaders = ["月份", "实际饱和度(%)", "预测饱和度(%)"];
-  const trendRows = p.months.map((m, i) => [
-    m,
-    p.actualSaturation[i],
-    p.predictedSaturation[i] != null ? p.predictedSaturation[i] : "—",
-  ]);
-
-  const forecastHeaders = [
+function buildProbExport(snapshot, options, probKey, probLabel) {
+  const dim = getPredictionDimensionData(snapshot.prediction, options.predictionDimension || "department");
+  const dimCol = dim.dimensionLabel === "员工" ? "姓名" : "部门";
+  const headers = [
     "序号",
-    "维度",
-    "类型",
-    "当前饱和度(%)",
-    "预测饱和度(%)",
-    "趋势",
-    "风险等级",
-    "建议",
+    dimCol,
+    probLabel,
+    "统计单位",
+    "统计周期",
+    "统计维度",
   ];
-  const forecastRows = p.forecastTable.map((r, i) => [
-    i + 1,
-    r.dimension,
-    r.dimensionType,
-    r.currentSaturation,
-    r.forecastSaturation,
-    r.trend,
-    r.riskLevel,
-    r.suggestion,
-  ]);
+  if (dim.dimensionLabel === "员工") headers.splice(2, 0, "所属部门");
 
-  return { trendHeaders, trendRows, forecastHeaders, forecastRows };
+  const rows = dim.items.map((item, i) => {
+    if (dim.dimensionLabel === "员工") {
+      return [
+        i + 1,
+        item.name,
+        item.department,
+        `${item[probKey]}%`,
+        snapshot.unitLabel,
+        snapshot.periodLabel,
+        "按员工",
+      ];
+    }
+    return [
+      i + 1,
+      item.name,
+      `${item[probKey]}%`,
+      snapshot.unitLabel,
+      snapshot.periodLabel,
+      "按部门",
+    ];
+  });
+
+  return { headers, rows };
 }
 
 const BUILDERS = {
   department: buildDepartmentExport,
   employee: buildEmployeeExport,
+  predictionLate: (snapshot, options) => buildProbExport(snapshot, options, "lateProb", "迟到概率(%)"),
+  predictionEarly: (snapshot, options) => buildProbExport(snapshot, options, "earlyProb", "早退概率(%)"),
+  predictionAbsentee: (snapshot, options) => buildProbExport(snapshot, options, "absenteeProb", "旷工概率(%)"),
 };
 
-export function exportSaturationModules(moduleKeys, snapshot) {
+export function exportSaturationModules(moduleKeys, snapshot, options = {}) {
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
-  const criteria = buildCriteria(snapshot);
+  const criteria = buildCriteria(snapshot, options);
   let delay = 0;
 
   moduleKeys.forEach((key) => {
     const mod = SATURATION_EXPORT_MODULES.find((m) => m.key === key);
-    if (!mod) return;
-
-    if (key === "prediction") {
-      const result = buildPredictionExport(snapshot);
-      setTimeout(() => {
-        downloadTableWithLog({
-          headers: result.trendHeaders,
-          rows: result.trendRows,
-          format: "csv",
-          baseFilename: `工作饱和度_月度趋势_${stamp}`,
-          meta: {
-            moduleCode: "work-saturation-prediction-trend",
-            moduleName: "员工工作饱和度-月度趋势",
-            moduleGroup: "员工行为智能分析",
-            rowCount: result.trendRows.length,
-            searchCriteria: criteria,
-          },
-        });
-      }, delay);
-      delay += 350;
-      setTimeout(() => {
-        downloadTableWithLog({
-          headers: result.forecastHeaders,
-          rows: result.forecastRows,
-          format: "csv",
-          baseFilename: `工作饱和度_预测明细_${stamp}`,
-          meta: {
-            moduleCode: "work-saturation-prediction-forecast",
-            moduleName: "员工工作饱和度-预测明细",
-            moduleGroup: "员工行为智能分析",
-            rowCount: result.forecastRows.length,
-            searchCriteria: criteria,
-          },
-        });
-      }, delay);
-      delay += 350;
-      return;
-    }
-
     const builder = BUILDERS[key];
-    if (!builder) return;
-    const { headers, rows } = builder(snapshot);
+    if (!mod || !builder) return;
+
+    const { headers, rows } = builder(snapshot, options);
     setTimeout(() => {
       downloadTableWithLog({
         headers,

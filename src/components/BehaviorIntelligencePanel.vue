@@ -23,7 +23,7 @@
               />
             </el-select>
           </el-form-item>
-          <el-form-item label="时间：">
+          <el-form-item v-if="subTab === 'basic'" label="时间：">
             <el-date-picker
               v-model="queryParams.startDate"
               type="date"
@@ -42,6 +42,12 @@
               @change="handleFilterChange"
             />
           </el-form-item>
+          <el-form-item v-if="subTab === 'prediction'" label="维度：">
+            <el-radio-group v-model="predictionDimension" size="mini" @change="handlePredictionDimensionChange">
+              <el-radio-button label="employee">按员工</el-radio-button>
+              <el-radio-button label="department">按部门</el-radio-button>
+            </el-radio-group>
+          </el-form-item>
           <el-form-item class="query-export">
             <el-button type="success" plain icon="el-icon-download" @click="openExportDialog">导出</el-button>
           </el-form-item>
@@ -55,7 +61,7 @@
           <span>
             当前统计：
             <strong>{{ linkageLabel }}</strong>
-            <span class="linkage-hint">切换单位/时间后下方图表自动联动刷新；点击部门柱图可筛选员工维度</span>
+            <span class="linkage-hint">{{ linkageHint }}</span>
           </span>
           <el-button v-if="linkedDepartment" type="text" size="mini" @click="clearDepartmentLink">
             清除部门联动
@@ -92,74 +98,20 @@
       </div>
 
       <div v-show="subTab === 'prediction'" class="tab-content">
-        <section class="prediction-kpi">
-          <div class="kpi-card">
-            <div class="kpi-card__label">平均预测饱和度</div>
-            <div class="kpi-card__value is-primary">{{ snapshot.prediction.avgForecast }}%</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-card__label">模型预测准确率</div>
-            <div class="kpi-card__value is-success">{{ snapshot.prediction.modelAccuracy }}%</div>
-          </div>
-          <div class="kpi-card">
-            <div class="kpi-card__label">高风险预警</div>
-            <div class="kpi-card__value is-danger">{{ snapshot.prediction.riskAlerts.length }}</div>
-          </div>
+        <section class="chart-card chart-card--prediction">
+          <h3 class="chart-card__title chart-card__title--center">迟到概率预测</h3>
+          <div ref="lateProbChart" class="chart-box chart-box--prediction" />
         </section>
 
-        <section class="chart-card">
-          <h3 class="chart-card__title">工作饱和度趋势与预测</h3>
-          <div ref="trendChart" class="chart-box chart-box--md" />
+        <section class="chart-card chart-card--prediction">
+          <h3 class="chart-card__title chart-card__title--center">早退概率预测</h3>
+          <div ref="earlyProbChart" class="chart-box chart-box--prediction" />
         </section>
 
-        <div class="prediction-grid">
-          <section class="chart-card">
-            <h3 class="chart-card__title">部门饱和度预测</h3>
-            <el-table :data="snapshot.prediction.forecastTable" border stripe size="small">
-              <el-table-column type="index" label="序号" width="55" align="center" />
-              <el-table-column prop="dimension" label="部门" min-width="110" show-overflow-tooltip />
-              <el-table-column prop="currentSaturation" label="当前饱和度" width="100" align="center">
-                <template slot-scope="{ row }">{{ row.currentSaturation }}%</template>
-              </el-table-column>
-              <el-table-column prop="forecastSaturation" label="预测饱和度" width="100" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="saturationClass(row.forecastSaturation)">{{ row.forecastSaturation }}%</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="trend" label="趋势" width="70" align="center">
-                <template slot-scope="{ row }">
-                  <span :class="row.trend === '上升' ? 'trend-up' : 'trend-down'">{{ row.trend }}</span>
-                </template>
-              </el-table-column>
-              <el-table-column prop="riskLevel" label="风险" width="70" align="center">
-                <template slot-scope="{ row }">
-                  <el-tag :type="riskTagType(row.riskLevel)" size="mini">{{ row.riskLevel }}</el-tag>
-                </template>
-              </el-table-column>
-              <el-table-column prop="suggestion" label="建议" min-width="160" show-overflow-tooltip />
-            </el-table>
-          </section>
-
-          <section class="chart-card">
-            <h3 class="chart-card__title">高风险员工预警</h3>
-            <div v-if="snapshot.prediction.riskAlerts.length" class="alert-list">
-              <div
-                v-for="(item, idx) in snapshot.prediction.riskAlerts"
-                :key="idx"
-                class="alert-item"
-                :class="item.level === '高风险' ? 'is-danger' : 'is-warning'"
-              >
-                <div class="alert-item__head">
-                  <span class="alert-item__name">{{ item.name }}</span>
-                  <el-tag :type="item.level === '高风险' ? 'danger' : 'warning'" size="mini">{{ item.level }}</el-tag>
-                </div>
-                <div class="alert-item__meta">{{ item.department }} · 饱和度 {{ item.saturation }}%</div>
-                <div class="alert-item__msg">{{ item.message }}</div>
-              </div>
-            </div>
-            <el-empty v-else description="当前筛选条件下暂无高风险预警" :image-size="72" />
-          </section>
-        </div>
+        <section class="chart-card chart-card--prediction">
+          <h3 class="chart-card__title chart-card__title--center">旷工概率预测</h3>
+          <div ref="absenteeProbChart" class="chart-box chart-box--prediction" />
+        </section>
       </div>
     </div>
 
@@ -202,6 +154,7 @@ import {
   UNIT_OPTIONS,
   DEFAULT_SATURATION_QUERY,
   buildWorkSaturationSnapshot,
+  getPredictionDimensionData,
 } from "../utils/workSaturationData";
 import {
   SATURATION_BASIC_EXPORT_MODULES,
@@ -211,6 +164,12 @@ import {
 
 const DEPT_COLORS = { bar: "#FAAD14", late: "#52C41A", early: "#EB2F96" };
 const EMP_COLORS = { bar: "#1890FF", late: "#722ED1", early: "#69C0FF" };
+
+const PROB_CHART_COLORS = {
+  late: "#52C41A",
+  early: "#722ED1",
+  absentee: "#FA8C16",
+};
 
 export default {
   name: "BehaviorIntelligencePanel",
@@ -224,6 +183,7 @@ export default {
   data() {
     return {
       subTab: "basic",
+      predictionDimension: "department",
       unitOptions: UNIT_OPTIONS.filter((u) => u.value !== "all"),
       queryParams: { ...DEFAULT_SATURATION_QUERY },
       snapshot: buildWorkSaturationSnapshot(DEFAULT_SATURATION_QUERY),
@@ -239,11 +199,25 @@ export default {
   },
   computed: {
     linkageLabel() {
-      const parts = [this.snapshot.unitLabel, this.snapshot.periodLabel];
-      if (this.linkedDepartment) parts.push(this.linkedDepartment);
-      const tabLabel = this.subTab === "prediction" ? "预测分析" : "基本统计指标";
-      parts.push(tabLabel);
+      const parts = [this.snapshot.unitLabel];
+      if (this.subTab === "basic") {
+        parts.push(this.snapshot.periodLabel);
+        if (this.linkedDepartment) parts.push(this.linkedDepartment);
+      } else {
+        parts.push(this.predictionDimension === "employee" ? "按员工" : "按部门");
+      }
+      parts.push(this.subTab === "prediction" ? "预测分析" : "基本统计指标");
       return parts.join(" · ");
+    },
+    linkageHint() {
+      if (this.subTab === "prediction") {
+        return "切换单位或维度后，下方三张概率预测图将自动联动刷新";
+      }
+      return "切换单位/时间后下方图表自动联动刷新；点击部门柱图可筛选员工维度";
+    },
+    currentPredictionData() {
+      const dim = getPredictionDimensionData(this.snapshot.prediction, this.predictionDimension);
+      return { ...dim };
     },
     displayEmployeeStats() {
       const list = this.snapshot.employeeStats || [];
@@ -269,8 +243,12 @@ export default {
     },
   },
   watch: {
-    subTab() {
-      this.$nextTick(() => this.refreshVisibleCharts());
+    subTab(val) {
+      this.$nextTick(() => {
+        this.initCharts();
+        this.renderAllCharts();
+        this.resizeCharts();
+      });
     },
   },
   mounted() {
@@ -288,11 +266,96 @@ export default {
   },
   methods: {
     initCharts() {
-      const refs = { dept: "deptChart", emp: "empChart", trend: "trendChart" };
+      const refs = {
+        dept: "deptChart",
+        emp: "empChart",
+        lateProb: "lateProbChart",
+        earlyProb: "earlyProbChart",
+        absenteeProb: "absenteeProbChart",
+      };
       Object.keys(refs).forEach((key) => {
         const el = this.$refs[refs[key]];
         if (el && !this.charts[key]) this.charts[key] = echarts.init(el);
       });
+    },
+
+    handlePredictionDimensionChange() {
+      this.renderPredictionCharts();
+    },
+
+    buildProbLineOption(categories, data, color, seriesName) {
+      const rotate = categories.length > 8 ? 28 : categories.length > 5 ? 18 : 0;
+      const maxVal = Math.max(...data, 1);
+      const axisMax = Math.min(25, Math.max(8, Math.ceil(maxVal / 2) * 2 + 2));
+      const interval = axisMax <= 10 ? 2 : 5;
+      return baseChartOption({
+        animation: true,
+        animationDuration: 400,
+        tooltip: {
+          trigger: "axis",
+          formatter: (params) => {
+            const p = params[0];
+            return `${p.name}<br/>${seriesName}：<strong>${p.value}%</strong>`;
+          },
+        },
+        grid: { left: "2%", right: "3%", top: "12%", bottom: rotate ? "18%" : "12%", containLabel: true },
+        xAxis: {
+          type: "category",
+          boundaryGap: false,
+          data: categories,
+          axisLabel: { interval: 0, rotate, fontSize: 11, color: "#606266" },
+          axisLine: { lineStyle: { color: "#E8E8E8" } },
+          axisTick: { show: false },
+        },
+        yAxis: {
+          type: "value",
+          min: 0,
+          max: axisMax,
+          interval,
+          axisLabel: { formatter: "{value}%", color: "#606266", fontSize: 11 },
+          splitLine: { lineStyle: { color: "#F0F0F0" } },
+        },
+        series: [
+          {
+            name: seriesName,
+            type: "line",
+            smooth: true,
+            symbol: "circle",
+            symbolSize: 8,
+            lineStyle: { width: 2.5, color },
+            itemStyle: { color, borderColor: "#fff", borderWidth: 2 },
+            areaStyle: { color: `${color}18` },
+            data,
+          },
+        ],
+      });
+    },
+
+    renderPredictionCharts() {
+      const dim = this.currentPredictionData;
+      const categories = dim.categories || [];
+
+      const lateChart = this.charts.lateProb;
+      if (lateChart) {
+        lateChart.setOption(
+          this.buildProbLineOption(categories, dim.lateProb, PROB_CHART_COLORS.late, "迟到概率"),
+          true
+        );
+      }
+      const earlyChart = this.charts.earlyProb;
+      if (earlyChart) {
+        earlyChart.setOption(
+          this.buildProbLineOption(categories, dim.earlyProb, PROB_CHART_COLORS.early, "早退概率"),
+          true
+        );
+      }
+      const absenteeChart = this.charts.absenteeProb;
+      if (absenteeChart) {
+        absenteeChart.setOption(
+          this.buildProbLineOption(categories, dim.absenteeProb, PROB_CHART_COLORS.absentee, "旷工概率"),
+          true
+        );
+      }
     },
 
     refreshSnapshot() {
@@ -469,63 +532,13 @@ export default {
       );
     },
 
-    renderTrendChart() {
-      const chart = this.charts.trend;
-      if (!chart) return;
-      const p = this.snapshot.prediction;
-      chart.setOption(
-        baseChartOption({
-          animation: false,
-          tooltip: { trigger: "axis" },
-          legend: legendBottomCenter(["实际饱和度", "预测饱和度"]),
-          grid: { left: "2%", right: "3%", top: "10%", bottom: "14%", containLabel: true },
-          xAxis: {
-            type: "category",
-            boundaryGap: false,
-            data: p.months,
-            axisLine: { lineStyle: { color: "#E8E8E8" } },
-            axisTick: { show: false },
-          },
-          yAxis: {
-            type: "value",
-            min: 50,
-            max: 100,
-            interval: 10,
-            axisLabel: { formatter: "{value}%", color: "#606266" },
-            splitLine: { lineStyle: { color: "#F0F0F0" } },
-          },
-          series: [
-            {
-              name: "实际饱和度",
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 6,
-              lineStyle: { width: 2, color: "#1890FF" },
-              itemStyle: { color: "#1890FF" },
-              areaStyle: { color: "rgba(24,144,255,0.08)" },
-              data: p.actualSaturation,
-            },
-            {
-              name: "预测饱和度",
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 6,
-              lineStyle: { width: 2, type: "dashed", color: "#FA8C16" },
-              itemStyle: { color: "#FA8C16" },
-              data: p.predictedSaturation,
-            },
-          ],
-        }),
-        true
-      );
-    },
-
     renderAllCharts() {
-      this.renderDeptChart();
-      this.renderEmpChart();
-      this.renderTrendChart();
+      if (this.subTab === "prediction") {
+        this.renderPredictionCharts();
+      } else {
+        this.renderDeptChart();
+        this.renderEmpChart();
+      }
     },
 
     refreshVisibleCharts() {
@@ -545,19 +558,9 @@ export default {
     handleReset() {
       this.queryParams = { ...DEFAULT_SATURATION_QUERY };
       this.linkedDepartment = null;
+      this.predictionDimension = "department";
       this.applyLinkage(false);
       this.$message.info("已重置查询条件");
-    },
-
-    saturationClass(val) {
-      if (val >= 88) return "sat-high";
-      if (val >= 75) return "sat-mid";
-      return "sat-low";
-    },
-
-    riskTagType(level) {
-      const map = { 高: "danger", 中: "warning", 低: "success" };
-      return map[level] || "info";
     },
 
     openExportDialog() {
@@ -589,7 +592,9 @@ export default {
         this.$message.warning("请至少选择一个导出模块");
         return;
       }
-      exportSaturationModules(this.selectedExportModules, this.snapshot);
+      exportSaturationModules(this.selectedExportModules, this.snapshot, {
+        predictionDimension: this.predictionDimension,
+      });
       this.exportDialogVisible = false;
       this.$message.success(`已开始导出 ${this.selectedExportModules.length} 个模块明细，请留意浏览器下载`);
     },
@@ -779,119 +784,12 @@ export default {
   height: 320px;
 }
 
-.prediction-kpi {
-  display: grid;
-  grid-template-columns: repeat(3, minmax(0, 1fr));
-  gap: 12px;
+.chart-box--prediction {
+  height: 280px;
 }
 
-.kpi-card {
-  padding: 16px;
-  background: #fafbfc;
-  border: 1px solid #eef0f3;
-  border-radius: 4px;
-  text-align: center;
-}
-
-.kpi-card__label {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 8px;
-}
-
-.kpi-card__value {
-  font-size: 26px;
-  font-weight: 700;
-  color: #303133;
-}
-
-.kpi-card__value.is-primary {
-  color: #1890ff;
-}
-
-.kpi-card__value.is-success {
-  color: #52c41a;
-}
-
-.kpi-card__value.is-danger {
-  color: #f5222d;
-}
-
-.prediction-grid {
-  display: grid;
-  grid-template-columns: minmax(0, 1.4fr) minmax(0, 1fr);
-  gap: 14px;
-}
-
-.alert-list {
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.alert-item {
-  padding: 10px 12px;
-  border-radius: 4px;
-  border-left: 3px solid #faad14;
-  background: #fffbe6;
-}
-
-.alert-item.is-danger {
-  border-left-color: #f5222d;
-  background: #fff1f0;
-}
-
-.alert-item.is-warning {
-  border-left-color: #fa8c16;
-  background: #fff7e6;
-}
-
-.alert-item__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.alert-item__name {
-  font-weight: 600;
-  color: #303133;
-  font-size: 13px;
-}
-
-.alert-item__meta {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 4px;
-}
-
-.alert-item__msg {
-  font-size: 12px;
-  color: #606266;
-  line-height: 1.5;
-}
-
-.sat-high {
-  color: #f5222d;
-  font-weight: 600;
-}
-
-.sat-mid {
-  color: #fa8c16;
-  font-weight: 600;
-}
-
-.sat-low {
-  color: #52c41a;
-  font-weight: 600;
-}
-
-.trend-up {
-  color: #f5222d;
-}
-
-.trend-down {
-  color: #52c41a;
+.chart-card--prediction {
+  padding-top: 12px;
 }
 
 .export-dialog-tip {
@@ -943,15 +841,10 @@ export default {
   .summary-strip {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
-
-  .prediction-grid {
-    grid-template-columns: 1fr;
-  }
 }
 
 @media (max-width: 768px) {
-  .summary-strip,
-  .prediction-kpi {
+  .summary-strip {
     grid-template-columns: 1fr;
   }
 
