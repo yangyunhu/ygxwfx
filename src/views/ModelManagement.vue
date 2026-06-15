@@ -1,5 +1,5 @@
 <template>
-  <behavior-intelligence-panel active-module="model" />
+  <behavior-intelligence-panel />
 </template>
 
 <script>

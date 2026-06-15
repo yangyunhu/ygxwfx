@@ -70,15 +70,6 @@
       </section>
 
       <div v-show="subTab === 'basic'" class="tab-content">
-        <section v-if="activeModule === 'saturation'" class="summary-strip">
-          <div v-for="item in summaryItems" :key="item.key" class="summary-card">
-            <div class="summary-card__label">{{ item.label }}</div>
-            <div class="summary-card__value" :class="item.valueClass">
-              {{ item.value }}<span v-if="item.suffix" class="summary-card__suffix">{{ item.suffix }}</span>
-            </div>
-          </div>
-        </section>
-
         <section class="chart-card" :class="{ 'is-linked': linkedDepartment }">
           <h3 class="chart-card__title chart-card__title--center">
             部门维度
@@ -173,13 +164,6 @@ const PROB_CHART_COLORS = {
 
 export default {
   name: "BehaviorIntelligencePanel",
-  props: {
-    activeModule: {
-      type: String,
-      default: "model",
-      validator: (v) => ["model", "saturation"].includes(v),
-    },
-  },
   data() {
     return {
       subTab: "basic",
@@ -231,15 +215,6 @@ export default {
     },
     exportDialogTitle() {
       return this.subTab === "prediction" ? "导出预测分析明细" : "导出基本统计明细";
-    },
-    summaryItems() {
-      const s = this.snapshot.summary;
-      return [
-        { key: "days", label: "平均出勤天数", value: s.avgDays, suffix: "天" },
-        { key: "late", label: "平均迟到率", value: s.avgLateRate, suffix: "%", valueClass: "is-warning" },
-        { key: "early", label: "平均早退率", value: s.avgEarlyRate, suffix: "%", valueClass: "is-info" },
-        { key: "sat", label: "平均工作饱和度", value: s.avgSaturation, suffix: "%", valueClass: "is-primary" },
-      ];
     },
   },
   watch: {
@@ -706,50 +681,6 @@ export default {
   gap: 14px;
 }
 
-.summary-strip {
-  display: grid;
-  grid-template-columns: repeat(4, minmax(0, 1fr));
-  gap: 12px;
-}
-
-.summary-card {
-  padding: 14px 16px;
-  background: linear-gradient(135deg, #f7f9fc 0%, #fff 100%);
-  border: 1px solid #eef2f7;
-  border-radius: 4px;
-}
-
-.summary-card__label {
-  font-size: 12px;
-  color: #909399;
-  margin-bottom: 6px;
-}
-
-.summary-card__value {
-  font-size: 22px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.summary-card__value.is-primary {
-  color: #1890ff;
-}
-
-.summary-card__value.is-warning {
-  color: #fa8c16;
-}
-
-.summary-card__value.is-info {
-  color: #722ed1;
-}
-
-.summary-card__suffix {
-  font-size: 13px;
-  font-weight: 400;
-  margin-left: 2px;
-  color: #909399;
-}
-
 .chart-card {
   padding: 14px 16px 12px;
   background: #fff;
@@ -837,17 +768,7 @@ export default {
   line-height: 1.5;
 }
 
-@media (max-width: 1200px) {
-  .summary-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
-  }
-}
-
 @media (max-width: 768px) {
-  .summary-strip {
-    grid-template-columns: 1fr;
-  }
-
   .query-actions {
     margin-left: 0;
     width: 100%;
