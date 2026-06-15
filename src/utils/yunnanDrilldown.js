@@ -116,19 +116,18 @@ export async function loadCountyMap(echarts, unitKey) {
   return payload;
 }
 
-/** 生成县级旷工人次 mock 数据 */
+/** 生成县级旷工人次 mock 数据（含 0 人次县区） */
 export function buildCountyMapData(counties, parentValue, factor = 1) {
   const n = Math.max(counties.length, 1);
-  const base = Math.max(4, Math.round((Number(parentValue) || 20) / n));
+  const base = Math.max(3, Math.round((Number(parentValue) || 20) / n));
   return counties.map((c, i) => {
     const seed = i + 1;
-    const raw = Math.round(base * (0.6 + (seed % 6) * 0.15) * factor);
+    if (seed % 5 === 0) {
+      return { name: c.name, fullName: c.fullName, value: 0 };
+    }
+    const raw = Math.round(base * (0.5 + (seed % 6) * 0.18) * factor);
     const value = Math.max(1, Math.min(55, raw));
-    return {
-      name: c.name,
-      fullName: c.fullName,
-      value,
-    };
+    return { name: c.name, fullName: c.fullName, value };
   });
 }
 

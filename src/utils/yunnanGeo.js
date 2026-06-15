@@ -28,19 +28,67 @@ export const SHORT_TO_GEO_NAME = Object.fromEntries(
   Object.entries(GEO_NAME_TO_SHORT).map(([full, short]) => [short, full])
 );
 
+/** 地图底色 — 无数据 / 0 人次（与卡片白底有对比，避免“缺块”） */
+export const MAP_BASE_COLOR = "#D6E4FF";
+
+/** 旷工人次分级配色（暖色递进 + 蓝灰底色） */
 export const ABSENTEE_MAP_LEVELS = [
   { min: 50, color: "#F5222D", label: "≥50人次" },
-  { min: 20, color: "#FA8C16", label: "20~49人次" },
-  { min: 5, color: "#FFC53D", label: "5~19人次" },
-  { min: 0, color: "#FFF1B8", label: "<5人次" },
+  { min: 20, color: "#FA541C", label: "20~49人次" },
+  { min: 5, color: "#FFA940", label: "5~19人次" },
+  { min: 1, color: "#FFD666", label: "1~4人次" },
+  { min: 0, color: MAP_BASE_COLOR, label: "0人次" },
 ];
+
+/** ECharts visualMap 分档 */
+export const MAP_VISUAL_PIECES = [
+  { min: 50, color: "#F5222D" },
+  { min: 20, max: 49, color: "#FA541C" },
+  { min: 5, max: 19, color: "#FFA940" },
+  { min: 1, max: 4, color: "#FFD666" },
+  { max: 0, color: MAP_BASE_COLOR },
+];
+
+export const MAP_GEO_ITEM_STYLE = {
+  areaColor: MAP_BASE_COLOR,
+  borderColor: "#B8C5D6",
+  borderWidth: 1,
+};
+
+export const MAP_EMPHASIS_ITEM_STYLE = {
+  areaColor: "#FFC069",
+  borderColor: "#FFFFFF",
+  borderWidth: 2,
+  shadowBlur: 8,
+  shadowColor: "rgba(0,0,0,0.12)",
+};
 
 export function getAbsenteeMapColor(value) {
   const v = Number(value) || 0;
   if (v >= 50) return ABSENTEE_MAP_LEVELS[0].color;
   if (v >= 20) return ABSENTEE_MAP_LEVELS[1].color;
   if (v >= 5) return ABSENTEE_MAP_LEVELS[2].color;
-  return ABSENTEE_MAP_LEVELS[3].color;
+  if (v >= 1) return ABSENTEE_MAP_LEVELS[3].color;
+  return ABSENTEE_MAP_LEVELS[4].color;
+}
+
+/** 补全地图 series 数据，确保每个区域都有值（缺失补 0） */
+export function fillMapSeriesData(mapName, data, echartsInstance) {
+  const mapMeta = echartsInstance.getMap(mapName);
+  const features = mapMeta && mapMeta.geoJson && mapMeta.geoJson.features;
+  if (!features || !features.length) return data;
+
+  const dataMap = new Map((data || []).map((d) => [d.name, d]));
+  return features.map((f) => {
+    const name = f.properties.name;
+    const hit = dataMap.get(name);
+    if (hit) return hit;
+    return {
+      name,
+      fullName: f.properties.fullName || name,
+      value: 0,
+    };
+  });
 }
 
 /** 将 DataV GeoJSON 转为 ECharts 可识别的短地名 */

@@ -172,7 +172,14 @@ import {
   buildWarningDetailExportRows,
   WARNING_DETAIL_EXPORT_HEADERS,
 } from "../utils/warningOverviewData";
-import { ABSENTEE_MAP_LEVELS, registerYunnanMap } from "../utils/yunnanGeo";
+import {
+  ABSENTEE_MAP_LEVELS,
+  MAP_VISUAL_PIECES,
+  MAP_GEO_ITEM_STYLE,
+  MAP_EMPHASIS_ITEM_STYLE,
+  fillMapSeriesData,
+  registerYunnanMap,
+} from "../utils/yunnanGeo";
 import {
   resolveUnitKeyByRegionName,
   loadCountyMap,
@@ -354,8 +361,8 @@ export default {
     renderMapChart() {
       const chart = this.charts.map;
       if (!chart) return;
-      const data = this.getCurrentMapData();
       const mapName = this.mapDrill.mapName;
+      const data = fillMapSeriesData(mapName, this.getCurrentMapData(), echarts);
       const geoLayout = this.getMapGeoLayout();
       const isCounty = this.mapDrill.level === "county";
       chart.setOption(
@@ -368,18 +375,14 @@ export default {
             textStyle: { color: "#303133", fontSize: 12 },
             formatter: (p) => {
               const label = (p.data && p.data.fullName) || p.name;
-              return `<div style="font-weight:600;">${label}</div><div style="margin-top:4px;">旷工人次：<strong>${p.value || 0}</strong></div>`;
+              const val = p.value != null ? p.value : 0;
+              return `<div style="font-weight:600;">${label}</div><div style="margin-top:4px;">旷工人次：<strong>${val}</strong></div>`;
             },
           },
           visualMap: {
             type: "piecewise",
             show: false,
-            pieces: [
-              { min: 50, color: "#F5222D" },
-              { min: 20, max: 49, color: "#FA8C16" },
-              { min: 5, max: 19, color: "#FFC53D" },
-              { max: 4, color: "#FFF1B8" },
-            ],
+            pieces: MAP_VISUAL_PIECES,
           },
           geo: {
             map: mapName,
@@ -392,19 +395,9 @@ export default {
             },
             emphasis: {
               label: { show: true, color: "#303133", fontWeight: 600 },
-              itemStyle: {
-                areaColor: "#FFD666",
-                borderColor: "#fff",
-                borderWidth: 2,
-                shadowBlur: 8,
-                shadowColor: "rgba(0,0,0,0.12)",
-              },
+              itemStyle: MAP_EMPHASIS_ITEM_STYLE,
             },
-            itemStyle: {
-              areaColor: "#FFF1B8",
-              borderColor: "#fff",
-              borderWidth: 1.5,
-            },
+            itemStyle: MAP_GEO_ITEM_STYLE,
           },
           series: [
             {
@@ -414,7 +407,7 @@ export default {
               selectedMode: false,
               data: data.map((d) => ({
                 name: d.name,
-                value: d.value,
+                value: d.value != null ? d.value : 0,
                 fullName: d.fullName,
               })),
             },
@@ -712,6 +705,8 @@ export default {
   min-width: 0;
   min-height: 420px;
   height: 100%;
+  background: #f7f9fc;
+  border-radius: 2px;
 }
 
 .chart-card__header--map {
