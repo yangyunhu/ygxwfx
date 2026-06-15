@@ -44,6 +44,7 @@ import EmployeeBehaviorOverview from '../views/EmployeeBehaviorOverview.vue';
 import WorkSaturationAnalysis from '../views/WorkSaturationAnalysis.vue';
 import ModelManagement from '../views/ModelManagement.vue';
 import CreditEvaluationStandard from '../views/CreditEvaluationStandard.vue';
+import CreditRatingData from '../views/CreditRatingData.vue';
 
 Vue.use(Router);
 
@@ -106,7 +107,7 @@ export default new Router({
     {
       path: '/employee-credit-profile/rating-data',
       name: 'CreditRatingData',
-      component: ModulePlaceholder,
+      component: CreditRatingData,
       meta: { title: '信用评级数据管理', description: '信用评级数据管理页面，用于管理员工信用评级相关数据。' }
     },
     {
