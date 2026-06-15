@@ -46,6 +46,7 @@ import ModelManagement from '../views/ModelManagement.vue';
 import CreditEvaluationStandard from '../views/CreditEvaluationStandard.vue';
 import CreditRatingData from '../views/CreditRatingData.vue';
 import CreditProfileDisplay from '../views/CreditProfileDisplay.vue';
+import PersonalAttendanceSettings from '../views/PersonalAttendanceSettings.vue';
 
 Vue.use(Router);
 
@@ -305,7 +306,7 @@ export default new Router({
     {
       path: '/personal-attendance-app/settings',
       name: 'PersonalAttendanceSettings',
-      component: ModulePlaceholder,
+      component: PersonalAttendanceSettings,
       meta: { title: '我的设置', description: '个人出勤管理APP设置页面，用于配置个人偏好与参数。' }
     },
     {
