@@ -1,906 +1,907 @@
 <template>
-  <div class="employee-overview-container">
-    <!-- 页签 -->
-    <el-tabs v-model="activeTab" type="card">
-      <el-tab-pane label="员工出勤情况" name="attendance"></el-tab-pane>
-      <el-tab-pane label="异常预警" name="warning"></el-tab-pane>
+  <div class="employee-overview-page">
+    <el-tabs v-model="activeTab" class="page-tabs">
+      <el-tab-pane label="员工出勤情况" name="attendance" />
+      <el-tab-pane label="异常预警" name="warning" />
     </el-tabs>
 
-    <!-- 查询栏 -->
-    <div class="query-bar">
-      <el-form :inline="true" size="small">
-        <el-form-item label="统计维度：">
-          <el-select v-model="queryParams.dimension" placeholder="请选择" style="width: 150px;">
-            <el-option label="按单位" value="unit"></el-option>
-            <el-option label="按部门" value="department"></el-option>
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item label="日期范围：">
-          <el-date-picker
-            v-model="queryParams.startDate"
-            type="date"
-            placeholder="起始日期"
-            value-format="yyyy-MM-dd"
-            style="width: 150px;"
-          ></el-date-picker>
-          <span style="margin: 0 8px;">-</span>
-          <el-date-picker
-            v-model="queryParams.endDate"
-            type="date"
-            placeholder="结束日期"
-            value-format="yyyy-MM-dd"
-            style="width: 150px;"
-          ></el-date-picker>
-        </el-form-item>
-        
-        <el-form-item label="单位：">
-          <el-select v-model="queryParams.unit" placeholder="请选择" style="width: 200px;">
-            <el-option label="全部单位" value="all"></el-option>
-            <el-option label="昆明供电局" value="kunming"></el-option>
-            <el-option label="曲靖供电局" value="qujing"></el-option>
-            <el-option label="玉溪供电局" value="yuxi"></el-option>
-          </el-select>
-        </el-form-item>
-        
-        <el-form-item>
-          <el-button type="primary" icon="el-icon-search" @click="handleQuery">查询</el-button>
-          <el-button icon="el-icon-refresh" @click="handleReset">重置</el-button>
-        </el-form-item>
-      </el-form>
+    <div v-show="activeTab === 'attendance'" class="overview-body">
+      <!-- 查询栏 -->
+      <section class="query-panel">
+        <el-form :inline="true" size="small" class="query-form">
+          <el-form-item label="统计维度：">
+            <el-select v-model="queryParams.dimension" placeholder="请选择" style="width: 140px">
+              <el-option label="按单位" value="unit" />
+              <el-option label="按部门" value="department" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="日期范围：">
+            <el-date-picker
+              v-model="queryParams.startDate"
+              type="date"
+              placeholder="起始日期"
+              value-format="yyyy-MM-dd"
+              style="width: 140px"
+            />
+            <span class="date-sep">-</span>
+            <el-date-picker
+              v-model="queryParams.endDate"
+              type="date"
+              placeholder="结束日期"
+              value-format="yyyy-MM-dd"
+              style="width: 140px"
+            />
+          </el-form-item>
+          <el-form-item label="单位：">
+            <el-select v-model="queryParams.unit" placeholder="请选择" style="width: 180px">
+              <el-option
+                v-for="opt in unitOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item class="query-actions">
+            <el-button type="primary" icon="el-icon-search" @click="handleQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="handleReset">重置</el-button>
+          </el-form-item>
+        </el-form>
+      </section>
+
+      <!-- KPI 指标条 -->
+      <section class="stats-banner">
+        <div
+          v-for="item in statItems"
+          :key="item.key"
+          class="stat-item"
+          :class="{ active: activeMetric === item.key, 'is-link': item.key !== 'comparison' }"
+          @click="item.key !== 'comparison' && handleCardClick(item.key)"
+        >
+          <template v-if="item.key !== 'comparison'">
+            <div class="stat-label">{{ item.label }}</div>
+            <div class="stat-value" :class="item.valueClass">{{ item.value }}</div>
+          </template>
+          <template v-else>
+            <div class="stat-label">{{ item.label }}</div>
+            <el-button type="text" size="small" class="comparison-btn" @click.stop="handleViewComparison">
+              查看详情
+            </el-button>
+          </template>
+        </div>
+      </section>
+
+      <!-- 操作提示 -->
+      <div class="tip-bar">
+        <i class="el-icon-info" />
+        <span class="tip-text">
+          当前统计维度：<strong>{{ snapshot.dimensionLabel }}</strong>；
+          点击上方 KPI 卡片可切换主图展示指标；
+          横轴为{{ snapshot.dimensionLabel }}名称，点击「查询」联动刷新全部图表。
+        </span>
+        <el-button type="primary" plain size="mini" icon="el-icon-download" @click="handleExportDetail">
+          导出明细
+        </el-button>
+      </div>
+
+      <!-- 主图表 -->
+      <section class="chart-card chart-card--main">
+        <div class="chart-card__header">
+          <h3 class="chart-card__title">{{ snapshot.mainChartTitle }}</h3>
+        </div>
+        <div ref="mainChart" class="chart-box chart-box--lg" />
+      </section>
+
+      <!-- 双列图表 -->
+      <div class="chart-grid">
+        <section class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">按时出勤 &amp; 迟到早退率</h3>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('punctuality')">
+              导出明细
+            </el-button>
+          </div>
+          <div ref="punctualityChart" class="chart-box" />
+        </section>
+
+        <section class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">迟到早退人数</h3>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('lateEarly')">
+              导出明细
+            </el-button>
+          </div>
+          <div ref="lateEarlyChart" class="chart-box" />
+        </section>
+
+        <section class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">请假趋势变化情况</h3>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('leaveTrend')">
+              导出明细
+            </el-button>
+          </div>
+          <div ref="leaveTrendChart" class="chart-box" />
+        </section>
+
+        <section class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">请假类型分布情况</h3>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('leaveType')">
+              导出明细
+            </el-button>
+          </div>
+          <div ref="leaveTypeChart" class="chart-box" />
+        </section>
+
+        <section class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">出差 &amp; 培训工时与专业相关性</h3>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('businessTraining')">
+              导出明细
+            </el-button>
+          </div>
+          <div ref="businessTrainingChart" class="chart-box" />
+        </section>
+
+        <section class="chart-card">
+          <div class="chart-card__header">
+            <h3 class="chart-card__title">专业与作业工时相关性</h3>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('specialty')">
+              导出明细
+            </el-button>
+          </div>
+          <div ref="specialtyChart" class="chart-box" />
+        </section>
+      </div>
+
+      <!-- 年休假分布 -->
+      <section class="chart-card chart-card--wide">
+        <div class="chart-card__header chart-card__header--wrap">
+          <h3 class="chart-card__title">年休假请假分布时段</h3>
+          <div class="header-tools">
+            <el-form :inline="true" size="mini">
+              <el-form-item label="日期范围：">
+                <el-date-picker
+                  v-model="leaveQueryParams.startDate"
+                  type="date"
+                  placeholder="起始"
+                  value-format="yyyy-MM-dd"
+                  style="width: 120px"
+                  @change="handleLeaveRangeChange"
+                />
+                <span class="date-sep">-</span>
+                <el-date-picker
+                  v-model="leaveQueryParams.endDate"
+                  type="date"
+                  placeholder="结束"
+                  value-format="yyyy-MM-dd"
+                  style="width: 120px"
+                  @change="handleLeaveRangeChange"
+                />
+              </el-form-item>
+            </el-form>
+            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('leaveDistribution')">
+              导出明细
+            </el-button>
+          </div>
+        </div>
+        <div ref="leaveBubbleChart" class="chart-box" />
+        <el-table :data="leaveTableData" border stripe size="small" class="leave-table">
+          <el-table-column prop="unit" label="单位" min-width="120" />
+          <el-table-column prop="specialty" label="专业" min-width="100" />
+          <el-table-column prop="fieldWorkCount" label="外勤人次" width="100" align="center" />
+          <el-table-column prop="totalDuration" label="总时长" width="100" align="center" />
+          <el-table-column prop="avgDuration" label="人均时长" width="100" align="center" />
+          <el-table-column prop="businessType" label="业务类型" min-width="120" />
+        </el-table>
+      </section>
     </div>
 
-    <!-- 顶部统计卡片 -->
-    <div class="stats-cards">
-      <div class="stat-card" @click="handleCardClick('total')">
-        <div class="stat-label">总应出勤人数</div>
-        <div class="stat-value">{{ statsData.totalShouldAttendance }}</div>
+    <div v-show="activeTab === 'warning'" class="warning-placeholder">
+      <div class="placeholder-card">
+        <h3>异常预警</h3>
+        <p>异常预警统计图表建设中，后续将展示预警趋势与分布分析。</p>
       </div>
-      <div class="stat-card" @click="handleCardClick('actual')">
-        <div class="stat-label">实际出勤人数</div>
-        <div class="stat-value">{{ statsData.actualAttendance }}</div>
-      </div>
-      <div class="stat-card" @click="handleCardClick('rate')">
-        <div class="stat-label">整体出勤率</div>
-        <div class="stat-value">{{ statsData.overallRate }}</div>
-      </div>
-      <div class="stat-card" @click="handleCardClick('leave')">
-        <div class="stat-label">请假时长</div>
-        <div class="stat-value">{{ statsData.leaveDuration }}</div>
-      </div>
-      <div class="stat-card comparison-card">
-        <div class="comparison-title">考勤数据对比</div>
-        <el-button type="text" size="small" @click="handleViewComparison">查看详情</el-button>
-      </div>
-    </div>
-
-    <!-- 黄色提示条 -->
-    <el-alert
-      title="注：点击【总应出勤人数】、【实际出勤人数】、【整体出勤率】、【请假时长】下方图表跟着动，横向为单位名称。"
-      type="warning"
-      :closable="false"
-      show-icon
-      style="margin-bottom: 16px;"
-    >
-      <template slot="default">
-        <div style="display: flex; justify-content: space-between; align-items: center;">
-          <span>注：点击【总应出勤人数】、【实际出勤人数】、【整体出勤率】、【请假时长】下方图表跟着动，横向为单位名称。</span>
-          <el-button type="primary" size="mini" @click="handleExportDetail">导出明细</el-button>
-        </div>
-      </template>
-    </el-alert>
-
-    <!-- 主图表区域 - 柱状图+折线图 -->
-    <div class="chart-section main-chart">
-      <div ref="mainChart" style="height: 400px;"></div>
-    </div>
-
-    <!-- 第二行图表 -->
-    <div class="chart-row">
-      <!-- 按时出勤&迟到早退率 -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title">按时出勤&迟到早退率</span>
-          <el-button type="primary" size="mini" @click="handleExportChart('punctuality')">导出明细</el-button>
-        </div>
-        <div ref="punctualityChart" style="height: 250px;"></div>
-      </div>
-
-      <!-- 迟到早退人数 -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title">迟到早退人数</span>
-          <el-button type="primary" size="mini" @click="handleExportChart('lateEarly')">导出明细</el-button>
-        </div>
-        <div ref="lateEarlyChart" style="height: 250px;"></div>
-      </div>
-    </div>
-
-    <!-- 第三行图表 -->
-    <div class="chart-row">
-      <!-- 请假趋势变化情况 -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title">请假趋势变化情况</span>
-          <el-button type="primary" size="mini" @click="handleExportChart('leaveTrend')">导出明细</el-button>
-        </div>
-        <div ref="leaveTrendChart" style="height: 250px;"></div>
-      </div>
-
-      <!-- 请假类型分布情况 -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title">请假类型分布情况</span>
-          <el-button type="primary" size="mini" @click="handleExportChart('leaveType')">导出明细</el-button>
-        </div>
-        <div ref="leaveTypeChart" style="height: 250px;"></div>
-      </div>
-    </div>
-
-    <!-- 第三行图表 -->
-    <div class="chart-row">
-      <!-- 出差&培训工时与专业相关性 -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title">出差&培训工时与专业相关性</span>
-          <el-button type="primary" size="mini" @click="handleExportChart('businessTraining')">导出明细</el-button>
-        </div>
-        <div ref="businessTrainingChart" style="height: 250px;"></div>
-      </div>
-
-      <!-- 专业与作业工时相关性 -->
-      <div class="chart-section">
-        <div class="chart-header">
-          <span class="chart-title">专业与作业工时相关性</span>
-          <el-button type="primary" size="mini" @click="handleExportChart('specialty')">导出明细</el-button>
-        </div>
-        <div ref="specialtyChart" style="height: 250px;"></div>
-      </div>
-    </div>
-
-    <!-- 年休假请假分布时段 -->
-    <div class="chart-section leave-distribution">
-      <div class="chart-header">
-        <div class="chart-title-wrapper">
-          <span class="chart-title">年休假请假分布时段</span>
-          <el-form :inline="true" size="mini" style="margin-left: 20px;">
-            <el-form-item label="日期范围：">
-              <el-date-picker
-                v-model="leaveQueryParams.startDate"
-                type="date"
-                placeholder="起始日期"
-                value-format="yyyy-MM-dd"
-                style="width: 120px;"
-              ></el-date-picker>
-              <span style="margin: 0 4px;">-</span>
-              <el-date-picker
-                v-model="leaveQueryParams.endDate"
-                type="date"
-                placeholder="结束日期"
-                value-format="yyyy-MM-dd"
-                style="width: 120px;"
-              ></el-date-picker>
-            </el-form-item>
-          </el-form>
-        </div>
-        <el-button type="primary" size="mini" @click="handleExportChart('leaveDistribution')">导出明细</el-button>
-      </div>
-      
-      <!-- 气泡图 -->
-      <div ref="leaveBubbleChart" style="height: 250px;"></div>
-      
-      <!-- 数据表格 -->
-      <el-table
-        :data="leaveTableData"
-        border
-        stripe
-        size="small"
-        style="margin-top: 16px;"
-      >
-        <el-table-column prop="unit" label="单位" min-width="120"></el-table-column>
-        <el-table-column prop="specialty" label="专业" min-width="100"></el-table-column>
-        <el-table-column prop="fieldWorkCount" label="外勤人次" width="100" align="center"></el-table-column>
-        <el-table-column prop="totalDuration" label="总时长" width="100" align="center"></el-table-column>
-        <el-table-column prop="avgDuration" label="人均时长" width="100" align="center"></el-table-column>
-        <el-table-column prop="businessType" label="业务类型" min-width="120"></el-table-column>
-      </el-table>
     </div>
   </div>
 </template>
 
 <script>
-import * as echarts from 'echarts';
+import * as echarts from "echarts";
+import {
+  CHART_COLORS,
+  LEAVE_TYPE_COLORS,
+  baseChartOption,
+  withAlpha,
+} from "../utils/chartTheme";
+import {
+  UNIT_OPTIONS,
+  DEFAULT_QUERY,
+  DEFAULT_LEAVE_QUERY,
+  buildOverviewSnapshot,
+  getMainChartSeriesMode,
+} from "../utils/behaviorOverviewData";
+
+const RADAR_INDICATORS = [
+  { name: "输电", max: 150 },
+  { name: "营配", max: 150 },
+  { name: "电网建设", max: 150 },
+  { name: "变电", max: 150 },
+  { name: "配电", max: 150 },
+];
 
 export default {
   name: "EmployeeBehaviorOverview",
   data() {
     return {
-      activeTab: 'attendance',
-      
-      // 查询参数
-      queryParams: {
-        dimension: 'unit',
-        startDate: '',
-        endDate: '',
-        unit: 'all'
-      },
-      
-      // 年休假查询参数
-      leaveQueryParams: {
-        startDate: '',
-        endDate: ''
-      },
-      
-      // 统计数据
-      statsData: {
-        totalShouldAttendance: 5280,
-        actualAttendance: 5072,
-        overallRate: '96.1%',
-        leaveDuration: '168.4h'
-      },
-      
-      // 年休假表格数据
-      leaveTableData: [
-        { unit: '昆明局', specialty: '技术', fieldWorkCount: 56, totalDuration: '216h', avgDuration: '3.9h', businessType: '项目实施' },
-        { unit: '玉溪局', specialty: '安监', fieldWorkCount: 34, totalDuration: '128h', avgDuration: '3.8h', businessType: '现场检查' },
-        { unit: '曲靖局', specialty: '市场', fieldWorkCount: 29, totalDuration: '96h', avgDuration: '3.3h', businessType: '客户拓展' },
-        { unit: '大理局', specialty: '人资', fieldWorkCount: 16, totalDuration: '42h', avgDuration: '2.6h', businessType: '招聘外勤' },
-        { unit: '临沧局', specialty: '综合', fieldWorkCount: 11, totalDuration: '31h', avgDuration: '2.8h', businessType: '行政办公' }
-      ],
-      
-      // ECharts实例
-      charts: {}
+      activeTab: "attendance",
+      activeMetric: "total",
+      unitOptions: UNIT_OPTIONS,
+      queryParams: { ...DEFAULT_QUERY },
+      leaveQueryParams: { ...DEFAULT_LEAVE_QUERY },
+      snapshot: buildOverviewSnapshot(DEFAULT_QUERY, DEFAULT_LEAVE_QUERY, "total"),
+      leaveTableData: [],
+      charts: {},
+      resizeHandler: null,
     };
   },
-  
+  computed: {
+    statsData() {
+      return this.snapshot.stats;
+    },
+    statItems() {
+      const d = this.statsData;
+      return [
+        { key: "total", label: "总应出勤人数", value: d.totalShouldAttendance, valueClass: "" },
+        { key: "actual", label: "实际出勤人数", value: d.actualAttendance, valueClass: "is-primary" },
+        { key: "rate", label: "整体出勤率", value: d.overallRate, valueClass: "is-success" },
+        { key: "leave", label: "请假时长", value: d.leaveDuration, valueClass: "" },
+        { key: "comparison", label: "考勤数据对比", value: "", valueClass: "" },
+      ];
+    },
+  },
   mounted() {
+    this.leaveTableData = this.snapshot.leaveTable;
     this.$nextTick(() => {
-      this.initCharts();
+      this.initChartInstances();
+      this.refreshAllCharts();
+      this.resizeHandler = () => {
+        Object.values(this.charts).forEach((c) => c && c.resize());
+      };
+      window.addEventListener("resize", this.resizeHandler);
     });
   },
-  
   beforeDestroy() {
-    // 销毁所有图表实例
-    Object.values(this.charts).forEach(chart => {
-      if (chart) chart.dispose();
-    });
+    if (this.resizeHandler) window.removeEventListener("resize", this.resizeHandler);
+    Object.values(this.charts).forEach((chart) => chart && chart.dispose());
   },
-  
   methods: {
-    // 初始化所有图表
-    initCharts() {
-      this.initMainChart();
-      this.initPunctualityChart();
-      this.initLateEarlyChart();
-      this.initLeaveTrendChart();
-      this.initLeaveTypeChart();
-      this.initBusinessTrainingChart();
-      this.initSpecialtyChart();
-      this.initLeaveBubbleChart();
+    rebuildSnapshot() {
+      this.snapshot = buildOverviewSnapshot(
+        this.queryParams,
+        this.leaveQueryParams,
+        this.activeMetric
+      );
+      this.leaveTableData = this.snapshot.leaveTable;
     },
-    
-    // 主图表 - 柱状图+折线图
-    initMainChart() {
-      const chart = echarts.init(this.$refs.mainChart);
-      this.charts.main = chart;
-      
-      const option = {
-        tooltip: {
-          trigger: 'axis',
-          axisPointer: { type: 'shadow' }
-        },
-        legend: {
-          data: ['应出勤人数', '实际出勤人数', '出勤率'],
-          top: 10
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          top: '15%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          data: ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆'],
-          axisLabel: { rotate: 0 }
-        },
-        yAxis: [
-          {
-            type: 'value',
-            name: '人数',
-            min: 0,
-            max: 7000,
-            interval: 1000,
-            position: 'left'
-          },
-          {
-            type: 'value',
-            name: '百分比',
-            min: 0,
-            max: 100,
-            interval: 10,
-            position: 'right',
-            axisLabel: { formatter: '{value}%' }
-          }
-        ],
-        series: [
-          {
-            name: '应出勤人数',
-            type: 'bar',
-            stack: 'attendance',
-            data: [3000, 2800, 2500, 2600, 1500, 1800, 2200, 2000, 2400, 2700, 2300, 2100, 2800, 2500, 2200, 2000]
-          },
-          {
-            name: '实际出勤人数',
-            type: 'bar',
-            stack: 'attendance',
-            data: [2800, 2600, 2300, 2400, 1400, 1700, 2100, 1900, 2300, 2600, 2200, 2000, 2700, 2400, 2100, 1900]
-          },
-          {
-            name: '出勤率',
-            type: 'line',
-            yAxisIndex: 1,
-            smooth: true,
-            lineStyle: { width: 2 },
-            data: [93, 93, 92, 92, 93, 94, 95, 95, 96, 96, 96, 95, 96, 96, 95, 95],
-            markPoint: {
-              data: [
-                { type: 'max', name: '最大值' }
-              ]
-            }
-          }
-        ]
+
+    initChartInstances() {
+      const map = {
+        main: "mainChart",
+        punctuality: "punctualityChart",
+        lateEarly: "lateEarlyChart",
+        leaveTrend: "leaveTrendChart",
+        leaveType: "leaveTypeChart",
+        businessTraining: "businessTrainingChart",
+        specialty: "specialtyChart",
+        leaveBubble: "leaveBubbleChart",
       };
-      
-      chart.setOption(option);
+      Object.keys(map).forEach((key) => {
+        const el = this.$refs[map[key]];
+        if (el) this.charts[key] = echarts.init(el);
+      });
     },
-    
-    // 按时出勤&迟到早退率图表
-    initPunctualityChart() {
-      const chart = echarts.init(this.$refs.punctualityChart);
-      this.charts.punctuality = chart;
-      
-      const option = {
-        tooltip: { trigger: 'axis' },
-        legend: {
-          data: ['事假', '病假', '年休假'],
-          bottom: 0
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '15%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          data: ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆']
-        },
-        yAxis: {
-          type: 'value',
-          axisLabel: { formatter: '{value}%' }
-        },
-        series: [
-          {
-            name: '事假',
-            type: 'line',
-            smooth: true,
-            data: [90, 90, 90, 90, 89, 86, 87, 87, 88, 93, 90, 94, 89, 90, 90, 89]
-          },
-          {
-            name: '病假',
-            type: 'line',
-            smooth: true,
-            data: [4, 4, 2, 11, 14, 7, 8, 10, 2, 7, 10, 4, 11, 10, 10, 11]
-          },
-          {
-            name: '年休假',
-            type: 'line',
-            smooth: true,
-            data: [6, 6, 8, 3, 1, 7, 5, 3, 10, 0, 0, 2, 0, 0, 0, 0]
-          }
-        ]
-      };
-      
-      chart.setOption(option);
+
+    barOpacity(seriesKey, emphasis) {
+      if (!emphasis || emphasis === seriesKey) return 1;
+      return 0.35;
     },
-    
-    // 迟到早退人数图表
-    initLateEarlyChart() {
-      const chart = echarts.init(this.$refs.lateEarlyChart);
-      this.charts.lateEarly = chart;
-      
-      const option = {
-        tooltip: { trigger: 'axis' },
-        legend: {
-          data: ['迟到人数', '早退人数'],
-          bottom: 0
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '15%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          data: ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆']
-        },
-        yAxis: {
-          type: 'value'
-        },
-        series: [
-          {
-            name: '迟到人数',
-            type: 'bar',
-            stack: 'late',
-            data: [2, 6, 10, 7, 8, 9, 13, 10, 6, 4, 5, 9, 14, 15, 14, 11]
-          },
-          {
-            name: '早退人数',
-            type: 'bar',
-            stack: 'late',
-            data: [1, 0, 0, 3, 0, 0, 0, 4, 0, 3, 1, 3, 0, 0, 0, 0]
-          }
-        ]
-      };
-      
-      chart.setOption(option);
+    refreshAllCharts() {
+      this.rebuildSnapshot();
+      this.renderMainChart();
+      this.renderPunctualityChart();
+      this.renderLateEarlyChart();
+      this.renderLeaveTrendChart();
+      this.renderLeaveTypeChart();
+      this.renderBusinessTrainingChart();
+      this.renderSpecialtyChart();
+      this.renderLeaveBubbleChart();
     },
-    
-    // 请假趋势变化情况 - 堆叠柱状图
-    initLeaveTrendChart() {
-      const chart = echarts.init(this.$refs.leaveTrendChart);
-      this.charts.leaveTrend = chart;
-      
-      const option = {
-        tooltip: { trigger: 'axis' },
-        legend: {
-          data: ['事假', '病假', '年休假'],
-          bottom: 0
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '15%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'category',
-          data: ['昆明', '曲靖', '玉溪', '保山', '昭通', '丽江', '普洱', '临沧', '楚雄', '红河', '文山', '西双版纳', '大理', '德宏', '怒江', '迪庆']
-        },
-        yAxis: {
-          type: 'value',
-          max: 60
-        },
-        series: [
-          {
-            name: '事假',
-            type: 'bar',
-            stack: 'leave',
-            data: [3, 2, 1, 1, 3, 2, 4, 2, 2, 3, 1, 2, 1, 1, 1, 1]
+
+    renderMainChart() {
+      const chart = this.charts.main;
+      if (!chart) return;
+      const s = this.snapshot;
+      const mode = getMainChartSeriesMode(this.activeMetric);
+      const legend = [];
+      const series = [];
+
+      if (mode.showShould) {
+        legend.push("应出勤人数");
+        series.push({
+          name: "应出勤人数",
+          type: "bar",
+          barMaxWidth: 18,
+          itemStyle: {
+            color: CHART_COLORS.secondary,
+            borderRadius: [2, 2, 0, 0],
+            opacity: this.barOpacity("should", mode.emphasis),
           },
-          {
-            name: '病假',
-            type: 'bar',
-            stack: 'leave',
-            data: [12, 10, 15, 8, 18, 15, 20, 12, 10, 15, 12, 10, 15, 12, 10, 8]
+          data: s.main.should,
+        });
+      }
+      if (mode.showActual) {
+        legend.push("实际出勤人数");
+        series.push({
+          name: "实际出勤人数",
+          type: "bar",
+          barMaxWidth: 18,
+          itemStyle: {
+            color: CHART_COLORS.primary,
+            borderRadius: [2, 2, 0, 0],
+            opacity: this.barOpacity("actual", mode.emphasis),
           },
-          {
-            name: '年休假',
-            type: 'bar',
-            stack: 'leave',
-            data: [25, 20, 18, 12, 22, 32, 8, 18, 16, 10, 15, 16, 12, 7, 7, 6]
-          }
-        ]
-      };
-      
-      chart.setOption(option);
-    },
-    
-    // 请假类型分布情况 - 环形饼图
-    initLeaveTypeChart() {
-      const chart = echarts.init(this.$refs.leaveTypeChart);
-      this.charts.leaveType = chart;
-      
-      const option = {
-        tooltip: {
-          trigger: 'item',
-          formatter: '{b}: {c}, {d}%'
-        },
-        legend: {
-          orient: 'horizontal',
-          bottom: 0,
-          data: ['事假', '病假', '年休假']
-        },
-        series: [
-          {
-            type: 'pie',
-            radius: ['40%', '70%'],
-            avoidLabelOverlap: false,
-            label: {
-              show: true,
-              position: 'outside',
-              formatter: '{b}, {c}, {d}%'
+          data: s.main.actual,
+        });
+      }
+      if (mode.showRate) {
+        legend.push("出勤率");
+        series.push({
+          name: "出勤率",
+          type: "line",
+          yAxisIndex: 1,
+          smooth: true,
+          symbol: "circle",
+          symbolSize: 6,
+          lineStyle: { width: mode.emphasis === "rate" ? 3 : 2, color: CHART_COLORS.success },
+          itemStyle: { color: CHART_COLORS.success },
+          data: s.main.rate,
+        });
+      }
+
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+          legend: { data: legend, top: 0 },
+          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
+          yAxis: [
+            { type: "value", name: "人数", min: 0, max: s.yMax, interval: Math.ceil(s.yMax / 7 / 100) * 100 },
+            {
+              type: "value",
+              name: "百分比",
+              min: 0,
+              max: 100,
+              interval: 10,
+              axisLabel: { formatter: "{value}%" },
             },
-            emphasis: {
-              label: {
-                show: true,
-                fontSize: 14,
-                fontWeight: 'bold'
-              }
-            },
-            labelLine: {
-              show: true
-            },
-            data: [
-              { value: 204, name: '事假' },
-              { value: 109, name: '病假' },
-              { value: 131, name: '年休假' }
-            ]
-          }
-        ]
-      };
-      
-      chart.setOption(option);
-    },
-    
-    // 出差&培训工时与专业相关性 - 散点图
-    initBusinessTrainingChart() {
-      const chart = echarts.init(this.$refs.businessTrainingChart);
-      this.charts.businessTraining = chart;
-      
-      const option = {
-        tooltip: {
-          formatter: function(param) {
-            return `出差工时: ${param.value[0]}<br/>培训工时: ${param.value[1]}`;
-          }
-        },
-        legend: {
-          data: ['出差工时', '培训工时', '线性(出差工时)', '线性(培训工时)'],
-          bottom: 0
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '15%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'value',
-          name: '培训工时',
-          min: 0,
-          max: 14
-        },
-        yAxis: {
-          type: 'value',
-          name: '出差工时',
-          min: 0,
-          max: 30
-        },
-        series: [
-          {
-            name: '出差工时',
-            type: 'scatter',
-            symbolSize: 8,
-            data: [[1, 25], [2, 5], [3, 12], [4, 12], [5, 13], [6, 5], [7, 16], [8, 24], [9, 5], [10, 17], [11, 22], [12, 3]]
-          },
-          {
-            name: '培训工时',
-            type: 'scatter',
-            symbolSize: 8,
-            data: [[1, 1], [2, 11], [3, 5], [4, 3], [5, 5], [6, 15], [7, 8], [8, 0], [9, 11], [10, 5], [11, 1], [12, 10]]
-          },
-          {
-            name: '线性(出差工时)',
-            type: 'line',
-            smooth: false,
-            lineStyle: { type: 'dotted' },
-            data: [[0, 13], [14, 13]],
-            symbol: 'none'
-          },
-          {
-            name: '线性(培训工时)',
-            type: 'line',
-            smooth: false,
-            lineStyle: { type: 'dotted' },
-            data: [[0, 5], [14, 7]],
-            symbol: 'none'
-          }
-        ]
-      };
-      
-      chart.setOption(option);
-    },
-    
-    // 专业与作业工时相关性 - 雷达图
-    initSpecialtyChart() {
-      const chart = echarts.init(this.$refs.specialtyChart);
-      this.charts.specialty = chart;
-      
-      const option = {
-        tooltip: {},
-        legend: {
-          data: ['作业工时时长', '出勤工时'],
-          bottom: 0
-        },
-        radar: {
-          indicator: [
-            { name: '输电', max: 150 },
-            { name: '营配', max: 150 },
-            { name: '电网建设', max: 150 },
-            { name: '变电', max: 150 },
-            { name: '配电', max: 150 }
           ],
-          radius: '65%'
-        },
-        series: [
-          {
-            name: '专业与作业工时',
-            type: 'radar',
-            data: [
-              {
-                value: [120, 80, 60, 100, 90],
-                name: '作业工时时长',
-                areaStyle: { opacity: 0.3 }
-              },
-              {
-                value: [100, 120, 80, 110, 100],
-                name: '出勤工时',
-                areaStyle: { opacity: 0.3 }
-              }
-            ]
-          }
-        ]
-      };
-      
-      chart.setOption(option);
+          series,
+        }),
+        true
+      );
     },
-    
-    // 年休假请假分布时段 - 气泡图
-    initLeaveBubbleChart() {
-      const chart = echarts.init(this.$refs.leaveBubbleChart);
-      this.charts.leaveBubble = chart;
-      
-      const option = {
-        tooltip: {
-          formatter: function(param) {
-            return `外勤频次: ${param.value[0]}<br/>时长(h): ${param.value[1]}`;
-          }
-        },
-        grid: {
-          left: '3%',
-          right: '4%',
-          bottom: '3%',
-          containLabel: true
-        },
-        xAxis: {
-          type: 'value',
-          name: '外勤频次',
-          min: 0,
-          max: 60
-        },
-        yAxis: {
-          type: 'value',
-          name: '时长(h)',
-          min: 0,
-          max: 250
-        },
-        series: [
-          {
-            type: 'scatter',
-            symbolSize: function(data) {
-              return Math.sqrt(data[2]) * 5;
+
+    renderPunctualityChart() {
+      const chart = this.charts.punctuality;
+      if (!chart) return;
+      const s = this.snapshot;
+      chart.setOption(
+        baseChartOption({
+          legend: { data: ["按时出勤率", "迟到率", "早退率"], bottom: 0 },
+          grid: { bottom: "18%" },
+          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
+          yAxis: { axisLabel: { formatter: "{value}%" }, max: 100 },
+          series: [
+            { name: "按时出勤率", type: "line", smooth: true, symbol: "none", itemStyle: { color: CHART_COLORS.primary }, data: s.punctuality.onTime },
+            { name: "迟到率", type: "line", smooth: true, symbol: "none", itemStyle: { color: CHART_COLORS.warning }, data: s.punctuality.late },
+            { name: "早退率", type: "line", smooth: true, symbol: "none", itemStyle: { color: CHART_COLORS.danger }, data: s.punctuality.early },
+          ],
+        }),
+        true
+      );
+    },
+
+    renderLateEarlyChart() {
+      const chart = this.charts.lateEarly;
+      if (!chart) return;
+      const s = this.snapshot;
+      chart.setOption(
+        baseChartOption({
+          legend: { data: ["迟到人数", "早退人数"], bottom: 0 },
+          grid: { bottom: "18%" },
+          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
+          series: [
+            { name: "迟到人数", type: "bar", stack: "late", barMaxWidth: 20, itemStyle: { color: CHART_COLORS.primary }, data: s.lateEarly.late },
+            { name: "早退人数", type: "bar", stack: "late", barMaxWidth: 20, itemStyle: { color: CHART_COLORS.warning }, data: s.lateEarly.early },
+          ],
+        }),
+        true
+      );
+    },
+
+    renderLeaveTrendChart() {
+      const chart = this.charts.leaveTrend;
+      if (!chart) return;
+      const s = this.snapshot;
+      const leaveNames = ["事假", "病假", "年休假"];
+      const datasets = [s.leaveTrend.personal, s.leaveTrend.sick, s.leaveTrend.annual];
+      const yMax = Math.max(10, ...datasets.flat()) + 5;
+      chart.setOption(
+        baseChartOption({
+          legend: { data: leaveNames, bottom: 0 },
+          grid: { bottom: "18%" },
+          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
+          yAxis: { max: yMax },
+          series: leaveNames.map((name, i) => ({
+            name,
+            type: "bar",
+            stack: "leave",
+            barMaxWidth: 20,
+            itemStyle: { color: LEAVE_TYPE_COLORS[name] },
+            data: datasets[i],
+          })),
+        }),
+        true
+      );
+    },
+
+    renderLeaveTypeChart() {
+      const chart = this.charts.leaveType;
+      if (!chart) return;
+      const pieData = this.snapshot.leavePie;
+      chart.setOption(
+        baseChartOption({
+          legend: { orient: "horizontal", bottom: 0, data: pieData.map((d) => d.name) },
+          series: [
+            {
+              type: "pie",
+              radius: ["42%", "68%"],
+              center: ["50%", "46%"],
+              avoidLabelOverlap: true,
+              label: { show: true, formatter: "{b}\n{d}%", fontSize: 11, color: "#606266" },
+              labelLine: { length: 8, length2: 6 },
+              data: pieData.map((d) => ({
+                ...d,
+                itemStyle: { color: LEAVE_TYPE_COLORS[d.name] },
+              })),
             },
-            data: [
-              [55, 220, 100],
-              [35, 125, 80],
-              [28, 95, 60],
-              [15, 42, 40],
-              [10, 31, 30]
-            ]
-          }
-        ]
-      };
-      
-      chart.setOption(option);
+          ],
+        }),
+        true
+      );
     },
-    
-    // 查询
+
+    renderBusinessTrainingChart() {
+      const chart = this.charts.businessTraining;
+      if (!chart) return;
+      const sc = this.snapshot.scatter;
+      chart.setOption(
+        baseChartOption({
+          legend: { data: ["出差工时", "培训工时", "线性(出差工时)", "线性(培训工时)"], bottom: 0 },
+          grid: { bottom: "20%" },
+          xAxis: { type: "value", name: "培训工时", min: 0, max: 14 },
+          yAxis: { type: "value", name: "出差工时", min: 0, max: 30 },
+          series: [
+            { name: "出差工时", type: "scatter", symbolSize: 8, itemStyle: { color: CHART_COLORS.primary }, data: sc.business },
+            { name: "培训工时", type: "scatter", symbolSize: 8, itemStyle: { color: CHART_COLORS.secondary }, data: sc.training },
+            { name: "线性(出差工时)", type: "line", lineStyle: { type: "dotted", color: CHART_COLORS.warning }, data: [[0, 13], [14, 13]], symbol: "none" },
+            { name: "线性(培训工时)", type: "line", lineStyle: { type: "dotted", color: CHART_COLORS.success }, data: [[0, 5], [14, 7]], symbol: "none" },
+          ],
+        }),
+        true
+      );
+    },
+
+    renderSpecialtyChart() {
+      const chart = this.charts.specialty;
+      if (!chart) return;
+      const sp = this.snapshot.specialty;
+      const maxVal = Math.max(...sp.work, ...sp.attend, 120);
+      const indicators = RADAR_INDICATORS.map((ind) => ({ ...ind, max: Math.ceil(maxVal / 10) * 10 + 20 }));
+      chart.setOption(
+        baseChartOption({
+          legend: { data: ["作业工时时长", "出勤工时"], bottom: 0 },
+          radar: {
+            indicator: indicators,
+            radius: "58%",
+            center: ["50%", "48%"],
+            axisName: { color: "#606266", fontSize: 11 },
+            splitArea: { areaStyle: { color: ["rgba(64,158,255,0.04)", "rgba(64,158,255,0.08)"] } },
+            splitLine: { lineStyle: { color: "#EBEEF5" } },
+            axisLine: { lineStyle: { color: "#DCDFE6" } },
+          },
+          series: [
+            {
+              type: "radar",
+              data: [
+                { value: sp.work, name: "作业工时时长", lineStyle: { color: CHART_COLORS.primary }, itemStyle: { color: CHART_COLORS.primary }, areaStyle: { color: withAlpha(CHART_COLORS.primary) } },
+                { value: sp.attend, name: "出勤工时", lineStyle: { color: CHART_COLORS.secondary }, itemStyle: { color: CHART_COLORS.secondary }, areaStyle: { color: withAlpha(CHART_COLORS.secondary) } },
+              ],
+            },
+          ],
+        }),
+        true
+      );
+    },
+
+    renderLeaveBubbleChart() {
+      const chart = this.charts.leaveBubble;
+      if (!chart) return;
+      const bubble = this.snapshot.bubble;
+      const xMax = Math.max(60, ...bubble.map((d) => d[0])) + 10;
+      const yMax = Math.max(250, ...bubble.map((d) => d[1])) + 20;
+      chart.setOption(
+        baseChartOption({
+          grid: { bottom: "12%" },
+          xAxis: { type: "value", name: "外勤频次", min: 0, max: xMax },
+          yAxis: { type: "value", name: "时长(h)", min: 0, max: yMax },
+          series: [
+            {
+              type: "scatter",
+              itemStyle: { color: CHART_COLORS.primary, opacity: 0.75 },
+              symbolSize: (data) => Math.sqrt(data[2]) * 5,
+              data: bubble,
+            },
+          ],
+        }),
+        true
+      );
+    },
+
     handleQuery() {
-      console.log('=== 查询 ===');
-      console.log('查询参数:', this.queryParams);
-      this.$message.success('查询成功');
-      // 这里调用后端API重新加载数据并刷新图表
+      if (this.queryParams.startDate && this.queryParams.endDate) {
+        if (this.queryParams.startDate > this.queryParams.endDate) {
+          this.$message.warning("起始日期不能晚于结束日期");
+          return;
+        }
+        if (!this.leaveQueryParams.startDate) {
+          this.leaveQueryParams.startDate = this.queryParams.startDate;
+        }
+        if (!this.leaveQueryParams.endDate) {
+          this.leaveQueryParams.endDate = this.queryParams.endDate;
+        }
+      }
+      this.refreshAllCharts();
+      this.$message.success("查询成功，图表已联动刷新");
     },
-    
-    // 重置
+
     handleReset() {
-      console.log('=== 重置 ===');
-      this.queryParams = {
-        dimension: 'unit',
-        startDate: '',
-        endDate: '',
-        unit: 'all'
-      };
-      this.leaveQueryParams = {
-        startDate: '',
-        endDate: ''
-      };
-      this.$message.info('已重置查询条件');
+      this.queryParams = { ...DEFAULT_QUERY };
+      this.leaveQueryParams = { ...DEFAULT_LEAVE_QUERY };
+      this.activeMetric = "total";
+      this.refreshAllCharts();
+      this.$message.info("已重置查询条件");
     },
-    
-    // 统计卡片点击
+
     handleCardClick(type) {
-      console.log('=== 卡片点击 ===', type);
-      // 这里实现点击卡片后刷新下方图表的逻辑
-      this.$message.info(`点击了${type}卡片`);
+      this.activeMetric = type;
+      this.renderMainChart();
+      const labels = {
+        total: "总应出勤人数",
+        actual: "实际出勤人数",
+        rate: "整体出勤率",
+        leave: "请假时长",
+      };
+      this.$message.info(`主图已切换为「${labels[type]}」视角`);
     },
-    
-    // 查看对比详情
+
+    handleLeaveRangeChange() {
+      if (
+        this.leaveQueryParams.startDate &&
+        this.leaveQueryParams.endDate &&
+        this.leaveQueryParams.startDate > this.leaveQueryParams.endDate
+      ) {
+        this.$message.warning("年休假分布起始日期不能晚于结束日期");
+        return;
+      }
+      this.rebuildSnapshot();
+      this.leaveTableData = this.snapshot.leaveTable;
+      this.renderLeaveBubbleChart();
+    },
+
     handleViewComparison() {
-      console.log('=== 查看对比详情 ===');
-      this.$message.info('查看考勤数据对比详情功能待开发');
+      this.$message.info("查看考勤数据对比详情功能待开发");
     },
-    
-    // 导出明细
+
     handleExportDetail() {
-      console.log('=== 导出明细 ===');
-      this.$confirm('确定要导出当前数据吗？', '提示', {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'info'
+      this.$confirm("确定要导出当前筛选条件下的数据吗？", "提示", {
+        confirmButtonText: "确定",
+        cancelButtonText: "取消",
+        type: "info",
       })
-        .then(() => {
-          this.$message.success('导出成功');
-        })
+        .then(() => this.$message.success("导出成功"))
         .catch(() => {});
     },
-    
-    // 导出图表数据
+
     handleExportChart(chartType) {
-      console.log('=== 导出图表数据 ===', chartType);
-      this.$message.success(`已导出${chartType}图表数据`);
-    }
-  }
+      this.$message.success(`已导出 ${chartType} 图表数据（当前筛选条件）`);
+    },
+  },
 };
 </script>
 
 <style scoped>
-.employee-overview-container {
-  padding: 20px;
-  background: #f5f7fa;
+.employee-overview-page {
   min-height: calc(100vh - 100px);
+  padding: 12px 16px 20px;
+  background: #f0f2f5;
+  box-sizing: border-box;
 }
 
-/* 查询栏 */
-.query-bar {
+.page-tabs {
   background: #fff;
-  padding: 20px;
-  margin-bottom: 20px;
-  border-radius: 4px;
-  border: 1px solid #ebeef5;
-}
-
-/* 统计卡片 */
-.stats-cards {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.stat-card {
-  flex: 1;
-  background: #fff;
-  padding: 24px;
-  border-radius: 4px;
-  cursor: pointer;
-  transition: all 0.3s;
-  border: 1px solid #ebeef5;
-}
-
-.stat-card:hover {
-  box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
-}
-
-.stat-label {
-  font-size: 14px;
-  color: #909399;
+  padding: 0 16px;
   margin-bottom: 12px;
-}
-
-.stat-value {
-  font-size: 28px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.comparison-card {
-  display: flex;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-}
-
-.comparison-title {
-  font-size: 14px;
-  color: #606266;
-  margin-bottom: 16px;
-  font-weight: 600;
-}
-
-/* 图表区域 */
-.chart-section {
-  background: #fff;
-  padding: 20px;
   border-radius: 4px;
-  border: 1px solid #ebeef5;
-  margin-bottom: 20px;
+  border: 1px solid #e4e7ed;
 }
 
-.chart-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 16px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid #ebeef5;
-}
-
-.chart-title {
-  font-size: 16px;
-  font-weight: bold;
-  color: #303133;
-}
-
-.chart-title-wrapper {
-  display: flex;
-  align-items: center;
-}
-
-/* 图表行 */
-.chart-row {
-  display: flex;
-  gap: 20px;
-  margin-bottom: 20px;
-}
-
-.chart-row .chart-section {
-  flex: 1;
-}
-
-/* 年休假分布区域 */
-.leave-distribution {
+.page-tabs >>> .el-tabs__header {
   margin-bottom: 0;
 }
 
-/* 响应式 */
+.page-tabs >>> .el-tabs__item {
+  height: 44px;
+  line-height: 44px;
+  font-size: 14px;
+}
+
+.page-tabs >>> .el-tabs__item.is-active {
+  color: #409eff;
+  font-weight: 600;
+}
+
+.page-tabs >>> .el-tabs__active-bar {
+  height: 2px;
+  background-color: #409eff;
+}
+
+.overview-body {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+/* 查询区 */
+.query-panel {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 14px 16px 6px;
+}
+
+.query-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.query-actions {
+  margin-left: auto;
+}
+
+.date-sep {
+  margin: 0 6px;
+  color: #909399;
+}
+
+/* KPI 指标条 */
+.stats-banner {
+  display: flex;
+  background: linear-gradient(180deg, #ecf5ff 0%, #f5faff 100%);
+  border: 1px solid #d9ecff;
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.stat-item {
+  flex: 1;
+  text-align: center;
+  padding: 16px 12px;
+  border-right: 1px solid #d9ecff;
+  transition: background 0.2s;
+}
+
+.stat-item:last-child {
+  border-right: none;
+}
+
+.stat-item.is-link {
+  cursor: pointer;
+}
+
+.stat-item.is-link:hover {
+  background: rgba(64, 158, 255, 0.08);
+}
+
+.stat-item.active {
+  background: rgba(64, 158, 255, 0.12);
+  box-shadow: inset 0 -2px 0 #409eff;
+}
+
+.stat-label {
+  font-size: 13px;
+  color: #606266;
+  margin-bottom: 8px;
+}
+
+.stat-value {
+  font-size: 26px;
+  font-weight: 600;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.stat-value.is-primary {
+  color: #409eff;
+}
+
+.stat-value.is-success {
+  color: #67c23a;
+}
+
+.comparison-btn {
+  color: #409eff;
+  padding: 0;
+  font-size: 13px;
+}
+
+/* 提示条 */
+.tip-bar {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-left: 3px solid #409eff;
+  border-radius: 4px;
+  font-size: 12px;
+  color: #606266;
+}
+
+.tip-bar .el-icon-info {
+  color: #409eff;
+  font-size: 16px;
+}
+
+.tip-text {
+  flex: 1;
+  line-height: 1.5;
+}
+
+.tip-text strong {
+  color: #409eff;
+  font-weight: 600;
+}
+
+/* 图表卡片 */
+.chart-card {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 14px 16px 16px;
+}
+
+.chart-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+  padding-bottom: 10px;
+  border-bottom: 1px solid #ebeef5;
+}
+
+.chart-card__header--wrap {
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chart-card__title {
+  margin: 0;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  padding-left: 10px;
+  border-left: 3px solid #409eff;
+  line-height: 1.4;
+}
+
+.header-tools {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.chart-box {
+  height: 260px;
+  width: 100%;
+}
+
+.chart-box--lg {
+  height: 380px;
+}
+
+.chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 12px;
+}
+
+.leave-table {
+  margin-top: 12px;
+}
+
+.leave-table >>> .el-table th {
+  background: #f5f7fa;
+  color: #606266;
+  font-weight: 600;
+}
+
+/* 异常预警占位 */
+.warning-placeholder {
+  padding: 20px 0;
+}
+
+.placeholder-card {
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  padding: 40px 24px;
+  text-align: center;
+}
+
+.placeholder-card h3 {
+  margin: 0 0 8px;
+  font-size: 16px;
+  color: #303133;
+}
+
+.placeholder-card p {
+  margin: 0;
+  font-size: 13px;
+  color: #909399;
+}
+
 @media (max-width: 1200px) {
-  .chart-row {
-    flex-direction: column;
+  .chart-grid {
+    grid-template-columns: 1fr;
   }
-  
-  .stats-cards {
+
+  .stats-banner {
     flex-wrap: wrap;
   }
-  
-  .stat-card {
-    min-width: calc(50% - 10px);
+
+  .stat-item {
+    min-width: 50%;
+    border-bottom: 1px solid #d9ecff;
   }
 }
 
 @media (max-width: 768px) {
-  .stat-card {
+  .stat-item {
     min-width: 100%;
   }
-  
+
   .stat-value {
     font-size: 22px;
   }
-  
-  .chart-title {
-    font-size: 14px;
+
+  .query-actions {
+    margin-left: 0;
+    width: 100%;
   }
 }
 </style>
