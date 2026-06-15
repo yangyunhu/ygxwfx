@@ -97,7 +97,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">按时出勤 &amp; 迟到早退率</h3>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('punctuality')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('punctuality')">
               导出明细
             </el-button>
           </div>
@@ -107,7 +107,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">迟到早退人数</h3>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('lateEarly')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('lateEarly')">
               导出明细
             </el-button>
           </div>
@@ -117,7 +117,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">请假趋势变化情况</h3>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('leaveTrend')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('leaveTrend')">
               导出明细
             </el-button>
           </div>
@@ -127,7 +127,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">请假类型分布情况</h3>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('leaveType')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('leaveType')">
               导出明细
             </el-button>
           </div>
@@ -137,7 +137,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">出差 &amp; 培训工时与专业相关性</h3>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('businessTraining')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('businessTraining')">
               导出明细
             </el-button>
           </div>
@@ -147,7 +147,7 @@
         <section class="chart-card">
           <div class="chart-card__header">
             <h3 class="chart-card__title">专业与作业工时相关性</h3>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('specialty')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('specialty')">
               导出明细
             </el-button>
           </div>
@@ -181,7 +181,7 @@
                 />
               </el-form-item>
             </el-form>
-            <el-button type="text" size="small" icon="el-icon-download" @click="handleExportChart('leaveDistribution')">
+            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleExportChart('leaveDistribution')">
               导出明细
             </el-button>
           </div>
@@ -210,10 +210,15 @@
 <script>
 import * as echarts from "echarts";
 import {
-  CHART_COLORS,
   LEAVE_TYPE_COLORS,
+  BUBBLE_COLORS,
   baseChartOption,
+  legendTopCenter,
+  legendBottomCenter,
+  linePointLabel,
+  stackBarLabel,
   withAlpha,
+  PROTOTYPE_COLORS,
 } from "../utils/chartTheme";
 import {
   UNIT_OPTIONS,
@@ -326,15 +331,17 @@ export default {
       const mode = getMainChartSeriesMode(this.activeMetric);
       const legend = [];
       const series = [];
+      const C = PROTOTYPE_COLORS;
 
       if (mode.showShould) {
         legend.push("应出勤人数");
         series.push({
           name: "应出勤人数",
           type: "bar",
-          barMaxWidth: 18,
+          barMaxWidth: 16,
+          barGap: "20%",
           itemStyle: {
-            color: CHART_COLORS.secondary,
+            color: C.bluePale,
             borderRadius: [2, 2, 0, 0],
             opacity: this.barOpacity("should", mode.emphasis),
           },
@@ -346,9 +353,9 @@ export default {
         series.push({
           name: "实际出勤人数",
           type: "bar",
-          barMaxWidth: 18,
+          barMaxWidth: 16,
           itemStyle: {
-            color: CHART_COLORS.primary,
+            color: C.green,
             borderRadius: [2, 2, 0, 0],
             opacity: this.barOpacity("actual", mode.emphasis),
           },
@@ -363,9 +370,9 @@ export default {
           yAxisIndex: 1,
           smooth: true,
           symbol: "circle",
-          symbolSize: 6,
-          lineStyle: { width: mode.emphasis === "rate" ? 3 : 2, color: CHART_COLORS.success },
-          itemStyle: { color: CHART_COLORS.success },
+          symbolSize: 5,
+          lineStyle: { width: 2, color: C.yellow },
+          itemStyle: { color: C.yellow, borderColor: "#fff", borderWidth: 1 },
           data: s.main.rate,
         });
       }
@@ -373,10 +380,20 @@ export default {
       chart.setOption(
         baseChartOption({
           tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-          legend: { data: legend, top: 0 },
-          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
+          legend: legendTopCenter(legend),
+          grid: { top: "16%", bottom: "10%" },
+          xAxis: {
+            data: s.categories,
+            axisLabel: { rotate: s.categories.length > 10 ? 35 : 0, fontSize: 10, interval: 0 },
+          },
           yAxis: [
-            { type: "value", name: "人数", min: 0, max: s.yMax, interval: Math.ceil(s.yMax / 7 / 100) * 100 },
+            {
+              type: "value",
+              name: "人数",
+              min: 0,
+              max: s.yMax,
+              interval: Math.ceil(s.yMax / 7 / 100) * 100,
+            },
             {
               type: "value",
               name: "百分比",
@@ -396,16 +413,42 @@ export default {
       const chart = this.charts.punctuality;
       if (!chart) return;
       const s = this.snapshot;
+      const lateEarlyRate = s.punctuality.late.map((v, i) =>
+        Math.round((v + s.punctuality.early[i]) * 10) / 10
+      );
+      const C = PROTOTYPE_COLORS;
       chart.setOption(
         baseChartOption({
-          legend: { data: ["按时出勤率", "迟到率", "早退率"], bottom: 0 },
-          grid: { bottom: "18%" },
-          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
-          yAxis: { axisLabel: { formatter: "{value}%" }, max: 100 },
+          legend: legendBottomCenter(["按时出勤率", "迟到早退率"]),
+          grid: { bottom: "16%", top: "12%" },
+          xAxis: {
+            data: s.categories,
+            axisLabel: { rotate: s.categories.length > 8 ? 35 : 0, fontSize: 10, interval: 0 },
+          },
+          yAxis: { axisLabel: { formatter: "{value}%" }, max: 100, min: 0 },
           series: [
-            { name: "按时出勤率", type: "line", smooth: true, symbol: "none", itemStyle: { color: CHART_COLORS.primary }, data: s.punctuality.onTime },
-            { name: "迟到率", type: "line", smooth: true, symbol: "none", itemStyle: { color: CHART_COLORS.warning }, data: s.punctuality.late },
-            { name: "早退率", type: "line", smooth: true, symbol: "none", itemStyle: { color: CHART_COLORS.danger }, data: s.punctuality.early },
+            {
+              name: "按时出勤率",
+              type: "line",
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 5,
+              lineStyle: { width: 2, color: C.blue },
+              itemStyle: { color: C.blue },
+              label: linePointLabel(C.blue),
+              data: s.punctuality.onTime,
+            },
+            {
+              name: "迟到早退率",
+              type: "line",
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 5,
+              lineStyle: { width: 2, color: C.orange },
+              itemStyle: { color: C.orange },
+              label: linePointLabel(C.orange),
+              data: lateEarlyRate,
+            },
           ],
         }),
         true
@@ -416,14 +459,34 @@ export default {
       const chart = this.charts.lateEarly;
       if (!chart) return;
       const s = this.snapshot;
+      const C = PROTOTYPE_COLORS;
       chart.setOption(
         baseChartOption({
-          legend: { data: ["迟到人数", "早退人数"], bottom: 0 },
-          grid: { bottom: "18%" },
-          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
+          legend: legendBottomCenter(["迟到人数", "早退人数"]),
+          grid: { bottom: "16%", top: "12%" },
+          xAxis: {
+            data: s.categories,
+            axisLabel: { rotate: s.categories.length > 8 ? 35 : 0, fontSize: 10, interval: 0 },
+          },
           series: [
-            { name: "迟到人数", type: "bar", stack: "late", barMaxWidth: 20, itemStyle: { color: CHART_COLORS.primary }, data: s.lateEarly.late },
-            { name: "早退人数", type: "bar", stack: "late", barMaxWidth: 20, itemStyle: { color: CHART_COLORS.warning }, data: s.lateEarly.early },
+            {
+              name: "迟到人数",
+              type: "bar",
+              stack: "late",
+              barMaxWidth: 22,
+              itemStyle: { color: C.blue },
+              label: stackBarLabel(true),
+              data: s.lateEarly.late,
+            },
+            {
+              name: "早退人数",
+              type: "bar",
+              stack: "late",
+              barMaxWidth: 22,
+              itemStyle: { color: C.orange },
+              label: stackBarLabel(true),
+              data: s.lateEarly.early,
+            },
           ],
         }),
         true
@@ -439,15 +502,18 @@ export default {
       const yMax = Math.max(10, ...datasets.flat()) + 5;
       chart.setOption(
         baseChartOption({
-          legend: { data: leaveNames, bottom: 0 },
-          grid: { bottom: "18%" },
-          xAxis: { data: s.categories, axisLabel: { rotate: s.categories.length > 8 ? 30 : 0, fontSize: 10 } },
-          yAxis: { max: yMax },
+          legend: legendBottomCenter(leaveNames),
+          grid: { bottom: "16%", top: "12%" },
+          xAxis: {
+            data: s.categories,
+            axisLabel: { rotate: s.categories.length > 8 ? 35 : 0, fontSize: 10, interval: 0 },
+          },
+          yAxis: { max: yMax, min: 0 },
           series: leaveNames.map((name, i) => ({
             name,
             type: "bar",
             stack: "leave",
-            barMaxWidth: 20,
+            barMaxWidth: 22,
             itemStyle: { color: LEAVE_TYPE_COLORS[name] },
             data: datasets[i],
           })),
@@ -462,15 +528,20 @@ export default {
       const pieData = this.snapshot.leavePie;
       chart.setOption(
         baseChartOption({
-          legend: { orient: "horizontal", bottom: 0, data: pieData.map((d) => d.name) },
+          legend: legendBottomCenter(pieData.map((d) => d.name)),
           series: [
             {
               type: "pie",
-              radius: ["42%", "68%"],
-              center: ["50%", "46%"],
+              radius: ["40%", "62%"],
+              center: ["50%", "44%"],
               avoidLabelOverlap: true,
-              label: { show: true, formatter: "{b}\n{d}%", fontSize: 11, color: "#606266" },
-              labelLine: { length: 8, length2: 6 },
+              label: {
+                show: true,
+                formatter: "{b}, {c}, {d}%",
+                fontSize: 11,
+                color: "#606266",
+              },
+              labelLine: { length: 10, length2: 8, lineStyle: { color: "#C0C4CC" } },
               data: pieData.map((d) => ({
                 ...d,
                 itemStyle: { color: LEAVE_TYPE_COLORS[d.name] },
@@ -486,17 +557,42 @@ export default {
       const chart = this.charts.businessTraining;
       if (!chart) return;
       const sc = this.snapshot.scatter;
+      const C = PROTOTYPE_COLORS;
       chart.setOption(
         baseChartOption({
-          legend: { data: ["出差工时", "培训工时", "线性(出差工时)", "线性(培训工时)"], bottom: 0 },
-          grid: { bottom: "20%" },
-          xAxis: { type: "value", name: "培训工时", min: 0, max: 14 },
-          yAxis: { type: "value", name: "出差工时", min: 0, max: 30 },
+          legend: legendBottomCenter(["出差工时", "培训工时", "线性(出差工时)", "线性(培训工时)"]),
+          grid: { bottom: "18%", top: "12%" },
+          xAxis: { type: "value", name: "培训工时", nameTextStyle: { fontSize: 11 }, min: 0, max: 14 },
+          yAxis: { type: "value", name: "出差工时", nameTextStyle: { fontSize: 11 }, min: 0, max: 30 },
           series: [
-            { name: "出差工时", type: "scatter", symbolSize: 8, itemStyle: { color: CHART_COLORS.primary }, data: sc.business },
-            { name: "培训工时", type: "scatter", symbolSize: 8, itemStyle: { color: CHART_COLORS.secondary }, data: sc.training },
-            { name: "线性(出差工时)", type: "line", lineStyle: { type: "dotted", color: CHART_COLORS.warning }, data: [[0, 13], [14, 13]], symbol: "none" },
-            { name: "线性(培训工时)", type: "line", lineStyle: { type: "dotted", color: CHART_COLORS.success }, data: [[0, 5], [14, 7]], symbol: "none" },
+            {
+              name: "出差工时",
+              type: "scatter",
+              symbolSize: 7,
+              itemStyle: { color: C.blue },
+              data: sc.business,
+            },
+            {
+              name: "培训工时",
+              type: "scatter",
+              symbolSize: 7,
+              itemStyle: { color: C.orange },
+              data: sc.training,
+            },
+            {
+              name: "线性(出差工时)",
+              type: "line",
+              lineStyle: { type: "dotted", color: C.blue, width: 1.5 },
+              data: [[0, 13], [14, 13]],
+              symbol: "none",
+            },
+            {
+              name: "线性(培训工时)",
+              type: "line",
+              lineStyle: { type: "dotted", color: C.orange, width: 1.5 },
+              data: [[0, 5], [14, 7]],
+              symbol: "none",
+            },
           ],
         }),
         true
@@ -508,25 +604,44 @@ export default {
       if (!chart) return;
       const sp = this.snapshot.specialty;
       const maxVal = Math.max(...sp.work, ...sp.attend, 120);
-      const indicators = RADAR_INDICATORS.map((ind) => ({ ...ind, max: Math.ceil(maxVal / 10) * 10 + 20 }));
+      const indicators = RADAR_INDICATORS.map((ind) => ({
+        ...ind,
+        max: Math.ceil(maxVal / 10) * 10 + 20,
+      }));
+      const C = PROTOTYPE_COLORS;
       chart.setOption(
         baseChartOption({
-          legend: { data: ["作业工时时长", "出勤工时"], bottom: 0 },
+          legend: legendBottomCenter(["作业工时时长", "出勤工时"]),
+          grid: { bottom: "14%" },
           radar: {
             indicator: indicators,
-            radius: "58%",
-            center: ["50%", "48%"],
+            radius: "55%",
+            center: ["50%", "46%"],
             axisName: { color: "#606266", fontSize: 11 },
-            splitArea: { areaStyle: { color: ["rgba(64,158,255,0.04)", "rgba(64,158,255,0.08)"] } },
-            splitLine: { lineStyle: { color: "#EBEEF5" } },
-            axisLine: { lineStyle: { color: "#DCDFE6" } },
+            splitArea: { areaStyle: { color: ["#fff", "#FAFAFA"] } },
+            splitLine: { lineStyle: { color: "#F0F0F0" } },
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
           },
           series: [
             {
               type: "radar",
+              symbol: "circle",
+              symbolSize: 4,
               data: [
-                { value: sp.work, name: "作业工时时长", lineStyle: { color: CHART_COLORS.primary }, itemStyle: { color: CHART_COLORS.primary }, areaStyle: { color: withAlpha(CHART_COLORS.primary) } },
-                { value: sp.attend, name: "出勤工时", lineStyle: { color: CHART_COLORS.secondary }, itemStyle: { color: CHART_COLORS.secondary }, areaStyle: { color: withAlpha(CHART_COLORS.secondary) } },
+                {
+                  value: sp.work,
+                  name: "作业工时时长",
+                  lineStyle: { color: C.blueLight, width: 2 },
+                  itemStyle: { color: C.blueLight },
+                  areaStyle: { color: withAlpha(C.blueLight, 0.25) },
+                },
+                {
+                  value: sp.attend,
+                  name: "出勤工时",
+                  lineStyle: { color: C.blueDark, width: 2 },
+                  itemStyle: { color: C.blueDark },
+                  areaStyle: { color: withAlpha(C.blueDark, 0.15) },
+                },
               ],
             },
           ],
@@ -543,15 +658,29 @@ export default {
       const yMax = Math.max(250, ...bubble.map((d) => d[1])) + 20;
       chart.setOption(
         baseChartOption({
-          grid: { bottom: "12%" },
-          xAxis: { type: "value", name: "外勤频次", min: 0, max: xMax },
-          yAxis: { type: "value", name: "时长(h)", min: 0, max: yMax },
+          grid: { bottom: "12%", top: "10%" },
+          xAxis: {
+            type: "value",
+            name: "外勤频次",
+            nameTextStyle: { fontSize: 11 },
+            min: 0,
+            max: xMax,
+          },
+          yAxis: {
+            type: "value",
+            name: "时长(h)",
+            nameTextStyle: { fontSize: 11 },
+            min: 0,
+            max: yMax,
+          },
           series: [
             {
               type: "scatter",
-              itemStyle: { color: CHART_COLORS.primary, opacity: 0.75 },
-              symbolSize: (data) => Math.sqrt(data[2]) * 5,
-              data: bubble,
+              symbolSize: (data) => Math.sqrt(data[2]) * 4.5,
+              data: bubble.map((item, i) => ({
+                value: item,
+                itemStyle: { color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], opacity: 0.85 },
+              })),
             },
           ],
         }),
@@ -635,7 +764,7 @@ export default {
 .employee-overview-page {
   min-height: calc(100vh - 100px);
   padding: 12px 16px 20px;
-  background: #f0f2f5;
+  background: #f5f5f5;
   box-sizing: border-box;
 }
 
@@ -699,17 +828,17 @@ export default {
 /* KPI 指标条 */
 .stats-banner {
   display: flex;
-  background: linear-gradient(180deg, #ecf5ff 0%, #f5faff 100%);
-  border: 1px solid #d9ecff;
-  border-radius: 4px;
+  background: #e6f7ff;
+  border: 1px solid #bae7ff;
+  border-radius: 2px;
   overflow: hidden;
 }
 
 .stat-item {
   flex: 1;
   text-align: center;
-  padding: 16px 12px;
-  border-right: 1px solid #d9ecff;
+  padding: 14px 10px;
+  border-right: 1px solid #bae7ff;
   transition: background 0.2s;
 }
 
@@ -722,12 +851,12 @@ export default {
 }
 
 .stat-item.is-link:hover {
-  background: rgba(64, 158, 255, 0.08);
+  background: rgba(24, 144, 255, 0.06);
 }
 
 .stat-item.active {
-  background: rgba(64, 158, 255, 0.12);
-  box-shadow: inset 0 -2px 0 #409eff;
+  background: rgba(24, 144, 255, 0.1);
+  box-shadow: inset 0 -2px 0 #1890ff;
 }
 
 .stat-label {
@@ -744,17 +873,17 @@ export default {
 }
 
 .stat-value.is-primary {
-  color: #409eff;
+  color: #52c41a;
 }
 
 .stat-value.is-success {
-  color: #67c23a;
+  color: #1890ff;
 }
 
 .comparison-btn {
-  color: #409eff;
+  color: #1890ff;
   padding: 0;
-  font-size: 13px;
+  font-size: 12px;
 }
 
 /* 提示条 */
@@ -762,18 +891,17 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 14px;
-  background: #fff;
-  border: 1px solid #e4e7ed;
-  border-left: 3px solid #409eff;
-  border-radius: 4px;
+  padding: 8px 12px;
+  background: #fffbe6;
+  border: 1px solid #ffe58f;
+  border-radius: 2px;
   font-size: 12px;
   color: #606266;
 }
 
 .tip-bar .el-icon-info {
-  color: #409eff;
-  font-size: 16px;
+  color: #faad14;
+  font-size: 14px;
 }
 
 .tip-text {
@@ -782,25 +910,31 @@ export default {
 }
 
 .tip-text strong {
-  color: #409eff;
+  color: #1890ff;
   font-weight: 600;
 }
 
-/* 图表卡片 */
+/* 图表卡片 — 对齐原型白底卡片 */
 .chart-card {
   background: #fff;
-  border: 1px solid #e4e7ed;
-  border-radius: 4px;
-  padding: 14px 16px 16px;
+  border: 1px solid #e8e8e8;
+  border-radius: 2px;
+  padding: 12px 14px 14px;
+  box-shadow: none;
+}
+
+.chart-card--main {
+  margin-bottom: 0;
 }
 
 .chart-card__header {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  margin-bottom: 8px;
-  padding-bottom: 10px;
-  border-bottom: 1px solid #ebeef5;
+  margin-bottom: 4px;
+  padding-bottom: 8px;
+  border-bottom: none;
+  min-height: 32px;
 }
 
 .chart-card__header--wrap {
@@ -810,11 +944,11 @@ export default {
 
 .chart-card__title {
   margin: 0;
-  font-size: 14px;
+  font-size: 13px;
   font-weight: 600;
   color: #303133;
-  padding-left: 10px;
-  border-left: 3px solid #409eff;
+  padding-left: 0;
+  border-left: none;
   line-height: 1.4;
 }
 
@@ -826,28 +960,37 @@ export default {
 }
 
 .chart-box {
-  height: 260px;
+  height: 280px;
   width: 100%;
 }
 
 .chart-box--lg {
-  height: 380px;
+  height: 360px;
 }
 
 .chart-grid {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 12px;
+  gap: 16px;
 }
 
 .leave-table {
-  margin-top: 12px;
+  margin-top: 10px;
+}
+
+.leave-table >>> .el-table {
+  font-size: 12px;
 }
 
 .leave-table >>> .el-table th {
-  background: #f5f7fa;
+  background: #fafafa;
   color: #606266;
   font-weight: 600;
+  padding: 8px 0;
+}
+
+.leave-table >>> .el-table td {
+  padding: 7px 0;
 }
 
 /* 异常预警占位 */
