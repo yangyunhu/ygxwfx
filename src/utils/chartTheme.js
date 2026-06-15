@@ -10,6 +10,10 @@ export const PROTOTYPE_COLORS = {
   green: "#52C41A",
   orange: "#FA8C16",
   yellow: "#FAAD14",
+  /** 主图堆叠柱 — 对齐图二 */
+  mainShould: "#1890FF",
+  mainActual: "#52C41A",
+  mainRate: "#FAAD14",
   text: "#303133",
   textSecondary: "#606266",
   border: "#E8E8E8",

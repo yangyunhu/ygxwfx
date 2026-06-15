@@ -213,7 +213,6 @@ import {
   LEAVE_TYPE_COLORS,
   BUBBLE_COLORS,
   baseChartOption,
-  legendTopCenter,
   legendBottomCenter,
   linePointLabel,
   stackBarLabel,
@@ -329,22 +328,29 @@ export default {
       if (!chart) return;
       const s = this.snapshot;
       const mode = getMainChartSeriesMode(this.activeMetric);
+      const C = PROTOTYPE_COLORS;
       const legend = [];
       const series = [];
-      const C = PROTOTYPE_COLORS;
+
+      const stackMax = s.main.should.reduce(
+        (max, v, i) => Math.max(max, v + (s.main.actual[i] || 0)),
+        0
+      );
+      const leftMax = Math.max(7000, Math.ceil(stackMax / 1000) * 1000);
+      const leftInterval = 1000;
 
       if (mode.showShould) {
         legend.push("应出勤人数");
         series.push({
           name: "应出勤人数",
           type: "bar",
-          barMaxWidth: 16,
-          barGap: "20%",
+          stack: "attendance",
+          barMaxWidth: 28,
           itemStyle: {
-            color: C.bluePale,
-            borderRadius: [2, 2, 0, 0],
+            color: C.mainShould,
             opacity: this.barOpacity("should", mode.emphasis),
           },
+          emphasis: { focus: "series" },
           data: s.main.should,
         });
       }
@@ -353,12 +359,13 @@ export default {
         series.push({
           name: "实际出勤人数",
           type: "bar",
-          barMaxWidth: 16,
+          stack: "attendance",
+          barMaxWidth: 28,
           itemStyle: {
-            color: C.green,
-            borderRadius: [2, 2, 0, 0],
+            color: C.mainActual,
             opacity: this.barOpacity("actual", mode.emphasis),
           },
+          emphasis: { focus: "series" },
           data: s.main.actual,
         });
       }
@@ -368,43 +375,113 @@ export default {
           name: "出勤率",
           type: "line",
           yAxisIndex: 1,
-          smooth: true,
+          smooth: false,
           symbol: "circle",
-          symbolSize: 5,
-          lineStyle: { width: 2, color: C.yellow },
-          itemStyle: { color: C.yellow, borderColor: "#fff", borderWidth: 1 },
+          symbolSize: 6,
+          z: 10,
+          lineStyle: { width: 2, color: C.mainRate },
+          itemStyle: { color: C.mainRate, borderColor: "#fff", borderWidth: 1 },
+          label: {
+            show: s.categories.length <= 16,
+            position: "top",
+            distance: 6,
+            fontSize: 10,
+            color: C.mainRate,
+            formatter: (p) => `${p.value}%`,
+          },
           data: s.main.rate,
         });
       }
 
       chart.setOption(
-        baseChartOption({
-          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
-          legend: legendTopCenter(legend),
-          grid: { top: "16%", bottom: "10%" },
+        {
+          color: [C.mainShould, C.mainActual, C.mainRate],
+          textStyle: { color: "#606266", fontSize: 11 },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            backgroundColor: "rgba(255,255,255,0.98)",
+            borderColor: "#E8E8E8",
+            borderWidth: 1,
+            padding: [10, 14],
+            textStyle: { color: "#303133", fontSize: 12 },
+            extraCssText: "box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-radius: 4px;",
+            formatter(params) {
+              if (!params || !params.length) return "";
+              const title = params[0].axisValue;
+              const rows = params
+                .map((p) => {
+                  const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>`;
+                  let val = p.value;
+                  if (p.seriesName === "出勤率") {
+                    val = `${p.value}%`;
+                  } else if (typeof val === "number") {
+                    val = val.toLocaleString();
+                  }
+                  return `<div style="display:flex;justify-content:space-between;gap:24px;margin-top:4px;">
+                    <span>${dot}${p.seriesName}</span><span style="font-weight:500;">${val}</span></div>`;
+                })
+                .join("");
+              return `<div style="font-weight:600;margin-bottom:4px;">${title}</div>${rows}`;
+            },
+          },
+          legend: {
+            data: legend,
+            top: 8,
+            left: "center",
+            icon: "rect",
+            itemWidth: 12,
+            itemHeight: 8,
+            itemGap: 24,
+            textStyle: { color: "#606266", fontSize: 11 },
+          },
+          grid: {
+            left: "2%",
+            right: "2%",
+            top: "14%",
+            bottom: "8%",
+            containLabel: true,
+          },
           xAxis: {
+            type: "category",
             data: s.categories,
-            axisLabel: { rotate: s.categories.length > 10 ? 35 : 0, fontSize: 10, interval: 0 },
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            axisTick: { show: false },
+            axisLabel: {
+              color: "#606266",
+              fontSize: 11,
+              interval: 0,
+              rotate: s.categories.length > 12 ? 35 : 0,
+            },
           },
           yAxis: [
             {
               type: "value",
               name: "人数",
+              nameTextStyle: { color: "#909399", fontSize: 11, padding: [0, 0, 0, 0] },
               min: 0,
-              max: s.yMax,
-              interval: Math.ceil(s.yMax / 7 / 100) * 100,
+              max: leftMax,
+              interval: leftInterval,
+              axisLine: { show: false },
+              axisTick: { show: false },
+              axisLabel: { color: "#606266", fontSize: 11 },
+              splitLine: { lineStyle: { color: "#F0F0F0", type: "solid" } },
             },
             {
               type: "value",
               name: "百分比",
+              nameTextStyle: { color: "#909399", fontSize: 11 },
               min: 0,
               max: 100,
               interval: 10,
-              axisLabel: { formatter: "{value}%" },
+              axisLine: { show: false },
+              axisTick: { show: false },
+              axisLabel: { color: "#606266", fontSize: 11, formatter: "{value}%" },
+              splitLine: { show: false },
             },
           ],
           series,
-        }),
+        },
         true
       );
     },
@@ -413,44 +490,129 @@ export default {
       const chart = this.charts.punctuality;
       if (!chart) return;
       const s = this.snapshot;
-      const lateEarlyRate = s.punctuality.late.map((v, i) =>
-        Math.round((v + s.punctuality.early[i]) * 10) / 10
-      );
       const C = PROTOTYPE_COLORS;
+
+      const onTimeData = (s.punctuality.onTime || []).map((v) => Number(v) || 0);
+      const lateEarlyData = (s.punctuality.late || []).map((v, i) => {
+        const late = Number(v) || 0;
+        const early = Number((s.punctuality.early || [])[i]) || 0;
+        return Math.round((late + early) * 10) / 10;
+      });
+
+      const connectorLines = s.categories.map((name, i) => [
+        { coord: [name, lateEarlyData[i]] },
+        { coord: [name, onTimeData[i]] },
+      ]);
+
       chart.setOption(
-        baseChartOption({
-          legend: legendBottomCenter(["按时出勤率", "迟到早退率"]),
-          grid: { bottom: "16%", top: "12%" },
-          xAxis: {
-            data: s.categories,
-            axisLabel: { rotate: s.categories.length > 8 ? 35 : 0, fontSize: 10, interval: 0 },
-          },
-          yAxis: { axisLabel: { formatter: "{value}%" }, max: 100, min: 0 },
-          series: [
-            {
-              name: "按时出勤率",
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 5,
-              lineStyle: { width: 2, color: C.blue },
-              itemStyle: { color: C.blue },
-              label: linePointLabel(C.blue),
-              data: s.punctuality.onTime,
+        {
+          textStyle: { color: "#606266", fontSize: 11 },
+          tooltip: {
+            trigger: "axis",
+            backgroundColor: "rgba(255,255,255,0.98)",
+            borderColor: "#E8E8E8",
+            borderWidth: 1,
+            textStyle: { color: "#303133", fontSize: 12 },
+            formatter(params) {
+              if (!params || !params.length) return "";
+              const title = params[0].axisValue;
+              const rows = params
+                .filter((p) => p.seriesType === "line")
+                .map((p) => {
+                  const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>`;
+                  return `<div style="display:flex;justify-content:space-between;gap:20px;margin-top:4px;">
+                    <span>${dot}${p.seriesName}</span><span>${p.value}%</span></div>`;
+                })
+                .join("");
+              return `<div style="font-weight:600;margin-bottom:4px;">${title}</div>${rows}`;
             },
+          },
+          legend: {
+            data: ["按时出勤率", "迟到早退率"],
+            bottom: 0,
+            left: "center",
+            selectedMode: true,
+            icon: "rect",
+            itemWidth: 12,
+            itemHeight: 8,
+            itemGap: 24,
+            textStyle: { color: "#606266", fontSize: 11 },
+          },
+          grid: { left: "2%", right: "3%", top: "12%", bottom: "14%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: s.categories,
+            boundaryGap: false,
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            axisTick: { show: false },
+            axisLabel: {
+              color: "#606266",
+              fontSize: 10,
+              interval: 0,
+              rotate: s.categories.length > 8 ? 35 : 0,
+            },
+          },
+          yAxis: {
+            type: "value",
+            min: 0,
+            max: 100,
+            interval: 20,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: "#909399", fontSize: 10, formatter: "{value}%" },
+            splitLine: { lineStyle: { color: "#F0F0F0", type: "solid" } },
+          },
+          series: [
             {
               name: "迟到早退率",
               type: "line",
+              z: 2,
               smooth: true,
               symbol: "circle",
-              symbolSize: 5,
+              symbolSize: 6,
+              showSymbol: true,
+              connectNulls: true,
               lineStyle: { width: 2, color: C.orange },
-              itemStyle: { color: C.orange },
-              label: linePointLabel(C.orange),
-              data: lateEarlyRate,
+              itemStyle: { color: C.orange, borderColor: "#fff", borderWidth: 1 },
+              label: {
+                show: true,
+                position: "top",
+                distance: 4,
+                fontSize: 10,
+                color: C.orange,
+                formatter: (p) => `${p.value}%`,
+              },
+              data: lateEarlyData,
+            },
+            {
+              name: "按时出勤率",
+              type: "line",
+              z: 3,
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 6,
+              showSymbol: true,
+              connectNulls: true,
+              lineStyle: { width: 2, color: C.blue },
+              itemStyle: { color: C.blue, borderColor: "#fff", borderWidth: 1 },
+              label: {
+                show: true,
+                position: "top",
+                distance: 4,
+                fontSize: 10,
+                color: C.blue,
+                formatter: (p) => `${p.value}%`,
+              },
+              data: onTimeData,
+              markLine: {
+                silent: true,
+                symbol: ["none", "none"],
+                lineStyle: { color: "#D9D9D9", width: 1, type: "solid" },
+                data: connectorLines,
+              },
             },
           ],
-        }),
+        },
         true
       );
     },

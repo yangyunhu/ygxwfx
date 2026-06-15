@@ -35,8 +35,8 @@ const UNIT_BASE = {
   actual: [2800, 2600, 2300, 2400, 1400, 1700, 2100, 1900, 2300, 2600, 2200, 2000, 2700, 2400, 2100, 1900],
   rate: [93, 93, 92, 92, 93, 94, 95, 95, 96, 96, 96, 95, 96, 96, 95, 95],
   onTimeRate: [90, 90, 90, 90, 89, 86, 87, 87, 88, 93, 90, 94, 89, 90, 90, 89],
-  lateRate: [4, 4, 2, 11, 14, 7, 8, 10, 2, 7, 10, 4, 11, 10, 10, 11],
-  earlyRate: [6, 6, 8, 3, 1, 7, 5, 3, 10, 0, 0, 2, 0, 0, 0, 0],
+  lateRate: [2, 2, 1, 6, 8, 4, 4, 5, 1, 4, 5, 2, 6, 5, 5, 5],
+  earlyRate: [2, 2, 2, 3, 1, 3, 2, 2, 5, 0, 0, 1, 0, 0, 0, 0],
   lateCount: [2, 6, 10, 7, 8, 9, 13, 10, 6, 4, 5, 9, 14, 15, 14, 11],
   earlyCount: [1, 0, 0, 3, 0, 0, 0, 4, 0, 3, 1, 3, 0, 0, 0, 0],
   leavePersonal: [3, 2, 1, 1, 3, 2, 4, 2, 2, 3, 1, 2, 1, 1, 1, 1],
@@ -52,6 +52,12 @@ function scaleNum(n, factor) {
 function scaleRate(n, factor) {
   const delta = (factor - 1) * 2;
   return Math.min(100, Math.max(80, Math.round((n + delta) * 10) / 10));
+}
+
+/** 迟到/早退等低占比率 — 不做 80% 下限钳制 */
+function scaleLowRate(n, factor) {
+  const delta = (factor - 1) * 0.3;
+  return Math.min(20, Math.max(0, Math.round((n + delta) * 10) / 10));
 }
 
 function getDateFactor(startDate, endDate) {
@@ -79,8 +85,8 @@ function buildUnitRows(units, factor) {
       actual: scaleNum(UNIT_BASE.actual[idx], factor),
       rate: scaleRate(UNIT_BASE.rate[idx], factor),
       onTimeRate: scaleRate(UNIT_BASE.onTimeRate[idx], factor),
-      lateRate: scaleRate(UNIT_BASE.lateRate[idx], factor),
-      earlyRate: scaleRate(UNIT_BASE.earlyRate[idx], factor),
+      lateRate: scaleLowRate(UNIT_BASE.lateRate[idx], factor),
+      earlyRate: scaleLowRate(UNIT_BASE.earlyRate[idx], factor),
       lateCount: scaleNum(UNIT_BASE.lateCount[idx], factor),
       earlyCount: scaleNum(UNIT_BASE.earlyCount[idx], factor),
       leavePersonal: scaleNum(UNIT_BASE.leavePersonal[idx], factor),
@@ -113,8 +119,8 @@ function buildDepartmentRows(unitFilter, factor) {
         should += rowShould;
         actual += rowActual;
         onTimeSum += scaleRate(88 + (seed % 6), factor);
-        lateSum += scaleRate(3 + (seed % 4), factor);
-        earlySum += scaleRate(2 + (seed % 3), factor);
+        lateSum += scaleLowRate(2 + (seed % 3), factor);
+        earlySum += scaleLowRate(1 + (seed % 2), factor);
         lateCount += scaleNum(1 + (seed % 8), factor);
         earlyCount += scaleNum(seed % 4, factor);
         leavePersonal += scaleNum(1 + (seed % 3), factor);
@@ -160,8 +166,8 @@ function buildDepartmentRows(unitFilter, factor) {
         actual,
         rate: scaleRate(90 + (seed % 8), factor),
         onTimeRate: scaleRate(88 + (seed % 6), factor),
-        lateRate: scaleRate(3 + (seed % 4), factor),
-        earlyRate: scaleRate(2 + (seed % 3), factor),
+        lateRate: scaleLowRate(2 + (seed % 3), factor),
+        earlyRate: scaleLowRate(1 + (seed % 2), factor),
         lateCount: scaleNum(1 + (seed % 8), factor),
         earlyCount: scaleNum(seed % 4, factor),
         leavePersonal: scaleNum(1 + (seed % 3), factor),
