@@ -115,21 +115,18 @@
 
         <!-- 班次设置内容 -->
         <div v-if="subActiveTab === 'shift'" class="sub-tab-content shift-layout">
-          <!-- 左侧组织树 -->
-          <aside class="left-org-tree">
-            <!-- 搜索框 -->
-            <div class="org-search-box">
+          <!-- 左侧组织树（与人员基本信息台账一致） -->
+          <aside class="org-sidebar">
+            <div class="org-search">
               <el-input
-                v-model="orgSearchKeyword"
-                placeholder="请输入"
+                v-model="orgTreeKeyword"
+                placeholder="关键字搜索"
                 prefix-icon="el-icon-search"
                 size="small"
                 clearable
-              ></el-input>
+              />
             </div>
-            
-            <!-- 树容器 -->
-            <div class="tree-scroll-area">
+            <div class="org-tree-wrap">
               <el-tree
                 ref="orgTree"
                 :data="filteredOrgTree"
@@ -140,8 +137,8 @@
                 node-key="id"
                 @node-click="handleOrgClick"
               >
-                <span slot-scope="{ node, data }" class="custom-tree-node">
-                  <i :class="data.icon || 'el-icon-folder'" class="tree-icon"></i>
+                <span slot-scope="{ node, data }" class="tree-node">
+                  <i :class="data.icon || 'el-icon-folder'" />
                   <span class="tree-label">{{ node.label }}</span>
                 </span>
               </el-tree>
@@ -712,6 +709,8 @@
 </template>
 
 <script>
+import { generateOrgTree } from "../utils/orgTree";
+
 export default {
   name: "AttendanceConfigManagement",
   data() {
@@ -730,14 +729,11 @@ export default {
         { label: '/', value: '/' }
       ],
       
-      // 组织树相关
-      orgSearchKeyword: '',
-      treeProps: {
-        label: 'label',
-        children: 'children'
-      },
-      orgTreeData: [],
-      selectedOrg: '',
+      // 组织树相关（与人员基本信息台账共用 orgTree 数据源）
+      orgTreeKeyword: "",
+      treeProps: { label: "name", children: "children" },
+      orgTree: [],
+      selectedOrg: "",
       
       // 班次设置相关
       shiftQueryParams: {
@@ -1019,34 +1015,26 @@ export default {
       selectedRows: []
     };
   },
-  created() {
-    this.loadOrgTree();
+  mounted() {
+    this.orgTree = generateOrgTree();
   },
   computed: {
-    // 递归过滤树节点
     filteredOrgTree() {
-      const kw = (this.orgSearchKeyword || '').trim();
-      if (!kw) return this.orgTreeData;
-      
+      const kw = (this.orgTreeKeyword || "").trim();
+      if (!kw) return this.orgTree;
       const filter = (nodes) =>
         nodes
           .map((n) => {
             const children = n.children ? filter(n.children) : [];
-            const match = (n.label || '').includes(kw);
-            
-            // 如果当前节点匹配或有子节点匹配，则保留
+            const match = (n.name || "").includes(kw);
             if (match || children.length) {
-              return { 
-                ...n, 
-                children: children.length ? children : n.children 
-              };
+              return { ...n, children: children.length ? children : n.children };
             }
             return null;
           })
           .filter(Boolean);
-      
-      return filter(this.orgTreeData);
-    }
+      return filter(this.orgTree);
+    },
   },
   methods: {
     // 标签页切换
@@ -1360,64 +1348,21 @@ export default {
     },
     
     // ========== 组织树相关方法 ==========
-        
-    // 加载组织架构树（模拟数据）
-    loadOrgTree() {
-      this.orgTreeData = [
-        {
-          id: 1,
-          label: '云南电网有限责任公司',
-          icon: 'el-icon-s-grid',
-          children: [
-            {
-              id: 2,
-              label: '昆明供电局',
-              icon: 'el-icon-office-building',
-              children: [
-                { id: 21, label: '安监部', icon: 'el-icon-folder' },
-                { id: 22, label: '财务部', icon: 'el-icon-folder' }
-              ]
-            },
-            {
-              id: 3,
-              label: '曲靖供电局',
-              icon: 'el-icon-office-building',
-              children: [
-                { id: 31, label: '安监部', icon: 'el-icon-folder' },
-                { id: 32, label: '财务部', icon: 'el-icon-folder' }
-              ]
-            },
-            {
-              id: 4,
-              label: '玉溪供电局',
-              icon: 'el-icon-office-building',
-              children: [
-                { id: 41, label: '安监部', icon: 'el-icon-folder' },
-                { id: 42, label: '财务部', icon: 'el-icon-folder' }
-              ]
-            }
-          ]
-        }
-      ];
-    },
 
-    // 点击组织节点
     handleOrgClick(data) {
-      // 根节点不设置筛选条件
-      this.selectedOrg = data.id === 1 ? '' : data.label;
-      
-      console.log('选中的组织:', this.selectedOrg);
-      
-      // 根据选中的组织重新加载右侧数据
+      this.selectedOrg = data.id === 1 ? "" : data.name;
+      this.shiftCurrentPage = 1;
       this.loadShiftData();
     },
-    
-    // 重置组织树选择
+
     resetOrgSelection() {
-      this.selectedOrg = '';
-      if (this.$refs.orgTree) {
-        this.$refs.orgTree.setCurrentKey(null);
-      }
+      this.selectedOrg = "";
+      this.orgTreeKeyword = "";
+      this.$nextTick(() => {
+        if (this.$refs.orgTree) {
+          this.$refs.orgTree.setCurrentKey(null);
+        }
+      });
     },
     
     // ========== 班次设置相关方法 ==========
@@ -1453,10 +1398,11 @@ export default {
     
     // 班次重置
     handleShiftReset() {
-      this.shiftQueryParams.groupName = '';
+      this.shiftQueryParams.groupName = "";
       this.resetOrgSelection();
+      this.shiftCurrentPage = 1;
       this.loadShiftData();
-      this.$message.info('已重置查询条件');
+      this.$message.info("已重置查询条件");
     },
     
     // 班次保存
@@ -2050,37 +1996,57 @@ export default {
 /* 班次设置布局 */
 .shift-layout {
   display: flex;
-  flex-direction: row; /* 明确设置为横向布局 */
-  gap: 16px;
+  flex-direction: row;
+  align-items: flex-start;
+  gap: 12px;
   overflow: hidden;
   height: 100%;
+  min-height: 0;
 }
 
-/* 左侧组织树面板 */
-.left-org-tree {
+/* 左侧组织树（与人员基本信息台账 org-sidebar 一致） */
+.shift-layout .org-sidebar {
   width: 280px;
-  min-width: 280px;
   flex-shrink: 0;
-  background-color: #fff;
+  background: #fff;
   border: 1px solid #e4e7ed;
   border-radius: 4px;
   display: flex;
   flex-direction: column;
   overflow: hidden;
+  align-self: stretch;
+  max-height: calc(100vh - 260px);
 }
 
-/* 搜索框区域 */
-.org-search-box {
-  padding: 12px;
+.shift-layout .org-search {
+  padding: 10px 12px;
   border-bottom: 1px solid #ebeef5;
+  flex-shrink: 0;
 }
 
-/* 树容器 - 允许内部滚动 */
-.tree-scroll-area {
+.shift-layout .org-tree-wrap {
   flex: 1;
-  overflow-y: auto;
-  padding: 8px 4px;
   min-height: 0;
+  overflow: auto;
+  padding: 8px 4px;
+}
+
+.shift-layout .tree-node {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
+  overflow: hidden;
+}
+
+.shift-layout .tree-node i {
+  margin-right: 6px;
+  color: #909399;
+}
+
+.shift-layout .tree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 右侧内容区 */
