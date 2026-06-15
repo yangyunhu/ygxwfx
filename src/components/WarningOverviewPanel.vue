@@ -39,9 +39,25 @@
 
     <!-- 地图 + TOP5 -->
     <div class="warning-top-grid">
-      <section class="chart-card chart-card--map">
+      <section class="chart-card chart-card--map" :class="{ 'is-county': mapDrill.level === 'county' }">
         <div class="chart-card__header chart-card__header--map">
-          <h3 class="chart-card__title">各单位出勤数据横向对比</h3>
+          <div class="map-header-main">
+            <h3 class="chart-card__title">各单位出勤数据横向对比</h3>
+            <div class="map-breadcrumb">
+              <span
+                class="map-crumb"
+                :class="{ 'is-link': mapDrill.level === 'county' }"
+                @click="mapDrill.level === 'county' && drillToProvince()"
+              >
+                云南省
+              </span>
+              <template v-if="mapDrill.level === 'county'">
+                <i class="el-icon-arrow-right map-crumb-sep" />
+                <span class="map-crumb is-active">{{ mapDrill.unitName }}</span>
+              </template>
+            </div>
+            <span v-if="mapDrill.level === 'province'" class="map-drill-tip">点击地市下钻查看县区</span>
+          </div>
           <div class="map-legend">
             <span class="map-legend__label">旷工人次</span>
             <div v-for="item in mapLevels" :key="item.label" class="map-legend__item">
@@ -50,7 +66,7 @@
             </div>
           </div>
         </div>
-        <div ref="mapChart" class="map-chart" />
+        <div ref="mapChart" v-loading="mapLoading" class="map-chart" />
       </section>
 
       <div class="warning-top5-col">
@@ -157,6 +173,12 @@ import {
   WARNING_DETAIL_EXPORT_HEADERS,
 } from "../utils/warningOverviewData";
 import { ABSENTEE_MAP_LEVELS, registerYunnanMap } from "../utils/yunnanGeo";
+import {
+  resolveUnitKeyByRegionName,
+  loadCountyMap,
+  buildCountyMapData,
+  getUnitMetaByKey,
+} from "../utils/yunnanDrilldown";
 import { downloadTableWithLog } from "../utils/exportLogger";
 
 export default {
@@ -174,6 +196,15 @@ export default {
       changeMode: "unit",
       warningSnapshot: buildWarningSnapshot(DEFAULT_WARNING_QUERY, "unit"),
       mapLevels: ABSENTEE_MAP_LEVELS,
+      mapDrill: {
+        level: "province",
+        unitKey: null,
+        unitName: "",
+        mapName: "yunnan",
+        mapData: [],
+      },
+      mapLoading: false,
+      mapClickBound: false,
       charts: {},
       detailPage: 1,
       detailPageSize: 10,
@@ -246,6 +277,10 @@ export default {
           this.charts[key] = echarts.init(el);
         }
       });
+      if (this.charts.map && !this.mapClickBound) {
+        this.charts.map.on("click", (params) => this.handleMapClick(params));
+        this.mapClickBound = true;
+      }
       this.inited = true;
       this.refreshCharts();
       this.bindMapResizeObserver();
@@ -265,23 +300,33 @@ export default {
       const w = el ? el.clientWidth : 600;
       const h = el ? el.clientHeight : 480;
       const ratio = w / Math.max(h, 1);
-      let sidePad = "7%";
-      if (w < 360) sidePad = "14%";
-      else if (w < 480) sidePad = "11%";
-      else if (w < 620) sidePad = "9%";
+      const isCounty = this.mapDrill.level === "county";
+      let sidePad = isCounty ? "6%" : "7%";
+      if (w < 360) sidePad = isCounty ? "10%" : "14%";
+      else if (w < 480) sidePad = isCounty ? "8%" : "11%";
+      else if (w < 620) sidePad = isCounty ? "7%" : "9%";
       return {
         left: sidePad,
         right: sidePad,
         top: ratio > 1.15 ? "10%" : "8%",
         bottom: ratio > 1.15 ? "8%" : "6%",
-        aspectScale: ratio > 1.25 ? 0.78 : ratio > 1.05 ? 0.84 : 0.88,
+        aspectScale: isCounty ? 0.92 : ratio > 1.25 ? 0.78 : ratio > 1.05 ? 0.84 : 0.88,
       };
+    },
+
+    getCurrentMapData() {
+      if (this.mapDrill.level === "county" && this.mapDrill.mapData.length) {
+        return this.mapDrill.mapData;
+      }
+      return this.warningSnapshot.mapData;
     },
 
     handleMapContainerResize() {
       if (!this.charts.map) return;
       const geoLayout = this.getMapGeoLayout();
-      this.charts.map.setOption({ geo: geoLayout });
+      this.charts.map.setOption({
+        geo: { ...geoLayout, map: this.mapDrill.mapName },
+      });
       this.resizeCharts();
     },
 
@@ -291,6 +336,10 @@ export default {
 
     refreshCharts() {
       this.rebuildSnapshot();
+      if (this.mapDrill.level === "province") {
+        this.mapDrill.mapName = "yunnan";
+        this.mapDrill.mapData = [];
+      }
       this.renderMapChart();
       this.renderTopChart("lateTop", this.warningSnapshot.lateTop5, "#FA8C16");
       this.renderTopChart("earlyTop", this.warningSnapshot.earlyTop5, "#1890FF");
@@ -305,8 +354,10 @@ export default {
     renderMapChart() {
       const chart = this.charts.map;
       if (!chart) return;
-      const data = this.warningSnapshot.mapData;
+      const data = this.getCurrentMapData();
+      const mapName = this.mapDrill.mapName;
       const geoLayout = this.getMapGeoLayout();
+      const isCounty = this.mapDrill.level === "county";
       chart.setOption(
         {
           tooltip: {
@@ -316,8 +367,8 @@ export default {
             borderWidth: 1,
             textStyle: { color: "#303133", fontSize: 12 },
             formatter: (p) => {
-              const unit = p.data && p.data.fullName ? p.data.fullName : `${p.name}供电局`;
-              return `<div style="font-weight:600;">${unit}</div><div style="margin-top:4px;">旷工人次：<strong>${p.value || 0}</strong></div>`;
+              const label = (p.data && p.data.fullName) || p.name;
+              return `<div style="font-weight:600;">${label}</div><div style="margin-top:4px;">旷工人次：<strong>${p.value || 0}</strong></div>`;
             },
           },
           visualMap: {
@@ -331,13 +382,13 @@ export default {
             ],
           },
           geo: {
-            map: "yunnan",
+            map: mapName,
             roam: false,
             ...geoLayout,
             label: {
               show: true,
               color: "#303133",
-              fontSize: 10,
+              fontSize: isCounty ? 9 : 10,
             },
             emphasis: {
               label: { show: true, color: "#303133", fontWeight: 600 },
@@ -358,8 +409,9 @@ export default {
           series: [
             {
               type: "map",
-              map: "yunnan",
+              map: mapName,
               geoIndex: 0,
+              selectedMode: false,
               data: data.map((d) => ({
                 name: d.name,
                 value: d.value,
@@ -370,6 +422,62 @@ export default {
         },
         true
       );
+    },
+
+    async handleMapClick(params) {
+      if (this.mapDrill.level !== "province") return;
+      const regionName = params.name;
+      const unitKey = resolveUnitKeyByRegionName(regionName);
+      if (!unitKey) {
+        this.$message.warning("暂不支持该地区下钻");
+        return;
+      }
+      await this.drillToCounty(unitKey, regionName);
+    },
+
+    async drillToCounty(unitKey, regionName) {
+      const meta = getUnitMetaByKey(unitKey);
+      if (!meta) return;
+
+      const parentRow = this.warningSnapshot.mapData.find((d) => d.name === meta.shortName);
+      const parentValue = parentRow ? parentRow.value : 20;
+
+      this.mapLoading = true;
+      try {
+        const countyMap = await loadCountyMap(echarts, unitKey);
+        const countyData = buildCountyMapData(
+          countyMap.counties,
+          parentValue,
+          this.warningSnapshot.factor
+        );
+        this.mapDrill = {
+          level: "county",
+          unitKey,
+          unitName: meta.shortName,
+          mapName: countyMap.mapName,
+          mapData: countyData,
+        };
+        this.renderMapChart();
+        this.$nextTick(() => this.handleMapContainerResize());
+        this.$message.success(`已进入${meta.shortName}县区视图`);
+      } catch (err) {
+        this.$message.error("县级地图加载失败，请稍后重试");
+      } finally {
+        this.mapLoading = false;
+      }
+    },
+
+    drillToProvince() {
+      if (this.mapDrill.level === "province") return;
+      this.mapDrill = {
+        level: "province",
+        unitKey: null,
+        unitName: "",
+        mapName: "yunnan",
+        mapData: [],
+      };
+      this.renderMapChart();
+      this.$nextTick(() => this.handleMapContainerResize());
     },
 
     renderTopChart(key, list, color) {
@@ -474,6 +582,7 @@ export default {
         }
       }
       this.detailPage = 1;
+      this.drillToProvince();
       this.refreshCharts();
       this.$message.success("查询成功，异常预警数据已刷新");
     },
@@ -482,6 +591,7 @@ export default {
       this.warningQuery = { ...DEFAULT_WARNING_QUERY };
       this.changeMode = "unit";
       this.detailPage = 1;
+      this.drillToProvince();
       this.refreshCharts();
       this.$message.info("已重置查询条件");
     },
@@ -610,6 +720,54 @@ export default {
   margin-bottom: 4px;
   padding-bottom: 10px;
   border-bottom: 1px solid #f0f0f0;
+}
+
+.map-header-main {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  min-width: 0;
+}
+
+.map-breadcrumb {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 4px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.map-crumb-sep {
+  font-size: 10px;
+  color: #c0c4cc;
+}
+
+.map-crumb.is-link {
+  color: #1890ff;
+  cursor: pointer;
+}
+
+.map-crumb.is-link:hover {
+  text-decoration: underline;
+}
+
+.map-crumb.is-active {
+  color: #303133;
+  font-weight: 600;
+}
+
+.map-drill-tip {
+  font-size: 11px;
+  color: #909399;
+}
+
+.map-chart {
+  cursor: default;
+}
+
+.chart-card--map:not(.is-county) .map-chart {
+  cursor: pointer;
 }
 
 .warning-top5-col {
