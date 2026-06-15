@@ -54,10 +54,44 @@ export const DEFAULT_UNIT_DEPT_QUERY = {
 };
 
 export const DEFAULT_DISTRIBUTION_QUERY = {
-  unit: "kunming",
-  startDate: "2025-01-01",
-  endDate: "2025-12-31",
+  unit: "all",
+  specialty: "all",
 };
+
+/** 工时与专业统计 — 专业列表 */
+export const STATS_SPECIALTY_LIST = [
+  "输电专业",
+  "配电专业",
+  "变电专业",
+  "营销专业",
+  "信息专业",
+  "安监专业",
+  "发电专业",
+  "营配专业",
+  "调度专业",
+  "基建专业",
+  "物资专业",
+  "财务专业",
+  "人资专业",
+  "综合专业",
+  "检修专业",
+  "运维专业",
+  "试验专业",
+  "保护专业",
+  "通信专业",
+  "自动化专业",
+  "计量专业",
+];
+
+export const DIST_STATS_UNIT_OPTIONS = [
+  { label: "全部单位", value: "all" },
+  ...UNIT_OPTIONS.filter((u) => u.value !== "all"),
+];
+
+export const DIST_STATS_SPECIALTY_OPTIONS = [
+  { label: "全部专业", value: "all" },
+  ...STATS_SPECIALTY_LIST.map((name) => ({ label: name, value: name })),
+];
 
 function hashSeed(str) {
   let h = 0;
@@ -125,46 +159,61 @@ export function buildSpecialtyHourDiff(query = {}) {
   };
 }
 
-/** 工时与专业统计分布 — 堆叠柱 + 占比 */
-export function buildSpecialtyDistribution(query = {}) {
-  const { unit = "kunming", startDate, endDate } = query;
-  const factor = dateFactor(startDate, endDate);
-  const unitIdx = Math.max(0, UNIT_OPTIONS.findIndex((u) => u.value === unit));
-
-  const attendance = [];
-  const businessTrip = [];
-  const training = [];
-  const overtime = [];
-
-  SPECIALTY_LABELS.forEach((name, i) => {
-    const seed = hashSeed(`${unit}-${name}-${startDate}`);
-    attendance.push(Math.round((120 + (seed % 60) + unitIdx * 3 + i * 4) * factor));
-    businessTrip.push(Math.round((35 + (seed % 25) + i * 2) * factor));
-    training.push(Math.round((28 + (seed % 20) + unitIdx) * factor));
-    overtime.push(Math.round((18 + (seed % 22) + i * 1.5) * factor));
-  });
-
-  const pieData = SPECIALTY_LABELS.map((name, i) => {
-    const total = attendance[i] + businessTrip[i] + training[i] + overtime[i];
-    return { name, value: total };
-  });
+/** 工时与专业统计分布 — 汇总行 */
+function buildStatsRow(id, unitKey, specialty, seed) {
+  const totalHours = Math.round(18 + (seed % 285) + (hashSeed(unitKey) % 35));
+  const avgHours = Math.round((1 + (seed % 5) + ((seed >> 3) % 10) / 10) * 10) / 10;
+  const medianHours = Math.round((avgHours + ((seed % 3) - 1) * 0.2) * 10) / 10;
+  const stdDev = Math.round((0.4 + (seed % 9) / 10) * 10) / 10;
+  const dispersion = Math.round((1 + (seed % 5) + (seed % 3) / 10) * 10) / 10;
 
   return {
-    categories: SPECIALTY_LABELS,
-    attendance,
-    businessTrip,
-    training,
-    overtime,
-    pieData,
+    id,
+    unitKey,
+    unit: unitLabel(unitKey),
+    specialty,
+    totalHours,
+    avgHours,
+    medianHours,
+    stdDev,
+    dispersion,
   };
 }
 
-export function specialtyLabel(value) {
-  const opt = SPECIALTY_OPTIONS.find((o) => o.value === value);
-  return opt ? opt.label : value;
+/** 生成 168 条模拟统计记录 */
+export function generateSpecialtyStatsRows() {
+  const units = UNIT_OPTIONS.filter((u) => u.value !== "all");
+  const rows = [];
+  for (let i = 0; i < 168; i += 1) {
+    const unit = units[i % units.length];
+    const specialty = STATS_SPECIALTY_LIST[i % STATS_SPECIALTY_LIST.length];
+    const seed = hashSeed(`${unit.value}-${specialty}-${i}`);
+    rows.push(buildStatsRow(i + 1, unit.value, specialty, seed));
+  }
+  return rows;
+}
+
+/** 按单位、专业筛选 */
+export function filterSpecialtyStatsRows(rows, query = {}) {
+  const { unit = "all", specialty = "all" } = query;
+  let result = rows;
+  if (unit && unit !== "all") {
+    result = result.filter((row) => row.unitKey === unit);
+  }
+  if (specialty && specialty !== "all") {
+    result = result.filter((row) => row.specialty === specialty);
+  }
+  return result;
 }
 
 export function unitLabel(value) {
+  if (value === "all") return "全部单位";
   const opt = UNIT_OPTIONS.find((o) => o.value === value);
+  return opt ? opt.label : value;
+}
+
+export function specialtyLabel(value) {
+  if (value === "all") return "全部专业";
+  const opt = SPECIALTY_OPTIONS.find((o) => o.value === value);
   return opt ? opt.label : value;
 }

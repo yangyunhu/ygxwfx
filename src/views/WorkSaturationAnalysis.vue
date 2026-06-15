@@ -16,12 +16,8 @@
           <WorkHourAnalysisPanel :panel-active="activeTab === 'hourAnalysis'" />
         </div>
 
-        <div v-show="activeTab === 'saturation'" class="tab-panel">
-          <div class="empty-state">
-            <i class="el-icon-pie-chart empty-state__icon-inline" />
-            <h3 class="empty-state__title">工作饱和度分析</h3>
-            <p class="empty-state__text">展示员工与部门的工作饱和度指标、对比及预警，功能开发中。</p>
-          </div>
+        <div v-show="activeTab === 'saturation'" class="tab-panel tab-panel--full">
+          <WorkSaturationPanel :panel-active="activeTab === 'saturation'" />
         </div>
       </div>
     </div>
@@ -31,10 +27,11 @@
 <script>
 import WorkDurationStatsPanel from "../components/WorkDurationStatsPanel.vue";
 import WorkHourAnalysisPanel from "../components/WorkHourAnalysisPanel.vue";
+import WorkSaturationPanel from "../components/WorkSaturationPanel.vue";
 
 export default {
   name: "WorkSaturationAnalysis",
-  components: { WorkDurationStatsPanel, WorkHourAnalysisPanel },
+  components: { WorkDurationStatsPanel, WorkHourAnalysisPanel, WorkSaturationPanel },
   data() {
     return {
       activeTab: "duration",
