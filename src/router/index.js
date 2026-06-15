@@ -45,6 +45,7 @@ import WorkSaturationAnalysis from '../views/WorkSaturationAnalysis.vue';
 import ModelManagement from '../views/ModelManagement.vue';
 import CreditEvaluationStandard from '../views/CreditEvaluationStandard.vue';
 import CreditRatingData from '../views/CreditRatingData.vue';
+import CreditProfileDisplay from '../views/CreditProfileDisplay.vue';
 
 Vue.use(Router);
 
@@ -113,7 +114,7 @@ export default new Router({
     {
       path: '/employee-credit-profile/profile-display',
       name: 'CreditProfileDisplay',
-      component: ModulePlaceholder,
+      component: CreditProfileDisplay,
       meta: { title: '信用画像展示', description: '信用画像展示页面，可视化展示员工信用画像与指标汇总。' }
     },
     {
