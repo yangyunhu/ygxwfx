@@ -43,6 +43,7 @@ import AttendanceStatistics from '../views/AttendanceStatistics.vue';
 import EmployeeBehaviorOverview from '../views/EmployeeBehaviorOverview.vue';
 import WorkSaturationAnalysis from '../views/WorkSaturationAnalysis.vue';
 import ModelManagement from '../views/ModelManagement.vue';
+import CreditEvaluationStandard from '../views/CreditEvaluationStandard.vue';
 
 Vue.use(Router);
 
@@ -99,7 +100,7 @@ export default new Router({
     {
       path: '/employee-credit-profile/evaluation-standard',
       name: 'CreditEvaluationStandard',
-      component: ModulePlaceholder,
+      component: CreditEvaluationStandard,
       meta: { title: '信用评价标准库', description: '信用评价标准库页面，用于管理和维护员工信用评价的标准体系。' }
     },
     {
