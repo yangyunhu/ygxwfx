@@ -297,7 +297,7 @@
           </el-form-item>
         </el-form>
         <p class="chart-subtitle">业务用时长与员工绩效结果</p>
-        <div ref="radarChart" class="chart-box" />
+        <div ref="radarChart" class="chart-box chart-box--lg" />
       </section>
     </div>
 
@@ -795,18 +795,28 @@ export default {
       chart.setOption(
         baseChartOption({
           tooltip: {},
-          legend: legendTopCenter(["本期", "上期"]),
+          legend: { ...legendTopCenter(["本期", "上期"]), top: 28 },
           radar: {
             indicator: dims.map((name) => ({ name, max: 100 })),
-            center: ["50%", "55%"],
-            radius: "62%",
-            axisName: { fontSize: 11, color: "#606266" },
+            center: ["50%", "58%"],
+            radius: "78%",
+            splitNumber: 4,
+            axisName: {
+              fontSize: 12,
+              color: "#606266",
+              lineHeight: 16,
+            },
+            splitArea: {
+              areaStyle: { color: ["rgba(24,144,255,0.02)", "rgba(24,144,255,0.06)"] },
+            },
           },
           series: [{
             type: "radar",
+            symbolSize: 8,
+            lineStyle: { width: 2.5 },
             data: [
-              { name: "本期", value: seriesA, areaStyle: { color: "rgba(24,144,255,0.2)" }, lineStyle: { color: "#1890FF" }, itemStyle: { color: "#1890FF" } },
-              { name: "上期", value: seriesB, areaStyle: { color: "rgba(19,194,194,0.15)" }, lineStyle: { color: "#13C2C2" }, itemStyle: { color: "#13C2C2" } },
+              { name: "本期", value: seriesA, areaStyle: { color: "rgba(24,144,255,0.25)" }, lineStyle: { color: "#1890FF" }, itemStyle: { color: "#1890FF" } },
+              { name: "上期", value: seriesB, areaStyle: { color: "rgba(19,194,194,0.2)" }, lineStyle: { color: "#13C2C2" }, itemStyle: { color: "#13C2C2" } },
             ],
           }],
         }),
@@ -924,6 +934,11 @@ export default {
 }
 
 .chart-box--sm { height: 260px; }
+
+.chart-box--lg {
+  height: 420px;
+  min-height: 380px;
+}
 
 @media (max-width: 768px) {
   .section-form__actions { margin-left: 0; width: 100%; }
