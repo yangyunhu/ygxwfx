@@ -2,35 +2,37 @@
   <div class="attendance-statistics-container">
     <!-- 主内容区域 -->
     <div class="main-content">
-      <!-- 左侧组织树 -->
-      <div class="left-panel">
-        <el-input
-          v-model="treeSearchKeyword"
-          placeholder="请输入"
-          prefix-icon="el-icon-search"
-          size="small"
-          clearable
-          style="margin-bottom: 16px;"
-        ></el-input>
-        
-        <el-tree
-          ref="orgTree"
-          :data="filteredOrgTree"
-          :props="treeProps"
-          show-checkbox
-          node-key="id"
-          default-expand-all
-          highlight-current
-          :expand-on-click-node="false"
-          @check-change="handleTreeCheckChange"
-          @node-click="handleOrgClick"
-        >
-          <span slot-scope="{ node, data }" class="custom-tree-node">
-            <i :class="getTreeIcon(data)" style="margin-right: 4px; color: #409EFF;"></i>
-            <span>{{ node.label }}</span>
-          </span>
-        </el-tree>
-      </div>
+      <!-- 左侧组织树（与人员基本信息台账一致） -->
+      <aside class="org-sidebar">
+        <div class="org-search">
+          <el-input
+            v-model="orgTreeKeyword"
+            placeholder="关键字搜索"
+            prefix-icon="el-icon-search"
+            size="small"
+            clearable
+          />
+        </div>
+        <div class="org-tree-wrap">
+          <el-tree
+            ref="orgTree"
+            :data="filteredOrgTree"
+            :props="treeProps"
+            show-checkbox
+            node-key="id"
+            default-expand-all
+            highlight-current
+            :expand-on-click-node="false"
+            @check-change="handleTreeCheckChange"
+            @node-click="handleOrgClick"
+          >
+            <span slot-scope="{ node, data }" class="tree-node">
+              <i :class="data.icon || 'el-icon-folder'" />
+              <span class="tree-label">{{ node.label }}</span>
+            </span>
+          </el-tree>
+        </div>
+      </aside>
 
       <!-- 右侧内容区 -->
       <div class="right-panel">
@@ -341,18 +343,17 @@
 </template>
 
 <script>
+import { generateOrgTree } from "../utils/orgTree";
+
 export default {
   name: "AttendanceStatistics",
   data() {
     return {
-      // 组织树相关
-      treeSearchKeyword: '',
-      treeProps: {
-        label: 'label',
-        children: 'children'
-      },
-      orgTreeData: [],
-      selectedOrg: '',  // 当前选中的组织节点
+      // 组织树相关（与人员基本信息台账共用 orgTree 数据源）
+      orgTreeKeyword: "",
+      treeProps: { label: "name", children: "children" },
+      orgTree: [],
+      selectedOrg: "",
       
       // 查询参数
       queryParams: {
@@ -468,108 +469,49 @@ export default {
     };
   },
   
-  created() {
-    this.loadOrgTree();
+  mounted() {
+    this.orgTree = generateOrgTree();
   },
-  
+
   computed: {
-    // 过滤后的组织树
     filteredOrgTree() {
-      if (!this.treeSearchKeyword) {
-        return this.orgTreeData;
-      }
-      return this.filterTree(this.orgTreeData, this.treeSearchKeyword);
-    }
+      const kw = (this.orgTreeKeyword || "").trim();
+      if (!kw) return this.orgTree;
+      const filter = (nodes) =>
+        nodes
+          .map((n) => {
+            const children = n.children ? filter(n.children) : [];
+            const match = (n.name || "").includes(kw);
+            if (match || children.length) {
+              return { ...n, children: children.length ? children : n.children };
+            }
+            return null;
+          })
+          .filter(Boolean);
+      return filter(this.orgTree);
+    },
   },
   
   methods: {
-    // 加载组织架构树
-    loadOrgTree() {
-      this.orgTreeData = [
-        {
-          id: 1,
-          label: '云南电网有限责任公司',
-          icon: 'el-icon-s-grid',
-          children: [
-            {
-              id: 2,
-              label: '昆明供电局',
-              icon: 'el-icon-office-building',
-              children: [
-                { id: 21, label: '安监部', icon: 'el-icon-folder' },
-                { id: 22, label: '财务部', icon: 'el-icon-folder' }
-              ]
-            },
-            {
-              id: 3,
-              label: '曲靖供电局',
-              icon: 'el-icon-office-building',
-              children: [
-                { id: 31, label: '安监部', icon: 'el-icon-folder' },
-                { id: 32, label: '财务部', icon: 'el-icon-folder' }
-              ]
-            },
-            {
-              id: 4,
-              label: '玉溪供电局',
-              icon: 'el-icon-office-building',
-              children: [
-                { id: 41, label: '安监部', icon: 'el-icon-folder' },
-                { id: 42, label: '财务部', icon: 'el-icon-folder' }
-              ]
-            }
-          ]
-        }
-      ];
-    },
-    
-    // 获取树节点图标
-    getTreeIcon(data) {
-      return data.icon || 'el-icon-folder';
-    },
-    
-    // 过滤树
-    filterTree(tree, keyword) {
-      return tree.filter(node => {
-        const matchLabel = node.label.toLowerCase().includes(keyword.toLowerCase());
-        const matchChildren = node.children && node.children.length > 0 
-          ? this.filterTree(node.children, keyword).length > 0 
-          : false;
-        
-        if (matchLabel || matchChildren) {
-          if (node.children) {
-            node.children = this.filterTree(node.children, keyword);
-          }
-          return true;
-        }
-        return false;
-      });
-    },
-    
-    // 树节点选中变化
     handleTreeCheckChange(data, checked, indeterminate) {
-      console.log('树节点选中变化:', data, checked);
-      // 这里可以根据需要处理选中逻辑
+      console.log("树节点选中变化:", data, checked, indeterminate);
     },
-    
-    // 点击组织节点
+
     handleOrgClick(data) {
-      // 根节点不设置筛选条件
-      this.selectedOrg = data.id === 1 ? '' : data.label;
-      
-      console.log('选中的组织:', this.selectedOrg);
-      
-      // 根据选中的组织重新加载右侧数据
+      this.selectedOrg = data.id === 1 ? "" : data.name;
       this.currentPage = 1;
       this.loadData();
     },
-    
-    // 重置组织树选择
+
     resetOrgSelection() {
-      this.selectedOrg = '';
-      if (this.$refs.orgTree) {
-        this.$refs.orgTree.setCurrentKey(null);
-      }
+      this.selectedOrg = "";
+      this.orgTreeKeyword = "";
+      this.$nextTick(() => {
+        if (this.$refs.orgTree) {
+          this.$refs.orgTree.setCurrentKey(null);
+          this.$refs.orgTree.setCheckedKeys([]);
+        }
+      });
     },
     
     // 查询
@@ -584,17 +526,17 @@ export default {
     
     // 重置
     handleReset() {
-      console.log('=== 重置 ===');
+      console.log("=== 重置 ===");
       this.queryParams = {
-        startDate: '',
-        endDate: '',
-        includeWeekend: 'include'
+        startDate: "",
+        endDate: "",
+        includeWeekend: "include",
       };
-      this.resetOrgSelection();  // 清除组织树选中状态
-      this.$refs.orgTree.setCheckedKeys([]);  // 清除勾选
+      this.resetOrgSelection();
       this.tableData = [];
       this.total = 0;
-      this.$message.info('已重置查询条件');
+      this.currentPage = 1;
+      this.$message.info("已重置查询条件");
     },
     
     // 导出
@@ -894,23 +836,55 @@ export default {
 .main-content {
   display: flex;
   flex: 1;
-  padding: 16px;
-  gap: 16px;
+  padding: 12px 16px;
+  gap: 12px;
+  overflow: hidden;
+  align-items: flex-start;
+}
+
+/* 左侧组织树（与人员基本信息台账 org-sidebar 一致） */
+.org-sidebar {
+  width: 280px;
+  flex-shrink: 0;
+  background: #fff;
+  border: 1px solid #e4e7ed;
+  border-radius: 4px;
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  align-self: stretch;
+  max-height: calc(100vh - 84px);
+}
+
+.org-search {
+  padding: 10px 12px;
+  border-bottom: 1px solid #ebeef5;
+  flex-shrink: 0;
+}
+
+.org-tree-wrap {
+  flex: 1;
+  min-height: 0;
+  overflow: auto;
+  padding: 8px 4px;
+}
+
+.tree-node {
+  display: flex;
+  align-items: center;
+  font-size: 13px;
   overflow: hidden;
 }
 
-/* 左侧面板 */
-.left-panel {
-  width: 280px;
-  background: #fff;
-  padding: 16px;
-  border-radius: 4px;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
-  overflow-y: auto;
+.tree-node i {
+  margin-right: 6px;
+  color: #909399;
 }
 
-.custom-tree-node {
-  font-size: 14px;
+.tree-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 右侧面板 */

@@ -46,7 +46,7 @@
         </el-menu-item>
         <el-menu-item index="/behavior-visual-dashboard/employee-overview">
           <i class="el-icon-document"></i>
-          <span>员工行为总览-员工出勤情况</span>
+          <span>员工行为总览</span>
         </el-menu-item>
       </el-submenu>
 

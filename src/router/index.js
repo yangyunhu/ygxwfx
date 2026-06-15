@@ -80,7 +80,7 @@ export default new Router({
       path: '/behavior-visual-dashboard/employee-overview',
       name: 'EmployeeBehaviorOverview',
       component: EmployeeBehaviorOverview,
-      meta: { title: '员工行为总览-员工出勤情况', description: '员工行为总览页面，展示员工出勤情况综合视图。' }
+      meta: { title: '员工行为总览', description: '员工行为总览页面，展示员工出勤情况综合视图。' }
     },
     {
       path: '/behavior-intelligence-scenarios/model-management',
