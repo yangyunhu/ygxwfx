@@ -120,11 +120,27 @@
         </section>
 
         <section class="chart-card">
-          <div class="chart-card__header">
-            <h3 class="chart-card__title">请假趋势变化情况</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('leaveTrend')">
-              导出明细
-            </el-button>
+          <div class="chart-card__header chart-card__header--wrap">
+            <h3 class="chart-card__title">考勤类别极值分析</h3>
+            <div class="chart-card__filters">
+              <span class="filter-label">考勤类别：</span>
+              <el-select
+                v-model="extremeCategoryFilter"
+                size="mini"
+                style="width: 140px"
+                @change="renderExtremeAttendanceChart"
+              >
+                <el-option
+                  v-for="opt in extremeCategoryOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+              <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('leaveTrend')">
+                导出明细
+              </el-button>
+            </div>
           </div>
           <div ref="leaveTrendChart" class="chart-box" />
         </section>
@@ -140,23 +156,24 @@
         </section>
 
         <section class="chart-card">
-          <div class="chart-card__header">
-            <h3 class="chart-card__title">出差 &amp; 培训工时与专业相关性</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('businessTraining')">
-              导出明细
-            </el-button>
+          <div class="chart-card__header chart-card__header--wrap">
+            <h3 class="chart-card__title">出差与培训工时趋势</h3>
+            <div class="chart-card__filters">
+              <span class="filter-label">统计维度：</span>
+              <el-radio-group
+                v-model="businessTrainingPeriod"
+                size="mini"
+                @change="renderBusinessTrainingChart"
+              >
+                <el-radio-button label="month">按月</el-radio-button>
+                <el-radio-button label="year">按年</el-radio-button>
+              </el-radio-group>
+              <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('businessTraining')">
+                导出明细
+              </el-button>
+            </div>
           </div>
           <div ref="businessTrainingChart" class="chart-box" />
-        </section>
-
-        <section class="chart-card">
-          <div class="chart-card__header">
-            <h3 class="chart-card__title">专业与作业工时相关性</h3>
-            <el-button type="primary" size="mini" plain icon="el-icon-download" @click="handleDirectExport('specialty')">
-              导出明细
-            </el-button>
-          </div>
-          <div ref="specialtyChart" class="chart-box" />
         </section>
       </div>
 
@@ -166,6 +183,21 @@
           <h3 class="chart-card__title">年休假请假分布时段</h3>
           <div class="header-tools">
             <el-form :inline="true" size="mini">
+              <el-form-item label="单位：">
+                <el-select
+                  v-model="leaveQueryParams.unit"
+                  placeholder="请选择"
+                  style="width: 140px"
+                  @change="handleLeaveFilterChange"
+                >
+                  <el-option
+                    v-for="opt in unitOptions"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </el-select>
+              </el-form-item>
               <el-form-item label="日期范围：">
                 <el-date-picker
                   v-model="leaveQueryParams.startDate"
@@ -173,7 +205,7 @@
                   placeholder="起始"
                   value-format="yyyy-MM-dd"
                   style="width: 120px"
-                  @change="handleLeaveRangeChange"
+                  @change="handleLeaveFilterChange"
                 />
                 <span class="date-sep">-</span>
                 <el-date-picker
@@ -182,7 +214,7 @@
                   placeholder="结束"
                   value-format="yyyy-MM-dd"
                   style="width: 120px"
-                  @change="handleLeaveRangeChange"
+                  @change="handleLeaveFilterChange"
                 />
               </el-form-item>
             </el-form>
@@ -191,14 +223,23 @@
             </el-button>
           </div>
         </div>
-        <div ref="leaveBubbleChart" class="chart-box" />
-        <el-table :data="leaveTableData" border stripe size="small" class="leave-table">
-          <el-table-column prop="unit" label="单位" min-width="120" />
-          <el-table-column prop="specialty" label="专业" min-width="100" />
-          <el-table-column prop="fieldWorkCount" label="外勤人次" width="100" align="center" />
-          <el-table-column prop="totalDuration" label="总时长" width="100" align="center" />
-          <el-table-column prop="avgDuration" label="人均时长" width="100" align="center" />
-          <el-table-column prop="businessType" label="业务类型" min-width="120" />
+        <div ref="leaveDistChart" class="chart-box chart-box--leave-dist" />
+        <el-table :data="leaveDistTableData" border size="small" class="leave-dist-table">
+          <el-table-column prop="year" label="" width="88" align="center" fixed />
+          <el-table-column
+            v-for="(month, idx) in leaveDistMonths"
+            :key="month"
+            :label="month"
+            align="center"
+            min-width="52"
+          >
+            <template slot-scope="{ row }">{{ row.values[idx] }}</template>
+          </el-table-column>
+          <el-table-column label="年度总人次" align="center" min-width="96" fixed="right">
+            <template slot-scope="{ row }">
+              <strong>{{ row.total }}</strong>
+            </template>
+          </el-table-column>
         </el-table>
       </section>
     </div>
@@ -250,14 +291,11 @@
 <script>
 import * as echarts from "echarts";
 import {
-  LEAVE_TYPE_COLORS,
   LEAVE_TYPE_PIE_COLORS,
-  BUBBLE_COLORS,
   baseChartOption,
   legendBottomCenter,
   linePointLabel,
   stackBarLabel,
-  withAlpha,
   PROTOTYPE_COLORS,
 } from "../utils/chartTheme";
 import {
@@ -266,6 +304,7 @@ import {
   DEFAULT_LEAVE_QUERY,
   buildOverviewSnapshot,
   getMainChartSeriesMode,
+  EXTREME_CATEGORY_FILTER_OPTIONS,
 } from "../utils/behaviorOverviewData";
 import {
   OVERVIEW_EXPORT_MODULES,
@@ -273,14 +312,6 @@ import {
   getOverviewExportModuleLabel,
 } from "../utils/behaviorOverviewExport";
 import WarningOverviewPanel from "../components/WarningOverviewPanel.vue";
-
-const RADAR_INDICATORS = [
-  { name: "输电", max: 150 },
-  { name: "营配", max: 150 },
-  { name: "电网建设", max: 150 },
-  { name: "变电", max: 150 },
-  { name: "配电", max: 150 },
-];
 
 export default {
   name: "EmployeeBehaviorOverview",
@@ -293,7 +324,8 @@ export default {
       queryParams: { ...DEFAULT_QUERY },
       leaveQueryParams: { ...DEFAULT_LEAVE_QUERY },
       snapshot: buildOverviewSnapshot(DEFAULT_QUERY, DEFAULT_LEAVE_QUERY, "total"),
-      leaveTableData: [],
+      leaveDistTableData: [],
+      leaveDistMonths: [],
       charts: {},
       resizeHandler: null,
       exportDialogVisible: false,
@@ -301,6 +333,9 @@ export default {
       selectedExportModules: [],
       exportCheckAll: false,
       exportIndeterminate: false,
+      extremeCategoryFilter: "all",
+      extremeCategoryOptions: EXTREME_CATEGORY_FILTER_OPTIONS,
+      businessTrainingPeriod: "month",
     };
   },
   computed: {
@@ -322,7 +357,7 @@ export default {
     },
   },
   mounted() {
-    this.leaveTableData = this.snapshot.leaveTable;
+    this.syncLeaveDistributionView();
     this.$nextTick(() => {
       this.initChartInstances();
       this.refreshAllCharts();
@@ -352,7 +387,7 @@ export default {
         this.leaveQueryParams,
         this.activeMetric
       );
-      this.leaveTableData = this.snapshot.leaveTable;
+      this.syncLeaveDistributionView();
     },
 
     initChartInstances() {
@@ -363,8 +398,7 @@ export default {
         leaveTrend: "leaveTrendChart",
         leaveType: "leaveTypeChart",
         businessTraining: "businessTrainingChart",
-        specialty: "specialtyChart",
-        leaveBubble: "leaveBubbleChart",
+        leaveDist: "leaveDistChart",
       };
       Object.keys(map).forEach((key) => {
         const el = this.$refs[map[key]];
@@ -378,14 +412,14 @@ export default {
     },
     refreshAllCharts() {
       this.rebuildSnapshot();
+      this.syncLeaveDistributionView();
       this.renderMainChart();
       this.renderPunctualityChart();
       this.renderLateEarlyChart();
-      this.renderLeaveTrendChart();
+      this.renderExtremeAttendanceChart();
       this.renderLeaveTypeChart();
       this.renderBusinessTrainingChart();
-      this.renderSpecialtyChart();
-      this.renderLeaveBubbleChart();
+      this.renderLeaveDistChart();
     },
 
     renderMainChart() {
@@ -649,16 +683,12 @@ export default {
         return Math.round((late + early) * 10) / 10;
       });
 
-      const connectorLines = s.categories.map((name, i) => [
-        { coord: [name, lateEarlyData[i]] },
-        { coord: [name, onTimeData[i]] },
-      ]);
-
       chart.setOption(
         {
           textStyle: { color: "#606266", fontSize: 11 },
           tooltip: {
             trigger: "axis",
+            axisPointer: { type: "shadow" },
             backgroundColor: "rgba(255,255,255,0.98)",
             borderColor: "#E8E8E8",
             borderWidth: 1,
@@ -667,7 +697,6 @@ export default {
               if (!params || !params.length) return "";
               const title = params[0].axisValue;
               const rows = params
-                .filter((p) => p.seriesType === "line")
                 .map((p) => {
                   const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>`;
                   return `<div style="display:flex;justify-content:space-between;gap:20px;margin-top:4px;">
@@ -692,7 +721,6 @@ export default {
           xAxis: {
             type: "category",
             data: s.categories,
-            boundaryGap: false,
             axisLine: { lineStyle: { color: "#E8E8E8" } },
             axisTick: { show: false },
             axisLabel: {
@@ -714,37 +742,10 @@ export default {
           },
           series: [
             {
-              name: "迟到早退率",
-              type: "line",
-              z: 2,
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 6,
-              showSymbol: true,
-              connectNulls: true,
-              lineStyle: { width: 2, color: C.orange },
-              itemStyle: { color: C.orange, borderColor: "#fff", borderWidth: 1 },
-              label: {
-                show: true,
-                position: "top",
-                distance: 4,
-                fontSize: 10,
-                color: C.orange,
-                formatter: (p) => `${p.value}%`,
-              },
-              data: lateEarlyData,
-            },
-            {
               name: "按时出勤率",
-              type: "line",
-              z: 3,
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 6,
-              showSymbol: true,
-              connectNulls: true,
-              lineStyle: { width: 2, color: C.blue },
-              itemStyle: { color: C.blue, borderColor: "#fff", borderWidth: 1 },
+              type: "bar",
+              barMaxWidth: 18,
+              itemStyle: { color: C.blue, borderRadius: [2, 2, 0, 0] },
               label: {
                 show: true,
                 position: "top",
@@ -754,12 +755,21 @@ export default {
                 formatter: (p) => `${p.value}%`,
               },
               data: onTimeData,
-              markLine: {
-                silent: true,
-                symbol: ["none", "none"],
-                lineStyle: { color: "#D9D9D9", width: 1, type: "solid" },
-                data: connectorLines,
+            },
+            {
+              name: "迟到早退率",
+              type: "bar",
+              barMaxWidth: 18,
+              itemStyle: { color: C.orange, borderRadius: [2, 2, 0, 0] },
+              label: {
+                show: true,
+                position: "top",
+                distance: 4,
+                fontSize: 10,
+                color: C.orange,
+                formatter: (p) => `${p.value}%`,
               },
+              data: lateEarlyData,
             },
           ],
         },
@@ -805,12 +815,110 @@ export default {
       );
     },
 
-    renderLeaveTrendChart() {
+    renderExtremeAttendanceChart() {
       const chart = this.charts.leaveTrend;
       if (!chart) return;
       const s = this.snapshot;
-      const leaveNames = ["事假", "病假", "年休假"];
-      const datasets = [s.leaveTrend.personal, s.leaveTrend.sick, s.leaveTrend.annual];
+      const C = PROTOTYPE_COLORS;
+      const analysis = s.extremeAttendance || [];
+
+      if (this.extremeCategoryFilter === "all") {
+        chart.setOption(
+          {
+            textStyle: { color: "#606266", fontSize: 11 },
+            tooltip: {
+              trigger: "axis",
+              axisPointer: { type: "shadow" },
+              backgroundColor: "rgba(255,255,255,0.98)",
+              borderColor: "#E8E8E8",
+              borderWidth: 1,
+              padding: [10, 14],
+              textStyle: { color: "#303133", fontSize: 12 },
+              formatter(params) {
+                if (!params || !params.length) return "";
+                const cat = analysis[params[0].dataIndex];
+                const title = params[0].axisValue;
+                const rows = params
+                  .map((p) => {
+                    const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>`;
+                    return `<div style="display:flex;justify-content:space-between;gap:24px;margin-top:4px;">
+                      <span>${dot}${p.seriesName}</span><span style="font-weight:500;">${p.value} 人次</span></div>`;
+                  })
+                  .join("");
+                const extra = cat
+                  ? `<div style="margin-top:8px;padding-top:6px;border-top:1px solid #f0f0f0;font-size:11px;color:#909399;">
+                    极大值出现在：${cat.maxOrg}<br/>极小值出现在：${cat.minOrg}</div>`
+                  : "";
+                return `<div style="font-weight:600;margin-bottom:4px;">${title}</div>${rows}${extra}`;
+              },
+            },
+            legend: {
+              data: ["极大值", "平均值", "极小值"],
+              bottom: 0,
+              left: "center",
+              icon: "rect",
+              itemWidth: 12,
+              itemHeight: 8,
+              itemGap: 24,
+              textStyle: { color: "#606266", fontSize: 11 },
+            },
+            grid: { left: "2%", right: "3%", top: "10%", bottom: "14%", containLabel: true },
+            xAxis: {
+              type: "category",
+              data: analysis.map((d) => d.label),
+              axisLine: { lineStyle: { color: "#E8E8E8" } },
+              axisTick: { show: false },
+              axisLabel: {
+                color: "#606266",
+                fontSize: 10,
+                interval: 0,
+                rotate: analysis.length > 6 ? 30 : 0,
+              },
+            },
+            yAxis: {
+              type: "value",
+              min: 0,
+              axisLine: { show: false },
+              axisTick: { show: false },
+              axisLabel: { color: "#909399", fontSize: 10 },
+              splitLine: { lineStyle: { color: "#EEEEEE", type: "solid" } },
+            },
+            series: [
+              {
+                name: "极大值",
+                type: "bar",
+                barMaxWidth: 20,
+                itemStyle: { color: C.orange, borderRadius: [2, 2, 0, 0] },
+                label: { show: true, position: "top", fontSize: 10, color: C.orange },
+                data: analysis.map((d) => d.max),
+              },
+              {
+                name: "平均值",
+                type: "bar",
+                barMaxWidth: 20,
+                itemStyle: { color: C.blue, borderRadius: [2, 2, 0, 0] },
+                label: { show: true, position: "top", fontSize: 10, color: C.blue },
+                data: analysis.map((d) => d.avg),
+              },
+              {
+                name: "极小值",
+                type: "bar",
+                barMaxWidth: 20,
+                itemStyle: { color: C.green, borderRadius: [2, 2, 0, 0] },
+                label: { show: true, position: "top", fontSize: 10, color: C.green },
+                data: analysis.map((d) => d.min),
+              },
+            ],
+          },
+          true
+        );
+        return;
+      }
+
+      const cat = analysis.find((d) => d.key === this.extremeCategoryFilter);
+      if (!cat) return;
+      const orgNames = cat.orgValues.map((d) => d.name);
+      const orgData = cat.orgValues.map((d) => d.value);
 
       chart.setOption(
         {
@@ -823,62 +931,77 @@ export default {
             borderWidth: 1,
             padding: [10, 14],
             textStyle: { color: "#303133", fontSize: 12 },
-            extraCssText: "box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-radius: 4px;",
             formatter(params) {
               if (!params || !params.length) return "";
-              const title = params[0].axisValue;
-              const rows = params
-                .map((p) => {
-                  const dot = `<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:${p.color};margin-right:6px;"></span>`;
-                  return `<div style="display:flex;justify-content:space-between;gap:24px;margin-top:4px;">
-                    <span>${dot}${p.seriesName}</span><span style="font-weight:500;">${p.value}</span></div>`;
-                })
-                .join("");
-              return `<div style="font-weight:600;margin-bottom:4px;">${title}</div>${rows}`;
+              const p = params[0];
+              return `<div style="font-weight:600;margin-bottom:4px;">${p.axisValue}</div>
+                <div>${cat.label}：<strong>${p.value} 人次</strong></div>`;
             },
           },
           legend: {
-            data: leaveNames,
+            data: [cat.label],
             bottom: 0,
             left: "center",
             icon: "rect",
             itemWidth: 12,
             itemHeight: 8,
-            itemGap: 24,
             textStyle: { color: "#606266", fontSize: 11 },
           },
           grid: { left: "2%", right: "3%", top: "10%", bottom: "14%", containLabel: true },
           xAxis: {
             type: "category",
-            data: s.categories,
+            data: orgNames,
             axisLine: { lineStyle: { color: "#E8E8E8" } },
             axisTick: { show: false },
             axisLabel: {
               color: "#606266",
               fontSize: 10,
               interval: 0,
-              rotate: s.categories.length > 8 ? 45 : 0,
+              rotate: orgNames.length > 8 ? 35 : 0,
             },
           },
           yAxis: {
             type: "value",
             min: 0,
-            max: 60,
-            interval: 10,
             axisLine: { show: false },
             axisTick: { show: false },
             axisLabel: { color: "#909399", fontSize: 10 },
             splitLine: { lineStyle: { color: "#EEEEEE", type: "solid" } },
           },
-          series: leaveNames.map((name, i) => ({
-            name,
-            type: "bar",
-            stack: "leave",
-            barMaxWidth: 26,
-            itemStyle: { color: LEAVE_TYPE_COLORS[name] },
-            emphasis: { focus: "series" },
-            data: datasets[i],
-          })),
+          series: [
+            {
+              name: cat.label,
+              type: "bar",
+              barMaxWidth: 28,
+              itemStyle: { color: cat.color, borderRadius: [2, 2, 0, 0] },
+              label: { show: true, position: "top", fontSize: 10, color: cat.color },
+              data: orgData,
+              markPoint: {
+                symbol: "pin",
+                symbolSize: 42,
+                label: { fontSize: 10, formatter: "{b}\n{c}" },
+                data: [
+                  {
+                    name: "极大值",
+                    type: "max",
+                    itemStyle: { color: C.orange },
+                  },
+                  {
+                    name: "极小值",
+                    type: "min",
+                    itemStyle: { color: C.green },
+                  },
+                ],
+              },
+              markLine: {
+                silent: true,
+                symbol: "none",
+                lineStyle: { type: "dashed", color: C.blue },
+                label: { formatter: "均值: {c}", fontSize: 10 },
+                data: [{ type: "average", name: "平均值" }],
+              },
+            },
+          ],
         },
         true
       );
@@ -918,133 +1041,108 @@ export default {
     renderBusinessTrainingChart() {
       const chart = this.charts.businessTraining;
       if (!chart) return;
-      const sc = this.snapshot.scatter;
+      const trend = this.snapshot.businessTrainingTrend[this.businessTrainingPeriod];
+      if (!trend || !trend.categories.length) return;
       const C = PROTOTYPE_COLORS;
+      const peak = Math.max(...trend.business, ...trend.training, 1);
+      const yMax = Math.ceil(peak / 5) * 5 + 5;
       chart.setOption(
         baseChartOption({
-          legend: legendBottomCenter(["出差工时", "培训工时", "线性(出差工时)", "线性(培训工时)"]),
+          legend: legendBottomCenter(["出差工时", "培训工时"]),
           grid: { bottom: "18%", top: "12%" },
-          xAxis: { type: "value", name: "培训工时", nameTextStyle: { fontSize: 11 }, min: 0, max: 14 },
-          yAxis: { type: "value", name: "出差工时", nameTextStyle: { fontSize: 11 }, min: 0, max: 30 },
-          series: [
-            {
-              name: "出差工时",
-              type: "scatter",
-              symbolSize: 7,
-              itemStyle: { color: C.blue },
-              data: sc.business,
-            },
-            {
-              name: "培训工时",
-              type: "scatter",
-              symbolSize: 7,
-              itemStyle: { color: C.orange },
-              data: sc.training,
-            },
-            {
-              name: "线性(出差工时)",
-              type: "line",
-              lineStyle: { type: "dotted", color: C.blue, width: 1.5 },
-              data: [[0, 13], [14, 13]],
-              symbol: "none",
-            },
-            {
-              name: "线性(培训工时)",
-              type: "line",
-              lineStyle: { type: "dotted", color: C.orange, width: 1.5 },
-              data: [[0, 5], [14, 7]],
-              symbol: "none",
-            },
-          ],
-        }),
-        true
-      );
-    },
-
-    renderSpecialtyChart() {
-      const chart = this.charts.specialty;
-      if (!chart) return;
-      const sp = this.snapshot.specialty;
-      const maxVal = Math.max(...sp.work, ...sp.attend, 120);
-      const indicators = RADAR_INDICATORS.map((ind) => ({
-        ...ind,
-        max: Math.ceil(maxVal / 10) * 10 + 20,
-      }));
-      const C = PROTOTYPE_COLORS;
-      chart.setOption(
-        baseChartOption({
-          legend: legendBottomCenter(["作业工时时长", "出勤工时"]),
-          grid: { bottom: "14%" },
-          radar: {
-            indicator: indicators,
-            radius: "55%",
-            center: ["50%", "46%"],
-            axisName: { color: "#606266", fontSize: 11 },
-            splitArea: { areaStyle: { color: ["#fff", "#FAFAFA"] } },
-            splitLine: { lineStyle: { color: "#F0F0F0" } },
-            axisLine: { lineStyle: { color: "#E8E8E8" } },
-          },
-          series: [
-            {
-              type: "radar",
-              symbol: "circle",
-              symbolSize: 4,
-              data: [
-                {
-                  value: sp.work,
-                  name: "作业工时时长",
-                  lineStyle: { color: C.blueLight, width: 2 },
-                  itemStyle: { color: C.blueLight },
-                  areaStyle: { color: withAlpha(C.blueLight, 0.25) },
-                },
-                {
-                  value: sp.attend,
-                  name: "出勤工时",
-                  lineStyle: { color: C.blueDark, width: 2 },
-                  itemStyle: { color: C.blueDark },
-                  areaStyle: { color: withAlpha(C.blueDark, 0.15) },
-                },
-              ],
-            },
-          ],
-        }),
-        true
-      );
-    },
-
-    renderLeaveBubbleChart() {
-      const chart = this.charts.leaveBubble;
-      if (!chart) return;
-      const bubble = this.snapshot.bubble;
-      const xMax = Math.max(60, ...bubble.map((d) => d[0])) + 10;
-      const yMax = Math.max(250, ...bubble.map((d) => d[1])) + 20;
-      chart.setOption(
-        baseChartOption({
-          grid: { bottom: "12%", top: "10%" },
+          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
           xAxis: {
-            type: "value",
-            name: "外勤频次",
-            nameTextStyle: { fontSize: 11 },
-            min: 0,
-            max: xMax,
+            type: "category",
+            data: trend.categories,
+            name: "时间",
+            nameTextStyle: { fontSize: 11, color: "#909399" },
+            nameGap: 28,
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            axisTick: { show: false },
+            axisLabel: {
+              color: "#606266",
+              fontSize: 10,
+              interval: 0,
+              rotate: trend.categories.length > 8 ? 30 : 0,
+            },
           },
           yAxis: {
             type: "value",
-            name: "时长(h)",
-            nameTextStyle: { fontSize: 11 },
+            name: "工时(h)",
+            nameTextStyle: { fontSize: 11, color: "#909399" },
             min: 0,
             max: yMax,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: "#909399", fontSize: 10 },
+            splitLine: { lineStyle: { color: "#EEEEEE", type: "solid" } },
           },
           series: [
             {
-              type: "scatter",
-              symbolSize: (data) => Math.sqrt(data[2]) * 4.5,
-              data: bubble.map((item, i) => ({
-                value: item,
-                itemStyle: { color: BUBBLE_COLORS[i % BUBBLE_COLORS.length], opacity: 0.85 },
-              })),
+              name: "出差工时",
+              type: "bar",
+              barMaxWidth: 22,
+              itemStyle: { color: C.blue, borderRadius: [2, 2, 0, 0] },
+              data: trend.business,
+            },
+            {
+              name: "培训工时",
+              type: "bar",
+              barMaxWidth: 22,
+              itemStyle: { color: C.orange, borderRadius: [2, 2, 0, 0] },
+              data: trend.training,
             },
           ],
+        }),
+        true
+      );
+    },
+
+    syncLeaveDistributionView() {
+      const dist = this.snapshot.annualLeaveDistribution || { categories: [], tableRows: [] };
+      this.leaveDistMonths = dist.categories;
+      this.leaveDistTableData = dist.tableRows;
+    },
+
+    renderLeaveDistChart() {
+      const chart = this.charts.leaveDist;
+      if (!chart) return;
+      const dist = this.snapshot.annualLeaveDistribution;
+      if (!dist || !dist.categories.length) return;
+      const peak = Math.max(...dist.series.flatMap((s) => s.data), 10);
+      const yMax = Math.ceil(peak / 20) * 20 + 20;
+      chart.setOption(
+        baseChartOption({
+          legend: legendBottomCenter(dist.series.map((s) => s.label)),
+          grid: { left: "2%", right: "3%", top: "10%", bottom: "16%", containLabel: true },
+          tooltip: { trigger: "axis" },
+          xAxis: {
+            type: "category",
+            boundaryGap: false,
+            data: dist.categories,
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            axisTick: { show: false },
+            axisLabel: { color: "#606266", fontSize: 11 },
+          },
+          yAxis: {
+            type: "value",
+            min: 0,
+            max: yMax,
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: "#909399", fontSize: 10 },
+            splitLine: { lineStyle: { color: "#EEEEEE", type: "solid" } },
+          },
+          series: dist.series.map((s) => ({
+            name: s.label,
+            type: "line",
+            smooth: true,
+            symbol: "circle",
+            symbolSize: 6,
+            lineStyle: { width: 2, color: s.color },
+            itemStyle: { color: s.color },
+            data: s.data,
+          })),
         }),
         true
       );
@@ -1071,6 +1169,7 @@ export default {
       this.queryParams = { ...DEFAULT_QUERY };
       this.leaveQueryParams = { ...DEFAULT_LEAVE_QUERY };
       this.activeMetric = "total";
+      this.extremeCategoryFilter = "all";
       this.refreshAllCharts();
       this.$message.info("已重置查询条件");
     },
@@ -1088,7 +1187,7 @@ export default {
       this.$message.info(`主图已切换为「${labels[type]}」视角`);
     },
 
-    handleLeaveRangeChange() {
+    handleLeaveFilterChange() {
       if (
         this.leaveQueryParams.startDate &&
         this.leaveQueryParams.endDate &&
@@ -1098,8 +1197,8 @@ export default {
         return;
       }
       this.rebuildSnapshot();
-      this.leaveTableData = this.snapshot.leaveTable;
-      this.renderLeaveBubbleChart();
+      this.syncLeaveDistributionView();
+      this.renderLeaveDistChart();
     },
 
     handleViewComparison() {
@@ -1123,7 +1222,8 @@ export default {
         [moduleKey],
         this.snapshot,
         this.queryParams,
-        this.leaveQueryParams
+        this.leaveQueryParams,
+        { businessTrainingPeriod: this.businessTrainingPeriod }
       );
       this.$message.success(`已导出「${getOverviewExportModuleLabel(moduleKey)}」明细`);
     },
@@ -1155,7 +1255,8 @@ export default {
         this.selectedExportModules,
         this.snapshot,
         this.queryParams,
-        this.leaveQueryParams
+        this.leaveQueryParams,
+        { businessTrainingPeriod: this.businessTrainingPeriod }
       );
       this.exportDialogVisible = false;
       this.$message.success(`已开始导出 ${count} 个统计模块明细，请留意浏览器下载`);
@@ -1369,6 +1470,19 @@ export default {
   gap: 8px;
 }
 
+.chart-card__filters {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.filter-label {
+  font-size: 12px;
+  color: #606266;
+  white-space: nowrap;
+}
+
 .chart-box {
   height: 280px;
   width: 100%;
@@ -1384,25 +1498,29 @@ export default {
   gap: 16px;
 }
 
-.leave-table {
+.leave-dist-table {
   margin-top: 10px;
 }
 
-.leave-table >>> .el-table {
+.leave-dist-table >>> .el-table {
   font-size: 12px;
 }
 
-.leave-table >>> .el-table th {
-  background: #fafafa;
-  color: #606266;
+.leave-dist-table >>> .el-table th {
+  background: #ecf5ff;
+  color: #303133;
   font-weight: 600;
   padding: 8px 0;
 }
 
-.leave-table >>> .el-table td {
+.leave-dist-table >>> .el-table td {
   padding: 7px 0;
+  color: #606266;
 }
 
+.chart-box--leave-dist {
+  height: 320px;
+}
 
 @media (max-width: 1200px) {
   .chart-grid {

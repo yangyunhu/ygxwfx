@@ -102,29 +102,7 @@
       <div ref="rateChart" class="chart-box" />
     </section>
 
-    <!-- 图表2：累计工时 & 培训工时 -->
-    <section class="chart-card">
-      <div class="chart-card__header">
-        <h3 class="chart-card__title">各单位累计工时&amp;培训工时分布情况</h3>
-        <div class="chart-card__controls">
-          <span class="control-label">专业分类：</span>
-          <el-cascader
-            v-model="professionalPath"
-            :options="professionalCategoryOptions"
-            :props="professionalCascaderProps"
-            size="small"
-            clearable
-            filterable
-            placeholder="选择专业分类"
-            class="filter-cascader--professional"
-            @change="handleProfessionalPathChange"
-          />
-        </div>
-      </div>
-      <div ref="hoursChart" class="chart-box" />
-    </section>
-
-    <!-- 图表3：各单位迟到&早退情况 -->
+    <!-- 图表2：各单位迟到&早退情况 -->
     <section class="chart-card">
       <div class="chart-card__header">
         <h3 class="chart-card__title">各单位迟到&amp;早退情况</h3>
@@ -132,7 +110,7 @@
       <div ref="lateEarlyChart" class="chart-box" />
     </section>
 
-    <!-- 图表4：各单位请假情况 -->
+    <!-- 图表3：各单位请假情况 -->
     <section class="chart-card">
       <div class="chart-card__header">
         <h3 class="chart-card__title">各单位请假情况</h3>
@@ -180,10 +158,6 @@ import {
   getPositionCategoryLabel,
   getPositionSequenceLabel,
 } from "../utils/positionRelation";
-import {
-  professionalToCascaderOptions,
-  DEFAULT_PROFESSIONAL_PATH,
-} from "../utils/professionalClassification";
 import { downloadTableWithLog } from "../utils/exportLogger";
 
 export default {
@@ -192,14 +166,11 @@ export default {
     return {
       attendanceDayTypeFilterOptions: ATTENDANCE_DAY_TYPE_FILTER_OPTIONS,
       leaveTypeFilterOptions: LEAVE_TYPE_FILTER_OPTIONS,
-      professionalCascaderProps: { checkStrictly: true, expandTrigger: "hover" },
       query: { ...DEFAULT_COMPARISON_QUERY },
       appliedQuery: { ...DEFAULT_COMPARISON_QUERY },
-      professionalPath: [...DEFAULT_PROFESSIONAL_PATH],
       attendanceDayTypeFilter: "all",
       unitLeaveTypeFilter: DEFAULT_UNIT_LEAVE_TYPE,
       snapshot: buildComparisonDashboard(DEFAULT_COMPARISON_QUERY, {
-        professionalPath: DEFAULT_PROFESSIONAL_PATH,
         attendanceDayTypeFilter: "all",
         unitLeaveTypeFilter: DEFAULT_UNIT_LEAVE_TYPE,
       }),
@@ -216,9 +187,6 @@ export default {
     },
     positionSequenceGroups() {
       return getPositionSequenceOptionGroups();
-    },
-    professionalCategoryOptions() {
-      return professionalToCascaderOptions();
     },
   },
   mounted() {
@@ -243,7 +211,6 @@ export default {
   methods: {
     refreshData() {
       this.snapshot = buildComparisonDashboard(this.appliedQuery, {
-        professionalPath: this.professionalPath,
         attendanceDayTypeFilter: this.attendanceDayTypeFilter,
         unitLeaveTypeFilter: this.unitLeaveTypeFilter,
       });
@@ -257,7 +224,6 @@ export default {
     handleReset() {
       this.query = { ...DEFAULT_COMPARISON_QUERY };
       this.appliedQuery = { ...DEFAULT_COMPARISON_QUERY };
-      this.professionalPath = [...DEFAULT_PROFESSIONAL_PATH];
       this.attendanceDayTypeFilter = "all";
       this.unitLeaveTypeFilter = DEFAULT_UNIT_LEAVE_TYPE;
       this.refreshData();
@@ -275,9 +241,6 @@ export default {
       }
     },
     handleAttendanceDayTypeChange() {
-      this.refreshData();
-    },
-    handleProfessionalPathChange() {
       this.refreshData();
     },
     handleUnitLeaveTypeChange() {
@@ -308,7 +271,6 @@ export default {
     initAndRenderCharts() {
       const refs = {
         rate: "rateChart",
-        hours: "hoursChart",
         lateEarly: "lateEarlyChart",
         unitLeave: "unitLeaveChart",
       };
@@ -322,7 +284,6 @@ export default {
     },
     renderAllCharts() {
       this.renderRateChart();
-      this.renderHoursChart();
       this.renderLateEarlyChart();
       this.renderUnitLeaveChart();
       Object.values(this.charts).forEach((c) => c && c.resize());
@@ -399,69 +360,6 @@ export default {
             itemStyle: { color: s.color, borderRadius: [2, 2, 0, 0] },
             data: s.data,
           })),
-        }),
-        true
-      );
-    },
-    renderHoursChart() {
-      const chart = this.charts.hours;
-      if (!chart) return;
-      const { categories, workHours, trainingHours } = this.snapshot.workHours;
-
-      chart.setOption(
-        baseChartOption({
-          tooltip: { trigger: "axis" },
-          legend: { data: ["累计工时", "培训工时"], top: 0, left: "center" },
-          grid: { left: "2%", right: "2%", top: "14%", bottom: "12%", containLabel: true },
-          xAxis: {
-            type: "category",
-            data: categories,
-            boundaryGap: false,
-            axisLabel: { interval: 0, rotate: 35, fontSize: 11 },
-          },
-          yAxis: { type: "value", min: 0 },
-          series: [
-            {
-              name: "累计工时",
-              type: "line",
-              smooth: false,
-              symbol: "none",
-              lineStyle: { width: 0 },
-              areaStyle: {
-                color: {
-                  type: "linear",
-                  x: 0, y: 0, x2: 0, y2: 1,
-                  colorStops: [
-                    { offset: 0, color: "rgba(245, 34, 45, 0.55)" },
-                    { offset: 1, color: "rgba(245, 34, 45, 0.08)" },
-                  ],
-                },
-              },
-              itemStyle: { color: "#F5222D" },
-              label: { show: true, position: "top", fontSize: 10, color: "#F5222D" },
-              data: workHours,
-            },
-            {
-              name: "培训工时",
-              type: "line",
-              smooth: false,
-              symbol: "none",
-              lineStyle: { width: 0 },
-              areaStyle: {
-                color: {
-                  type: "linear",
-                  x: 0, y: 0, x2: 0, y2: 1,
-                  colorStops: [
-                    { offset: 0, color: "rgba(250, 173, 20, 0.6)" },
-                    { offset: 1, color: "rgba(250, 173, 20, 0.05)" },
-                  ],
-                },
-              },
-              itemStyle: { color: "#FAAD14" },
-              label: { show: true, position: "top", fontSize: 10, color: "#FAAD14" },
-              data: trainingHours,
-            },
-          ],
         }),
         true
       );
@@ -612,10 +510,6 @@ export default {
 
 .filter-select--sequence {
   width: 240px;
-}
-
-.filter-cascader--professional {
-  width: 320px;
 }
 
 .filter-select--leave-type {

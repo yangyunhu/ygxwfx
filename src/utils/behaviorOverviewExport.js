@@ -23,8 +23,8 @@ export const OVERVIEW_EXPORT_MODULES = [
   },
   {
     key: "leaveTrend",
-    label: "请假趋势变化情况",
-    desc: "事假、病假、年休假申请与审批明细",
+    label: "考勤类别极值分析",
+    desc: "各考勤类别在不同组织层级的极大值、极小值及平均值明细（不含正常出勤）",
   },
   {
     key: "leaveType",
@@ -33,18 +33,13 @@ export const OVERVIEW_EXPORT_MODULES = [
   },
   {
     key: "businessTraining",
-    label: "出差 & 培训工时与专业相关性",
-    desc: "出差、培训工时及专业关联分析明细",
-  },
-  {
-    key: "specialty",
-    label: "专业与作业工时相关性",
-    desc: "各专业作业工时、出勤工时及相关性明细",
+    label: "出差与培训工时趋势",
+    desc: "出差、培训工时按时间维度汇总明细",
   },
   {
     key: "leaveDistribution",
     label: "年休假请假分布时段",
-    desc: "年休假时段分布及外勤统计明细",
+    desc: "各年度年休假按月分布人次及年度汇总明细",
   },
 ];
 
@@ -188,49 +183,38 @@ function buildLateEarlyDetail(snapshot, queryParams) {
 function buildLeaveTrendDetail(snapshot, queryParams) {
   const headers = [
     "序号",
-    "姓名",
-    "工号",
-    "单位",
-    "部门",
-    "请假类型",
-    "请假天数",
-    "请假开始日期",
-    "请假结束日期",
-    "审批状态",
+    "考勤类别",
+    "组织名称",
+    "组织全称",
+    "人次",
+    "极大值",
+    "极小值",
+    "平均值",
+    "极大值组织",
+    "极小值组织",
   ];
   const rows = [];
   let seq = 1;
-  snapshot.rows.forEach((r, ri) => {
-    const personal = snapshot.leaveTrend.personal[ri] || 0;
-    const sick = snapshot.leaveTrend.sick[ri] || 0;
-    const annual = snapshot.leaveTrend.annual[ri] || 0;
-    const buckets = [
-      { type: "事假", days: personal },
-      { type: "病假", days: sick },
-      { type: "年休假", days: annual },
-    ];
-    buckets.forEach((b, bi) => {
-      if (b.days <= 0) return;
-      const itemCount = Math.min(3, Math.max(1, Math.ceil(b.days / 8)));
-      for (let j = 0; j < itemCount; j++) {
-        const seed = ri * 9 + bi * 3 + j;
-        const days = Math.max(1, Math.round(b.days / itemCount));
-        const start = mockDate(seed, bi);
-        rows.push([
-          seq++,
-          NAMES[seed % NAMES.length],
-          mockEmpId(seed + 300),
-          r.fullName || r.name,
-          DEPTS[j % DEPTS.length],
-          b.type,
-          days,
-          start,
-          mockDate(seed + days, bi),
-          APPROVAL_STATUS[seed % APPROVAL_STATUS.length],
-        ]);
-      }
+  const analysis = snapshot.extremeAttendance || [];
+  analysis.forEach((cat) => {
+    cat.orgValues.forEach((org) => {
+      rows.push([
+        seq++,
+        cat.label,
+        org.name,
+        org.fullName || org.name,
+        org.value,
+        cat.max,
+        cat.min,
+        cat.avg,
+        cat.maxOrg,
+        cat.minOrg,
+      ]);
     });
   });
+  if (!rows.length) {
+    rows.push([1, "—", "—", "—", 0, 0, 0, 0, "—", "—"]);
+  }
   return { headers, rows };
 }
 
@@ -259,98 +243,48 @@ function buildLeaveTypeDetail(snapshot, queryParams) {
   return { headers, rows };
 }
 
-function buildBusinessTrainingDetail(snapshot, queryParams) {
-  const headers = ["序号", "姓名", "单位", "专业", "业务类型", "工时(h)", "月份", "关联度得分"];
+function buildBusinessTrainingDetail(snapshot, queryParams, leaveQueryParams, exportContext = {}) {
+  const periodType = exportContext.businessTrainingPeriod || "month";
+  const periodLabel = periodType === "year" ? "按年" : "按月";
+  const trend = snapshot.businessTrainingTrend
+    ? snapshot.businessTrainingTrend[periodType]
+    : { categories: [], timeKeys: [], business: [], training: [] };
+  const headers = ["序号", "时间", "业务类型", "工时(h)", "统计维度", "单位"];
   const rows = [];
   let seq = 1;
-  const types = ["出差", "培训"];
-  snapshot.rows.slice(0, 8).forEach((r, ri) => {
-    types.forEach((type, ti) => {
-      for (let j = 0; j < 2; j++) {
-        const seed = ri * 4 + ti * 2 + j;
-        const scatter = type === "出差" ? snapshot.scatter.business : snapshot.scatter.training;
-        const point = scatter[(ri + j) % scatter.length] || [1, 10];
-        rows.push([
-          seq++,
-          NAMES[seed % NAMES.length],
-          r.fullName || r.name,
-          SPECIALTIES[seed % SPECIALTIES.length],
-          type,
-          point[1] || 10,
-          `2025-${pad2((ri % 12) + 1)}`,
-          (75 + (seed % 20)).toFixed(1),
-        ]);
-      }
-    });
-  });
-  return { headers, rows };
-}
+  const unitName = unitFilterLabel(queryParams.unit);
 
-function buildSpecialtyDetail(snapshot, queryParams) {
-  const headers = ["序号", "姓名", "单位", "专业", "作业工时(h)", "出勤工时(h)", "相关性系数"];
-  const rows = [];
-  let seq = 1;
-  const radarNames = ["输电", "营配", "电网建设", "变电", "配电"];
-  snapshot.rows.slice(0, 6).forEach((r, ri) => {
-    radarNames.forEach((spec, si) => {
-      const seed = ri * 5 + si;
-      const workH = snapshot.specialty.work[ri] || 80 + seed * 3;
-      const attendH = snapshot.specialty.attend[ri] || 70 + seed * 2;
-      const coef = (0.65 + (seed % 30) / 100).toFixed(2);
-      rows.push([
-        seq++,
-        NAMES[seed % NAMES.length],
-        r.fullName || r.name,
-        spec,
-        workH + si * 5,
-        attendH + si * 4,
-        coef,
-      ]);
+  trend.categories.forEach((cat, i) => {
+    ["出差", "培训"].forEach((type) => {
+      const hours = type === "出差" ? trend.business[i] : trend.training[i];
+      rows.push([seq++, cat, type, hours, periodLabel, unitName]);
     });
   });
+
+  if (!rows.length) {
+    rows.push([1, "—", "—", 0, periodLabel, unitName]);
+  }
   return { headers, rows };
 }
 
 function buildLeaveDistributionDetail(snapshot, queryParams, leaveQueryParams) {
-  const headers = [
-    "序号",
-    "单位",
-    "专业",
-    "姓名",
-    "外勤人次",
-    "总时长",
-    "人均时长",
-    "业务类型",
-    "年休假开始",
-    "年休假结束",
-  ];
-  const rows = [];
-  let seq = 1;
+  const dist = snapshot.annualLeaveDistribution || { categories: [], tableRows: [] };
+  const unitName = unitFilterLabel(leaveQueryParams.unit || "all");
   const period =
     leaveQueryParams.startDate && leaveQueryParams.endDate
       ? `${leaveQueryParams.startDate} ~ ${leaveQueryParams.endDate}`
       : periodLabel(queryParams);
-
-  snapshot.leaveTable.forEach((row, ri) => {
-    for (let j = 0; j < 3; j++) {
-      const seed = ri * 3 + j;
-      rows.push([
-        seq++,
-        row.unit,
-        row.specialty,
-        NAMES[seed % NAMES.length],
-        row.fieldWorkCount,
-        row.totalDuration,
-        row.avgDuration,
-        row.businessType,
-        leaveQueryParams.startDate || mockDate(seed, 5),
-        leaveQueryParams.endDate || mockDate(seed + 5, 5),
-      ]);
-    }
-  });
+  const headers = ["年度", ...dist.categories, "年度总人次", "单位", "日期范围"];
+  const rows = dist.tableRows.map((row) => [
+    row.year,
+    ...row.values,
+    row.total,
+    unitName,
+    period,
+  ]);
 
   if (!rows.length) {
-    rows.push([1, "—", "—", "—", 0, "0h", "0h", "—", period.split(" ~ ")[0] || "—", period.split(" ~ ")[1] || "—"]);
+    rows.push(["—", ...dist.categories.map(() => 0), 0, unitName, period]);
   }
   return { headers, rows };
 }
@@ -362,14 +296,13 @@ const BUILDERS = {
   leaveTrend: buildLeaveTrendDetail,
   leaveType: buildLeaveTypeDetail,
   businessTraining: buildBusinessTrainingDetail,
-  specialty: buildSpecialtyDetail,
   leaveDistribution: buildLeaveDistributionDetail,
 };
 
-export function buildOverviewExportTable(moduleKey, snapshot, queryParams, leaveQueryParams = {}) {
+export function buildOverviewExportTable(moduleKey, snapshot, queryParams, leaveQueryParams = {}, exportContext = {}) {
   const builder = BUILDERS[moduleKey];
   if (!builder) return { headers: [], rows: [] };
-  return builder(snapshot, queryParams, leaveQueryParams);
+  return builder(snapshot, queryParams, leaveQueryParams, exportContext);
 }
 
 export function getOverviewExportModuleLabel(moduleKey) {
@@ -383,6 +316,7 @@ function buildSearchCriteria(queryParams, leaveQueryParams) {
     `统计维度:${dim}`,
     `单位:${unitFilterLabel(queryParams.unit)}`,
     `日期:${periodLabel(queryParams)}`,
+    `年休假分布单位:${unitFilterLabel(leaveQueryParams.unit || "all")}`,
     leaveQueryParams.startDate ? `年休假分布:${periodLabel(leaveQueryParams)}` : "",
   ]
     .filter(Boolean)
@@ -392,14 +326,14 @@ function buildSearchCriteria(queryParams, leaveQueryParams) {
 /**
  * 导出选中的统计模块明细（每个模块一个 CSV 文件）
  */
-export function exportOverviewModules(moduleKeys, snapshot, queryParams, leaveQueryParams = {}) {
+export function exportOverviewModules(moduleKeys, snapshot, queryParams, leaveQueryParams = {}, exportContext = {}) {
   const stamp = new Date().toISOString().slice(0, 10).replace(/-/g, "");
   const criteria = buildSearchCriteria(queryParams, leaveQueryParams);
 
   moduleKeys.forEach((key, index) => {
     const mod = OVERVIEW_EXPORT_MODULES.find((m) => m.key === key);
     if (!mod) return;
-    const { headers, rows } = buildOverviewExportTable(key, snapshot, queryParams, leaveQueryParams);
+    const { headers, rows } = buildOverviewExportTable(key, snapshot, queryParams, leaveQueryParams, exportContext);
     setTimeout(() => {
       downloadTableWithLog({
         headers,

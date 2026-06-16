@@ -90,18 +90,14 @@ function buildLateEarlyByUnit(seed) {
 }
 
 export function buildComparisonDashboard(queryParams = {}, options = {}) {
-  const professionalPath = options.professionalPath || [];
-  const pathKey = Array.isArray(professionalPath) ? professionalPath.join("/") : "";
   const seed = filterSeed({
     ...queryParams,
     attendanceDayTypeFilter: options.attendanceDayTypeFilter,
-    professionalPathKey: pathKey,
   });
   const attendanceDayTypeFilter = options.attendanceDayTypeFilter || "all";
   const unitLeaveTypeFilter = options.unitLeaveTypeFilter || DEFAULT_UNIT_LEAVE_TYPE;
 
   const attendanceDays = buildAttendanceDaysByUnit(seed, attendanceDayTypeFilter);
-  const workHours = buildWorkHoursByUnit(seed, professionalPath);
   const lateEarly = buildLateEarlyByUnit(seed);
   const leaveByUnit = getLeaveByUnitChartData(queryParams, unitLeaveTypeFilter);
 
@@ -112,13 +108,6 @@ export function buildComparisonDashboard(queryParams = {}, options = {}) {
       training: attendanceDays.map((d) => d.training),
       businessTrip: attendanceDays.map((d) => d.businessTrip),
       normal: attendanceDays.map((d) => d.normal),
-    },
-    workHours: {
-      professionalPath: Array.isArray(professionalPath) ? [...professionalPath] : [],
-      professionalPathText: formatProfessionalPath(professionalPath),
-      categories: workHours.map((d) => d.name),
-      workHours: workHours.map((d) => d.workHours),
-      trainingHours: workHours.map((d) => d.trainingHours),
     },
     lateEarly: {
       categories: lateEarly.map((d) => d.name),
@@ -154,14 +143,6 @@ export function getExportRows(snapshot) {
       snapshot.attendanceDays.businessTrip[i],
       snapshot.attendanceDays.normal[i],
       filterLabel,
-    ]);
-  });
-  snapshot.workHours.categories.forEach((unit, i) => {
-    rows.push([
-      "累计工时与培训工时", unit,
-      snapshot.workHours.workHours[i],
-      snapshot.workHours.trainingHours[i],
-      snapshot.workHours.professionalPathText, "",
     ]);
   });
   snapshot.lateEarly.categories.forEach((name, i) => {

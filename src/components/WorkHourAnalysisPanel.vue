@@ -92,6 +92,49 @@
       </section>
 
       <section class="chart-section">
+        <div class="section-header-row">
+          <h3 class="section-title section-title--plain">专业与作业工时相关性</h3>
+          <el-button type="primary" size="small" plain icon="el-icon-download" @click="handleSpecialtyCorrExport">
+            导出明细
+          </el-button>
+        </div>
+        <el-form :inline="true" size="small" class="section-form">
+          <el-form-item label="专业：">
+            <el-select v-model="specialtyCorrQuery.specialty" placeholder="请选择" style="width: 120px">
+              <el-option
+                v-for="opt in specialtyOptions"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="时间：">
+            <el-date-picker
+              v-model="specialtyCorrQuery.startDate"
+              type="date"
+              placeholder="开始日期"
+              value-format="yyyy-MM-dd"
+              style="width: 140px"
+            />
+            <span class="date-sep">~</span>
+            <el-date-picker
+              v-model="specialtyCorrQuery.endDate"
+              type="date"
+              placeholder="结束日期"
+              value-format="yyyy-MM-dd"
+              style="width: 140px"
+            />
+          </el-form-item>
+          <el-form-item class="section-form__actions">
+            <el-button type="primary" icon="el-icon-search" @click="handleSpecialtyCorrQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="resetSpecialtyCorrQuery">重置</el-button>
+          </el-form-item>
+        </el-form>
+        <div ref="specialtyCorrChart" class="chart-box" />
+      </section>
+
+      <section class="chart-section">
         <h3 class="section-title">
           <span class="section-dot" />
           按单位及部门展示
@@ -212,7 +255,7 @@
 
 <script>
 import * as echarts from "echarts";
-import { baseChartOption, legendTopCenter } from "../utils/chartTheme";
+import { baseChartOption, legendTopCenter, legendBottomCenter, withAlpha, PROTOTYPE_COLORS } from "../utils/chartTheme";
 import { UNIT_OPTIONS } from "../utils/behaviorOverviewData";
 import {
   SPECIALTY_OPTIONS,
@@ -224,9 +267,13 @@ import {
   DIST_STATS_SPECIALTY_OPTIONS,
   buildHourTypeByCity,
   buildSpecialtyHourDiff,
+  buildSpecialtyWorkCorrelation,
   generateSpecialtyStatsRows,
   filterSpecialtyStatsRows,
   unitLabel,
+  specialtyLabel,
+  SPECIALTY_RADAR_INDICATORS,
+  DEFAULT_SPECIALTY_CORR_QUERY,
 } from "../utils/workHourAnalysisData";
 import { buildWorkHoursDistributionData } from "../utils/unitAttendanceComparisonData";
 import {
@@ -257,6 +304,7 @@ export default {
       distUnitOptions: DIST_STATS_UNIT_OPTIONS,
       distSpecialtyOptions: DIST_STATS_SPECIALTY_OPTIONS,
       typeQuery: { ...DEFAULT_HOUR_ANALYSIS_QUERY },
+      specialtyCorrQuery: { ...DEFAULT_SPECIALTY_CORR_QUERY },
       hoursDistQuery: { ...DEFAULT_UNIT_HOURS_DIST_QUERY },
       hoursDistProfessionalPath: [...DEFAULT_PROFESSIONAL_PATH],
       professionalCascaderProps: { checkStrictly: true, expandTrigger: "hover" },
@@ -266,6 +314,7 @@ export default {
       distCurrentPage: 1,
       distPageSize: 10,
       typeData: buildHourTypeByCity(DEFAULT_HOUR_ANALYSIS_QUERY),
+      specialtyCorrData: buildSpecialtyWorkCorrelation(DEFAULT_SPECIALTY_CORR_QUERY),
       hoursDistData: buildWorkHoursDistributionData(
         DEFAULT_UNIT_HOURS_DIST_QUERY,
         DEFAULT_PROFESSIONAL_PATH
@@ -328,7 +377,7 @@ export default {
         if (this.panelActive) this.resizeCharts();
       });
       this.$nextTick(() => {
-        ["typeChart", "unitHoursDistChart", "unitDeptChart"].forEach((refName) => {
+        ["typeChart", "unitHoursDistChart", "specialtyCorrChart", "unitDeptChart"].forEach((refName) => {
           const el = this.$refs[refName];
           if (el) this.resizeObserver.observe(el);
         });
@@ -338,6 +387,7 @@ export default {
       const refs = {
         type: "typeChart",
         unitHoursDist: "unitHoursDistChart",
+        specialtyCorr: "specialtyCorrChart",
         unitDept: "unitDeptChart",
       };
       Object.keys(refs).forEach((key) => {
@@ -366,6 +416,45 @@ export default {
     },
     refreshUnitDeptData() {
       this.unitDeptData = buildSpecialtyHourDiff(this.unitDeptQuery);
+    },
+    refreshSpecialtyCorrData() {
+      this.specialtyCorrData = buildSpecialtyWorkCorrelation(this.specialtyCorrQuery);
+    },
+    handleSpecialtyCorrQuery() {
+      this.refreshSpecialtyCorrData();
+      this.renderSpecialtyCorrChart();
+    },
+    resetSpecialtyCorrQuery() {
+      this.specialtyCorrQuery = { ...DEFAULT_SPECIALTY_CORR_QUERY };
+      this.refreshSpecialtyCorrData();
+      this.renderSpecialtyCorrChart();
+    },
+    handleSpecialtyCorrExport() {
+      const sp = this.specialtyCorrData;
+      const headers = ["序号", "专业维度", "作业工时(h)", "出勤工时(h)", "筛选专业", "时间范围"];
+      const period = `${this.specialtyCorrQuery.startDate} ~ ${this.specialtyCorrQuery.endDate}`;
+      const specLabel = specialtyLabel(this.specialtyCorrQuery.specialty);
+      const rows = SPECIALTY_RADAR_INDICATORS.map((ind, i) => [
+        i + 1,
+        ind.name,
+        sp.work[i],
+        sp.attend[i],
+        specLabel,
+        period,
+      ]);
+      downloadTableWithLog({
+        headers,
+        rows,
+        format: "csv",
+        baseFilename: "专业与作业工时相关性",
+        meta: {
+          moduleCode: "hour_specialty_correlation",
+          moduleName: "专业与作业工时相关性",
+          moduleGroup: "员工工作饱和度分析",
+          searchCriteria: { specialty: specLabel, period },
+        },
+      });
+      this.$message.success(`已导出 ${rows.length} 条记录`);
     },
     formatStatNumber(val) {
       if (val == null || val === "") return "-";
@@ -466,6 +555,7 @@ export default {
     renderAllCharts() {
       this.renderTypeChart();
       this.renderUnitHoursDistChart();
+      this.renderSpecialtyCorrChart();
       this.renderUnitDeptChart();
     },
     renderTypeChart() {
@@ -591,6 +681,57 @@ export default {
               itemStyle: { color: "#FAAD14" },
               label: { show: true, position: "top", fontSize: 10, color: "#FAAD14" },
               data: trainingHours,
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderSpecialtyCorrChart() {
+      const chart = this.charts.specialtyCorr;
+      if (!chart) return;
+      const sp = this.specialtyCorrData;
+      const maxVal = Math.max(...sp.work, ...sp.attend, 120);
+      const indicators = SPECIALTY_RADAR_INDICATORS.map((ind) => ({
+        ...ind,
+        max: Math.ceil(maxVal / 10) * 10 + 20,
+      }));
+      const C = PROTOTYPE_COLORS;
+      chart.setOption(
+        baseChartOption({
+          legend: legendBottomCenter(["作业工时时长", "出勤工时"]),
+          grid: { bottom: "14%" },
+          radar: {
+            indicator: indicators,
+            radius: "55%",
+            center: ["50%", "46%"],
+            axisName: { color: "#606266", fontSize: 11 },
+            splitArea: { areaStyle: { color: ["#fff", "#FAFAFA"] } },
+            splitLine: { lineStyle: { color: "#F0F0F0" } },
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+          },
+          series: [
+            {
+              type: "radar",
+              symbol: "circle",
+              symbolSize: 4,
+              data: [
+                {
+                  value: sp.work,
+                  name: "作业工时时长",
+                  lineStyle: { color: C.blueLight, width: 2 },
+                  itemStyle: { color: C.blueLight },
+                  areaStyle: { color: withAlpha(C.blueLight, 0.25) },
+                },
+                {
+                  value: sp.attend,
+                  name: "出勤工时",
+                  lineStyle: { color: C.blueDark, width: 2 },
+                  itemStyle: { color: C.blueDark },
+                  areaStyle: { color: withAlpha(C.blueDark, 0.15) },
+                },
+              ],
             },
           ],
         }),

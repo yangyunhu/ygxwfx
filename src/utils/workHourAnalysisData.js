@@ -222,3 +222,31 @@ export function specialtyLabel(value) {
   const opt = SPECIALTY_OPTIONS.find((o) => o.value === value);
   return opt ? opt.label : value;
 }
+
+/** 专业与作业工时相关性 — 雷达图维度 */
+export const SPECIALTY_RADAR_INDICATORS = [
+  { name: "输电", max: 150 },
+  { name: "营配", max: 150 },
+  { name: "电网建设", max: 150 },
+  { name: "变电", max: 150 },
+  { name: "配电", max: 150 },
+];
+
+export const DEFAULT_SPECIALTY_CORR_QUERY = {
+  specialty: "substation",
+  startDate: "2025-01-01",
+  endDate: "2025-12-31",
+};
+
+/** 专业与作业工时相关性 — 雷达图数据 */
+export function buildSpecialtyWorkCorrelation(query = {}) {
+  const { specialty = "substation", startDate, endDate } = query;
+  const factor = dateFactor(startDate, endDate);
+  const bias = specialtyBias(specialty);
+  const scale = (n) => Math.round(n * factor);
+
+  return {
+    work: SPECIALTY_RADAR_INDICATORS.map((_, i) => scale(80 + (i + 1) * 15 + bias)),
+    attend: SPECIALTY_RADAR_INDICATORS.map((_, i) => scale(70 + (i + 1) * 18 + (bias % 10))),
+  };
+}
