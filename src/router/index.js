@@ -50,6 +50,8 @@ import PersonalAttendanceSettings from '../views/PersonalAttendanceSettings.vue'
 import PersonalAttendanceStats from '../views/PersonalAttendanceStats.vue';
 import PersonalAttendanceHome from '../views/PersonalAttendanceHome.vue';
 import AttendanceStabilityAnalysis from '../views/AttendanceStabilityAnalysis.vue';
+import AttendancePatternAnalysis from '../views/AttendancePatternAnalysis.vue';
+import LeaveBehaviorAnalysis from '../views/LeaveBehaviorAnalysis.vue';
 
 Vue.use(Router);
 
@@ -333,13 +335,13 @@ export default new Router({
     {
       path: '/team-behavior-portrait/attendance-pattern',
       name: 'AttendancePatternAnalysis',
-      component: ModulePlaceholder,
+      component: AttendancePatternAnalysis,
       meta: { title: '出勤时间规律分析', description: '出勤时间规律分析页面，分析员工或班组的出勤时间规律。' }
     },
     {
       path: '/team-behavior-portrait/leave-behavior',
       name: 'LeaveBehaviorAnalysis',
-      component: ModulePlaceholder,
+      component: LeaveBehaviorAnalysis,
       meta: { title: '请假行为分析', description: '请假行为分析页面，统计和分析员工或班组的请假行为模式。' }
     },
     {
