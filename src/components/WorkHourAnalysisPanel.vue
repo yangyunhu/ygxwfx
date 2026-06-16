@@ -73,20 +73,16 @@
             <h3 class="section-title section-title--plain">专业与作业工时相关性</h3>
             <el-button type="primary" size="small" plain icon="el-icon-download" @click="handleSpecialtyCorrExport">导出明细</el-button>
           </div>
-          <el-form :inline="true" size="small" class="section-form">
+          <el-form :inline="true" size="small" class="section-form section-form--compact">
             <el-form-item label="专业：">
-              <el-select v-model="specialtyCorrQuery.specialty" placeholder="请选择" style="width: 120px">
+              <el-select
+                v-model="specialtyCorrQuery.specialty"
+                placeholder="请选择"
+                style="width: 120px"
+                @change="handleSpecialtyChange"
+              >
                 <el-option v-for="opt in specialtyOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
               </el-select>
-            </el-form-item>
-            <el-form-item label="时间：">
-              <el-date-picker v-model="specialtyCorrQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
-              <span class="date-sep">~</span>
-              <el-date-picker v-model="specialtyCorrQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
-            </el-form-item>
-            <el-form-item class="section-form__actions">
-              <el-button type="primary" icon="el-icon-search" @click="handleSpecialtyCorrQuery">查询</el-button>
-              <el-button icon="el-icon-refresh" @click="resetSpecialtyCorrQuery">重置</el-button>
             </el-form-item>
           </el-form>
           <div ref="specialtyCorrChart" class="chart-box chart-box--radar" />
@@ -98,7 +94,8 @@
       </div>
 
       <section class="chart-section">
-        <h3 class="section-title"><span class="section-dot" />岗位分类与工时相关性</h3>
+        <h3 class="section-title"><span class="section-dot" />岗位分类平均工时对比</h3>
+        <p class="section-desc">按统计区间人均平均工时（h）展示管理类、专业技术类、技能类差异</p>
         <div ref="postCategoryChart" class="chart-box" />
       </section>
 
@@ -112,10 +109,6 @@
           <div class="trend-chart-item">
             <p class="chart-subtitle"><span class="chart-subtitle__dot chart-subtitle__dot--prof" />专业技术类</p>
             <div ref="trendProfChart" class="chart-box chart-box--trend" />
-          </div>
-          <div class="trend-chart-item trend-chart-item--wide">
-            <p class="chart-subtitle"><span class="chart-subtitle__dot chart-subtitle__dot--mgmt" />管理类</p>
-            <div ref="trendMgmtChart" class="chart-box chart-box--trend chart-box--trend-wide" />
           </div>
         </div>
       </section>
@@ -238,7 +231,6 @@ import { downloadTableWithLog } from "../utils/exportLogger";
 const TREND_CHART_THEMES = {
   skill: { names: ["变电", "配电"], colors: ["#1890FF", "#13C2C2"] },
   professional: { names: ["营销", "方式"], colors: ["#FA8C16", "#597EF7"] },
-  management: { names: ["人资", "党群"], colors: ["#52C41A", "#9254DE"] },
 };
 
 function hexToRgba(hex, alpha) {
@@ -404,7 +396,6 @@ export default {
           "postCategoryChart",
           "trendSkillChart",
           "trendProfChart",
-          "trendMgmtChart",
         ].forEach((refName) => {
           const el = this.$refs[refName];
           if (el) this.resizeObserver.observe(el);
@@ -420,7 +411,6 @@ export default {
         postCategory: "postCategoryChart",
         trendSkill: "trendSkillChart",
         trendProf: "trendProfChart",
-        trendMgmt: "trendMgmtChart",
       };
       Object.keys(refs).forEach((key) => {
         const el = this.$refs[refs[key]];
@@ -446,12 +436,16 @@ export default {
     },
     handleDashboardQuery() {
       this.refreshDashboardData();
+      this.refreshSpecialtyCorrData();
       this.renderDashboardCharts();
+      this.renderSpecialtyCorrChart();
     },
     resetDashboardQuery() {
       this.dashboardQuery = { ...DEFAULT_DASHBOARD_QUERY };
       this.refreshDashboardData();
+      this.refreshSpecialtyCorrData();
       this.renderDashboardCharts();
+      this.renderSpecialtyCorrChart();
     },
     refreshHoursDistData() {
       this.hoursDistData = buildWorkHoursDistributionData(
@@ -460,21 +454,20 @@ export default {
       );
     },
     refreshSpecialtyCorrData() {
-      this.specialtyCorrData = buildSpecialtyWorkCorrelation(this.specialtyCorrQuery);
+      this.specialtyCorrData = buildSpecialtyWorkCorrelation({
+        specialty: this.specialtyCorrQuery.specialty,
+        startDate: this.dashboardQuery.startDate,
+        endDate: this.dashboardQuery.endDate,
+      });
     },
-    handleSpecialtyCorrQuery() {
-      this.refreshSpecialtyCorrData();
-      this.renderSpecialtyCorrChart();
-    },
-    resetSpecialtyCorrQuery() {
-      this.specialtyCorrQuery = { ...DEFAULT_SPECIALTY_CORR_QUERY };
+    handleSpecialtyChange() {
       this.refreshSpecialtyCorrData();
       this.renderSpecialtyCorrChart();
     },
     handleSpecialtyCorrExport() {
       const sp = this.specialtyCorrData;
       const headers = ["序号", "专业维度", "作业工时(h)", "出勤工时(h)", "筛选专业", "时间范围"];
-      const period = `${this.specialtyCorrQuery.startDate} ~ ${this.specialtyCorrQuery.endDate}`;
+      const period = `${this.dashboardQuery.startDate} ~ ${this.dashboardQuery.endDate}`;
       const specLabel = specialtyLabel(this.specialtyCorrQuery.specialty);
       const rows = SPECIALTY_RADAR_INDICATORS.map((ind, i) => [
         i + 1,
@@ -677,22 +670,103 @@ export default {
     renderPostCategoryChart() {
       const chart = this.charts.postCategory;
       if (!chart) return;
-      const { categories, management, professional, skill } = this.postCategoryData;
+      const { categories, management, professional, skill, provincialAvg } = this.postCategoryData;
+      const all = [...management, ...professional, ...skill];
+      const yMin = Math.max(0, Math.floor(Math.min(...all) / 50) * 50 - 20);
+      const yMax = Math.ceil(Math.max(...all, provincialAvg) / 50) * 50 + 20;
+      const interval = yMax - yMin <= 120 ? 20 : 40;
+
+      const barSeries = (name, data, color) => ({
+        name,
+        type: "bar",
+        barMaxWidth: 14,
+        barGap: "18%",
+        itemStyle: {
+          color: {
+            type: "linear",
+            x: 0,
+            y: 0,
+            x2: 0,
+            y2: 1,
+            colorStops: [
+              { offset: 0, color },
+              { offset: 1, color: hexToRgba(color, 0.72) },
+            ],
+          },
+          borderRadius: [3, 3, 0, 0],
+        },
+        emphasis: { focus: "series" },
+        label: {
+          show: false,
+          position: "top",
+          fontSize: 10,
+          color: "#606266",
+          formatter: (p) => `${p.value}`,
+        },
+        data,
+      });
+
       chart.setOption(
         baseChartOption({
-          tooltip: { trigger: "axis" },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: (params) => {
+              const title = params[0]?.axisValue || "";
+              const rows = params
+                .map(
+                  (p) =>
+                    `<div style="display:flex;justify-content:space-between;gap:20px;margin-top:4px">
+                      <span>${p.marker}${p.seriesName}</span>
+                      <strong>平均 ${p.value} h</strong>
+                    </div>`
+                )
+                .join("");
+              return `<div style="font-weight:600;margin-bottom:4px">${title}</div>${rows}
+                <div style="margin-top:6px;padding-top:6px;border-top:1px dashed #eee;color:#909399;font-size:11px">
+                  全省均值 ${provincialAvg} h
+                </div>`;
+            },
+          },
           legend: legendTopCenter(["管理类", "专业技术类", "技能类"]),
-          grid: { left: "2%", right: "2%", top: "14%", bottom: "16%", containLabel: true },
+          grid: { left: "2%", right: "2%", top: "16%", bottom: "16%", containLabel: true },
           xAxis: {
             type: "category",
             data: categories,
             axisLabel: { interval: 0, rotate: 35, fontSize: 10 },
           },
-          yAxis: { type: "value", min: 0, max: 240, interval: 40 },
+          yAxis: {
+            type: "value",
+            name: "平均工时(h)",
+            min: yMin,
+            max: yMax,
+            interval,
+            nameTextStyle: { color: "#909399", fontSize: 11 },
+            axisLine: { show: false },
+            splitLine: { lineStyle: { color: "#F0F2F5", type: "dashed" } },
+          },
           series: [
-            { name: "管理类", type: "bar", barMaxWidth: 12, itemStyle: { color: "#1890FF" }, data: management },
-            { name: "专业技术类", type: "bar", barMaxWidth: 12, itemStyle: { color: "#52C41A" }, data: professional },
-            { name: "技能类", type: "bar", barMaxWidth: 12, itemStyle: { color: "#FAAD14" }, data: skill },
+            barSeries("管理类", management, "#1890FF"),
+            barSeries("专业技术类", professional, "#52C41A"),
+            barSeries("技能类", skill, "#FAAD14"),
+            {
+              name: "全省平均",
+              type: "line",
+              symbol: "none",
+              lineStyle: { width: 0 },
+              markLine: {
+                silent: true,
+                symbol: "none",
+                lineStyle: { color: "#FA8C16", type: "dashed", width: 2 },
+                label: {
+                  formatter: `全省平均 ${provincialAvg}h`,
+                  color: "#FA8C16",
+                  fontSize: 11,
+                },
+                data: [{ yAxis: provincialAvg }],
+              },
+              data: [],
+            },
           ],
         }),
         true
@@ -702,7 +776,6 @@ export default {
     renderPostTrendCharts() {
       this.renderSingleTrendChart("trendSkill", "skill");
       this.renderSingleTrendChart("trendProf", "professional");
-      this.renderSingleTrendChart("trendMgmt", "management");
     },
     renderSingleTrendChart(chartKey, dataKey) {
       const chart = this.charts[chartKey];
@@ -951,6 +1024,14 @@ export default {
   color: #303133;
 }
 
+.section-desc {
+  margin: -6px 0 10px;
+  padding-left: 16px;
+  font-size: 12px;
+  color: #909399;
+  line-height: 1.5;
+}
+
 .section-title--plain {
   margin: 0;
 }
@@ -1091,14 +1172,6 @@ export default {
   border-radius: 6px;
 }
 
-.trend-chart-item:last-child {
-  grid-column: 1 / -1;
-}
-
-.trend-chart-item--wide {
-  padding-bottom: 10px;
-}
-
 .chart-subtitle {
   display: flex;
   align-items: center;
@@ -1125,16 +1198,8 @@ export default {
   background: linear-gradient(135deg, #fa8c16, #597ef7);
 }
 
-.chart-subtitle__dot--mgmt {
-  background: linear-gradient(135deg, #52c41a, #9254de);
-}
-
 .chart-box--trend {
   height: 268px;
-}
-
-.chart-box--trend-wide {
-  height: 288px;
 }
 
 .chart-box {

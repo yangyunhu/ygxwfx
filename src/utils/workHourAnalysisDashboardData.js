@@ -99,20 +99,43 @@ export function buildCumulativeSpecialtyRadar(query = {}) {
   return { dims, labels, values };
 }
 
-/** 岗位分类与工时相关性 — 分组柱 */
+/** 岗位分类平均工时 — 各地市分组柱 */
 export function buildPostCategoryBarChart(query = {}) {
   const factor = dateFactor(query.startDate, query.endDate);
+  const workDays = countWorkDays(query.startDate, query.endDate);
   const categories = YUNNAN_CITIES.map((c) => c.short);
   const management = [];
   const professional = [];
   const skill = [];
+
+  // 岗位类别人均日出勤基准（h），再折算为统计区间平均工时
+  const dailyBase = { management: 7.52, professional: 7.86, skill: 7.38 };
+
   categories.forEach((_, i) => {
-    const seed = hashSeed(`post-${query.startDate}-${i}`);
-    management.push(Math.round((155 + (seed % 35)) * factor));
-    professional.push(Math.round((168 + ((seed >> 3) % 40)) * factor));
-    skill.push(Math.round((142 + ((seed >> 5) % 38)) * factor));
+    const seed = hashSeed(`post-avg-${query.startDate}-${i}`);
+    const mgmtDaily = dailyBase.management + ((seed % 14) - 7) / 100;
+    const profDaily = dailyBase.professional + (((seed >> 3) % 16) - 8) / 100;
+    const skillDaily = dailyBase.skill + (((seed >> 5) % 14) - 7) / 100;
+    management.push(roundAvgHours(mgmtDaily, workDays, factor));
+    professional.push(roundAvgHours(profDaily, workDays, factor));
+    skill.push(roundAvgHours(skillDaily, workDays, factor));
   });
-  return { categories, management, professional, skill };
+
+  const all = [...management, ...professional, ...skill];
+  const provincialAvg = roundAvgHours(
+    (dailyBase.management + dailyBase.professional + dailyBase.skill) / 3,
+    workDays,
+    factor
+  );
+
+  return { categories, management, professional, skill, provincialAvg, workDays };
+}
+
+/** 统计区间人均平均工时(h)，随时间筛选缩放 */
+function roundAvgHours(dailyHours, workDays, factor) {
+  const refDays = 26;
+  const timeScale = Math.min(1.2, Math.max(0.35, workDays / 180)) * factor;
+  return Number((dailyHours * refDays * timeScale).toFixed(1));
 }
 
 /** 岗位分类工时趋势 — 三组折线 */
@@ -133,6 +156,5 @@ export function buildPostCategoryTrendCharts(query = {}) {
     categories,
     skill: buildPair("skill", 175, 160),
     professional: buildPair("prof", 188, 172),
-    management: buildPair("mgmt", 165, 158),
   };
 }
