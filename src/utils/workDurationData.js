@@ -57,6 +57,13 @@ function buildRow(index, dept, unit, team, workDays) {
   const standardAvg = 8.0;
   const totalHours = Number((onDutyCount * avgHours * workDays).toFixed(2));
   const standardTotalHours = Number((onDutyCount * standardAvg * workDays).toFixed(2));
+  // 出勤工时：人均日出勤工时
+  const attendanceHours = avgHours;
+  // 饱和工时：按饱和标准 10h/人/日 测算
+  const saturationDaily = 10.0;
+  const saturationHours = Number((onDutyCount * saturationDaily * workDays).toFixed(2));
+  // 平均工时：统计区间内人均累计工时
+  const averageHours = Number((totalHours / onDutyCount).toFixed(2));
 
   return {
     id: index + 1,
@@ -66,11 +73,16 @@ function buildRow(index, dept, unit, team, workDays) {
     orgId: dept.id,
     orgName: dept.name,
     onDutyCount,
+    attendanceHours,
     totalHours,
+    saturationHours,
+    averageHours,
     avgHours,
     standardTotalHours,
     standardAvg,
+    saturationDaily,
     meetsStandard: avgHours >= standardAvg,
+    exceedsSaturation: totalHours >= saturationHours,
   };
 }
 

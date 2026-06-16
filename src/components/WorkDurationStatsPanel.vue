@@ -91,14 +91,24 @@
             <el-table-column prop="department" label="部门" min-width="160" show-overflow-tooltip />
             <el-table-column prop="team" label="班组" min-width="120" show-overflow-tooltip />
             <el-table-column prop="onDutyCount" label="在职人数(在岗)" width="130" align="center" />
+            <el-table-column label="出勤工时(h)" width="110" align="center">
+              <template slot-scope="scope">
+                <span :class="hoursClass(scope.row)">{{ formatNumber(scope.row.attendanceHours) }}</span>
+              </template>
+            </el-table-column>
             <el-table-column label="出勤总工时(h)" width="130" align="center">
               <template slot-scope="scope">
                 <span :class="hoursClass(scope.row)">{{ formatNumber(scope.row.totalHours) }}</span>
               </template>
             </el-table-column>
-            <el-table-column label="人均工时(h)" width="110" align="center">
+            <el-table-column label="饱和工时(h)" width="120" align="center">
               <template slot-scope="scope">
-                <span :class="hoursClass(scope.row)">{{ formatNumber(scope.row.avgHours) }}</span>
+                <span :class="saturationClass(scope.row)">{{ formatNumber(scope.row.saturationHours) }}</span>
+              </template>
+            </el-table-column>
+            <el-table-column label="平均工时(h)" width="110" align="center">
+              <template slot-scope="scope">
+                <span :class="hoursClass(scope.row)">{{ formatNumber(scope.row.averageHours) }}</span>
               </template>
             </el-table-column>
             <el-table-column prop="standardTotalHours" label="标准总工时(h)" width="130" align="center">
@@ -277,6 +287,9 @@ export default {
     hoursClass(row) {
       return row.meetsStandard ? "hours-ok" : "hours-low";
     },
+    saturationClass(row) {
+      return row.exceedsSaturation ? "hours-warn" : "hours-sat";
+    },
     indexMethod(index) {
       return (this.currentPage - 1) * this.pageSize + index + 1;
     },
@@ -387,8 +400,10 @@ export default {
         "部门",
         "班组",
         "在职人数(在岗)",
+        "出勤工时(h)",
         "出勤总工时(h)",
-        "人均工时(h)",
+        "饱和工时(h)",
+        "平均工时(h)",
         "标准总工时(h)",
       ];
       const rows = source.map((row, idx) => [
@@ -397,8 +412,10 @@ export default {
         row.department,
         row.team,
         row.onDutyCount,
+        this.formatNumber(row.attendanceHours),
         this.formatNumber(row.totalHours),
-        this.formatNumber(row.avgHours),
+        this.formatNumber(row.saturationHours),
+        this.formatNumber(row.averageHours),
         this.formatNumber(row.standardTotalHours),
       ]);
       downloadTableWithLog({
@@ -541,6 +558,16 @@ export default {
 
 .hours-low {
   color: #f5222d;
+  font-weight: 600;
+}
+
+.hours-warn {
+  color: #fa8c16;
+  font-weight: 600;
+}
+
+.hours-sat {
+  color: #1890ff;
   font-weight: 600;
 }
 
