@@ -20,7 +20,7 @@
         </el-form>
       </section>
 
-      <div class="kpi-row">
+      <div class="kpi-row kpi-row--3">
         <div v-for="item in kpiItems" :key="item.key" class="kpi-card">
           <div class="kpi-card__value">
             {{ item.value }}<span v-if="item.suffix" class="kpi-card__unit">{{ item.suffix }}</span>
@@ -67,38 +67,33 @@
         <div ref="unitHoursDistChart" class="chart-box" />
       </section>
 
-      <section class="chart-section">
-        <div class="section-header-row">
-          <h3 class="section-title section-title--plain">专业与作业工时相关性</h3>
-          <el-button type="primary" size="small" plain icon="el-icon-download" @click="handleSpecialtyCorrExport">导出明细</el-button>
-        </div>
-        <el-form :inline="true" size="small" class="section-form">
-          <el-form-item label="专业：">
-            <el-select v-model="specialtyCorrQuery.specialty" placeholder="请选择" style="width: 120px">
-              <el-option v-for="opt in specialtyOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="时间：">
-            <el-date-picker v-model="specialtyCorrQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
-            <span class="date-sep">~</span>
-            <el-date-picker v-model="specialtyCorrQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
-          </el-form-item>
-          <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleSpecialtyCorrQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetSpecialtyCorrQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
-        <div ref="specialtyCorrChart" class="chart-box chart-box--radar" />
-      </section>
-
       <div class="chart-grid-2">
         <section class="chart-section">
-          <h3 class="section-title"><span class="section-dot" />全省人均工时分布情况</h3>
-          <div ref="provinceDistChart" class="chart-box chart-box--md" />
+          <div class="section-header-row">
+            <h3 class="section-title section-title--plain">专业与作业工时相关性</h3>
+            <el-button type="primary" size="small" plain icon="el-icon-download" @click="handleSpecialtyCorrExport">导出明细</el-button>
+          </div>
+          <el-form :inline="true" size="small" class="section-form">
+            <el-form-item label="专业：">
+              <el-select v-model="specialtyCorrQuery.specialty" placeholder="请选择" style="width: 120px">
+                <el-option v-for="opt in specialtyOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+              </el-select>
+            </el-form-item>
+            <el-form-item label="时间：">
+              <el-date-picker v-model="specialtyCorrQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
+              <span class="date-sep">~</span>
+              <el-date-picker v-model="specialtyCorrQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
+            </el-form-item>
+            <el-form-item class="section-form__actions">
+              <el-button type="primary" icon="el-icon-search" @click="handleSpecialtyCorrQuery">查询</el-button>
+              <el-button icon="el-icon-refresh" @click="resetSpecialtyCorrQuery">重置</el-button>
+            </el-form-item>
+          </el-form>
+          <div ref="specialtyCorrChart" class="chart-box chart-box--radar" />
         </section>
         <section class="chart-section">
-          <h3 class="section-title"><span class="section-dot" />累计工时与专业相关性</h3>
-          <div ref="cumulativeRadarChart" class="chart-box chart-box--radar" />
+          <h3 class="section-title"><span class="section-dot" />技能类全量岗位序列累计工时</h3>
+          <div ref="cumulativeRadarChart" class="chart-box chart-box--radar-skill" />
         </section>
       </div>
 
@@ -111,16 +106,16 @@
         <h3 class="section-title"><span class="section-dot" />岗位分类工时趋势</h3>
         <div class="trend-chart-grid">
           <div class="trend-chart-item">
-            <p class="chart-subtitle">技能类</p>
-            <div ref="trendSkillChart" class="chart-box chart-box--sm" />
+            <p class="chart-subtitle"><span class="chart-subtitle__dot chart-subtitle__dot--skill" />技能类</p>
+            <div ref="trendSkillChart" class="chart-box chart-box--trend" />
           </div>
           <div class="trend-chart-item">
-            <p class="chart-subtitle">专业技术类</p>
-            <div ref="trendProfChart" class="chart-box chart-box--sm" />
+            <p class="chart-subtitle"><span class="chart-subtitle__dot chart-subtitle__dot--prof" />专业技术类</p>
+            <div ref="trendProfChart" class="chart-box chart-box--trend" />
           </div>
-          <div class="trend-chart-item">
-            <p class="chart-subtitle">管理类</p>
-            <div ref="trendMgmtChart" class="chart-box chart-box--sm" />
+          <div class="trend-chart-item trend-chart-item--wide">
+            <p class="chart-subtitle"><span class="chart-subtitle__dot chart-subtitle__dot--mgmt" />管理类</p>
+            <div ref="trendMgmtChart" class="chart-box chart-box--trend chart-box--trend-wide" />
           </div>
         </div>
       </section>
@@ -229,7 +224,6 @@ import {
   DEFAULT_DASHBOARD_QUERY,
   buildHourAnalysisKpi,
   buildCityAvgHoursChart,
-  buildProvinceHourDistChart,
   buildCumulativeSpecialtyRadar,
   buildPostCategoryBarChart,
   buildPostCategoryTrendCharts,
@@ -240,6 +234,72 @@ import {
   DEFAULT_PROFESSIONAL_PATH,
 } from "../utils/professionalClassification";
 import { downloadTableWithLog } from "../utils/exportLogger";
+
+const TREND_CHART_THEMES = {
+  skill: { names: ["变电", "配电"], colors: ["#1890FF", "#13C2C2"] },
+  professional: { names: ["营销", "方式"], colors: ["#FA8C16", "#597EF7"] },
+  management: { names: ["人资", "党群"], colors: ["#52C41A", "#9254DE"] },
+};
+
+function hexToRgba(hex, alpha) {
+  const h = (hex || "").replace("#", "");
+  if (h.length !== 6) return hex;
+  const r = parseInt(h.slice(0, 2), 16);
+  const g = parseInt(h.slice(2, 4), 16);
+  const b = parseInt(h.slice(4, 6), 16);
+  return `rgba(${r},${g},${b},${alpha})`;
+}
+
+function buildTrendSeries(name, data, color) {
+  return {
+    name,
+    type: "line",
+    smooth: 0.38,
+    connectNulls: true,
+    symbol: "circle",
+    symbolSize: 7,
+    showSymbol: false,
+    lineStyle: {
+      width: 2.5,
+      color,
+      shadowColor: hexToRgba(color, 0.25),
+      shadowBlur: 8,
+      shadowOffsetY: 4,
+    },
+    itemStyle: { color, borderColor: "#fff", borderWidth: 2 },
+    emphasis: {
+      focus: "series",
+      scale: true,
+      showSymbol: true,
+      itemStyle: { shadowBlur: 10, shadowColor: hexToRgba(color, 0.35) },
+    },
+    areaStyle: {
+      color: {
+        type: "linear",
+        x: 0,
+        y: 0,
+        x2: 0,
+        y2: 1,
+        colorStops: [
+          { offset: 0, color: hexToRgba(color, 0.28) },
+          { offset: 1, color: hexToRgba(color, 0.03) },
+        ],
+      },
+    },
+    data,
+  };
+}
+
+function calcTrendYAxis(seriesA, seriesB) {
+  const all = [...seriesA, ...seriesB].filter((v) => v != null);
+  const minVal = Math.min(...all);
+  const maxVal = Math.max(...all);
+  const yMin = Math.max(0, Math.floor((minVal - 25) / 20) * 20);
+  const yMax = Math.ceil((maxVal + 20) / 20) * 20;
+  const span = yMax - yMin;
+  const interval = span <= 80 ? 20 : span <= 160 ? 40 : 50;
+  return { min: yMin, max: yMax, interval };
+}
 
 export default {
   name: "WorkHourAnalysisPanel",
@@ -259,7 +319,6 @@ export default {
       dashboardQuery: { ...DEFAULT_DASHBOARD_QUERY },
       dashboardKpi: buildHourAnalysisKpi(DEFAULT_DASHBOARD_QUERY),
       cityAvgData: buildCityAvgHoursChart(DEFAULT_DASHBOARD_QUERY),
-      provinceDistData: buildProvinceHourDistChart(DEFAULT_DASHBOARD_QUERY),
       cumulativeRadarData: buildCumulativeSpecialtyRadar(DEFAULT_DASHBOARD_QUERY),
       postCategoryData: buildPostCategoryBarChart(DEFAULT_DASHBOARD_QUERY),
       postTrendData: buildPostCategoryTrendCharts(DEFAULT_DASHBOARD_QUERY),
@@ -295,10 +354,9 @@ export default {
     kpiItems() {
       const k = this.dashboardKpi;
       return [
-        { key: "avg", label: "整体平均工时", value: k.avgHours, suffix: "h", desc: "全员整体水平" },
-        { key: "median", label: "工时中位数", value: k.medianHours, suffix: "h", desc: "多数员工工时" },
-        { key: "std", label: "整体标准差", value: k.stdDev, suffix: "", desc: "分配均衡度" },
-        { key: "range", label: "工时区间", value: `${k.rangeMin}h ~ ${k.rangeMax}h`, suffix: "", desc: "全局整体水平" },
+        { key: "attendance", label: "出勤工时", value: k.attendanceHours, suffix: "h", desc: "人均日出勤工时" },
+        { key: "total", label: "出勤总工时", value: k.totalAttendanceHoursDisplay, suffix: "h", desc: "统计区间累计" },
+        { key: "saturation", label: "饱和工时", value: k.saturationHoursDisplay, suffix: "h", desc: "饱和标准累计" },
       ];
     },
   },
@@ -342,7 +400,6 @@ export default {
           "cityAvgChart",
           "unitHoursDistChart",
           "specialtyCorrChart",
-          "provinceDistChart",
           "cumulativeRadarChart",
           "postCategoryChart",
           "trendSkillChart",
@@ -359,7 +416,6 @@ export default {
         cityAvg: "cityAvgChart",
         unitHoursDist: "unitHoursDistChart",
         specialtyCorr: "specialtyCorrChart",
-        provinceDist: "provinceDistChart",
         cumulativeRadar: "cumulativeRadarChart",
         postCategory: "postCategoryChart",
         trendSkill: "trendSkillChart",
@@ -384,7 +440,6 @@ export default {
     refreshDashboardData() {
       this.dashboardKpi = buildHourAnalysisKpi(this.dashboardQuery);
       this.cityAvgData = buildCityAvgHoursChart(this.dashboardQuery);
-      this.provinceDistData = buildProvinceHourDistChart(this.dashboardQuery);
       this.cumulativeRadarData = buildCumulativeSpecialtyRadar(this.dashboardQuery);
       this.postCategoryData = buildPostCategoryBarChart(this.dashboardQuery);
       this.postTrendData = buildPostCategoryTrendCharts(this.dashboardQuery);
@@ -528,7 +583,6 @@ export default {
     },
     renderDashboardCharts() {
       this.renderCityAvgChart();
-      this.renderProvinceDistChart();
       this.renderCumulativeRadarChart();
       this.renderPostCategoryChart();
       this.renderPostTrendCharts();
@@ -576,95 +630,43 @@ export default {
       );
       chart.resize();
     },
-    renderProvinceDistChart() {
-      const chart = this.charts.provinceDist;
-      if (!chart) return;
-      const { categories, perCapita, cumulative, provincialAvg } = this.provinceDistData;
-      chart.setOption(
-        baseChartOption({
-          tooltip: { trigger: "axis" },
-          legend: legendTopCenter(["累计工时", "人均工时", "全省平均"]),
-          grid: { left: "2%", right: "4%", top: "16%", bottom: "18%", containLabel: true },
-          xAxis: {
-            type: "category",
-            data: categories,
-            axisLabel: { interval: 0, rotate: 35, fontSize: 10 },
-          },
-          yAxis: [
-            { type: "value", name: "累计", min: 0 },
-            { type: "value", name: "人均(h)", min: 0, max: 12, splitLine: { show: false } },
-          ],
-          series: [
-            {
-              name: "累计工时",
-              type: "line",
-              yAxisIndex: 0,
-              smooth: true,
-              symbol: "none",
-              lineStyle: { width: 0 },
-              areaStyle: {
-                color: {
-                  type: "linear", x: 0, y: 0, x2: 0, y2: 1,
-                  colorStops: [
-                    { offset: 0, color: "rgba(24,144,255,0.45)" },
-                    { offset: 1, color: "rgba(24,144,255,0.05)" },
-                  ],
-                },
-              },
-              data: cumulative,
-            },
-            {
-              name: "人均工时",
-              type: "bar",
-              yAxisIndex: 1,
-              barMaxWidth: 16,
-              itemStyle: { color: "#69C0FF", borderRadius: [2, 2, 0, 0] },
-              data: perCapita,
-            },
-            {
-              name: "全省平均",
-              type: "line",
-              yAxisIndex: 1,
-              symbol: "none",
-              lineStyle: { type: "dashed", color: "#FA8C16", width: 2 },
-              markLine: {
-                silent: true,
-                symbol: "none",
-                data: [{ yAxis: provincialAvg }],
-                lineStyle: { color: "#FA8C16", type: "dashed" },
-              },
-              data: [],
-            },
-          ],
-        }),
-        true
-      );
-      chart.resize();
-    },
     renderCumulativeRadarChart() {
       const chart = this.charts.cumulativeRadar;
       if (!chart) return;
-      const { dims, values } = this.cumulativeRadarData;
+      const { dims, labels, values } = this.cumulativeRadarData;
       const maxVal = Math.max(...values, 80);
       chart.setOption(
         baseChartOption({
+          tooltip: {
+            trigger: "item",
+            formatter: (p) => {
+              const idx = labels.indexOf(p.name);
+              const fullName = idx >= 0 ? dims[idx] : p.name;
+              return `${fullName}<br/>累计工时：<strong>${p.value} h</strong>`;
+            },
+          },
+          legend: legendBottomCenter(["累计工时"]),
           radar: {
-            indicator: dims.map((name) => ({ name, max: maxVal + 15 })),
-            radius: "62%",
-            center: ["50%", "52%"],
-            axisName: { color: "#606266", fontSize: 11 },
+            indicator: labels.map((name) => ({ name, max: maxVal + 12 })),
+            radius: "58%",
+            center: ["50%", "48%"],
+            startAngle: 90,
+            splitNumber: 4,
+            axisName: { color: "#606266", fontSize: 9, lineHeight: 13 },
             splitArea: { areaStyle: { color: ["#fff", "#FAFAFA"] } },
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            splitLine: { lineStyle: { color: "#F0F0F0" } },
           },
           series: [{
             type: "radar",
             symbol: "circle",
-            symbolSize: 5,
+            symbolSize: 4,
             data: [{
               value: values,
               name: "累计工时",
               lineStyle: { color: "#1890FF", width: 2 },
-              itemStyle: { color: "#1890FF" },
-              areaStyle: { color: withAlpha("#1890FF", 0.25) },
+              itemStyle: { color: "#1890FF", borderColor: "#fff", borderWidth: 1 },
+              areaStyle: { color: withAlpha("#1890FF", 0.22) },
             }],
           }],
         }),
@@ -698,47 +700,71 @@ export default {
       chart.resize();
     },
     renderPostTrendCharts() {
-      this.renderSingleTrendChart("trendSkill", "skill", ["变电", "配电"], ["#EB2F96", "#1A558E"]);
-      this.renderSingleTrendChart("trendProf", "professional", ["营销", "方式"], ["#FA8C16", "#1A558E"]);
-      this.renderSingleTrendChart("trendMgmt", "management", ["人资", "党群"], ["#52C41A", "#8C8C8C"]);
+      this.renderSingleTrendChart("trendSkill", "skill");
+      this.renderSingleTrendChart("trendProf", "professional");
+      this.renderSingleTrendChart("trendMgmt", "management");
     },
-    renderSingleTrendChart(chartKey, dataKey, names, colors) {
+    renderSingleTrendChart(chartKey, dataKey) {
       const chart = this.charts[chartKey];
       if (!chart) return;
+      const theme = TREND_CHART_THEMES[dataKey];
       const { categories } = this.postTrendData;
       const pair = this.postTrendData[dataKey];
+      const yAxis = calcTrendYAxis(pair.seriesA, pair.seriesB);
+
       chart.setOption(
         baseChartOption({
-          tooltip: { trigger: "axis" },
-          legend: legendTopCenter(names),
-          grid: { left: "4%", right: "4%", top: "22%", bottom: "18%", containLabel: true },
+          tooltip: {
+            trigger: "axis",
+            axisPointer: {
+              type: "line",
+              lineStyle: { color: "#D9D9D9", type: "dashed" },
+            },
+            formatter: (params) => {
+              const title = params[0]?.axisValue || "";
+              const rows = params
+                .map(
+                  (p) =>
+                    `<div style="display:flex;align-items:center;justify-content:space-between;gap:16px;margin-top:4px">
+                      <span>${p.marker}${p.seriesName}</span>
+                      <strong style="color:#303133">${p.value} h</strong>
+                    </div>`
+                )
+                .join("");
+              return `<div style="font-weight:600;color:#303133;margin-bottom:2px">${title}</div>${rows}`;
+            },
+          },
+          legend: {
+            ...legendBottomCenter(theme.names),
+            icon: "roundRect",
+            itemWidth: 16,
+            itemHeight: 4,
+            itemGap: 24,
+          },
+          grid: { left: "3%", right: "3%", top: "12%", bottom: "16%", containLabel: true },
           xAxis: {
             type: "category",
+            boundaryGap: false,
             data: categories,
-            axisLabel: { interval: 1, rotate: 40, fontSize: 9 },
+            axisLine: { lineStyle: { color: "#E8E8E8" } },
+            axisTick: { show: false },
+            axisLabel: { interval: 0, rotate: 35, fontSize: 10, color: "#606266", hideOverlap: true },
           },
-          yAxis: { type: "value", min: 0, max: 240, splitNumber: 4 },
+          yAxis: {
+            type: "value",
+            min: yAxis.min,
+            max: yAxis.max,
+            interval: yAxis.interval,
+            name: "工时(h)",
+            nameTextStyle: { color: "#909399", fontSize: 11, padding: [0, 0, 0, -8] },
+            axisLine: { show: false },
+            axisTick: { show: false },
+            axisLabel: { color: "#909399", fontSize: 10 },
+            splitLine: { lineStyle: { color: "#F0F2F5", type: "dashed" } },
+          },
           series: [
-            {
-              name: names[0],
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 4,
-              lineStyle: { width: 2, color: colors[0] },
-              itemStyle: { color: colors[0] },
-              data: pair.seriesA,
-            },
-            {
-              name: names[1],
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 4,
-              lineStyle: { width: 2, color: colors[1] },
-              itemStyle: { color: colors[1] },
-              data: pair.seriesB,
-            },
+            buildTrendSeries(theme.names[0], pair.seriesA, theme.colors[0]),
+            buildTrendSeries(theme.names[1], pair.seriesB, theme.colors[1]),
           ],
         }),
         true
@@ -1003,6 +1029,10 @@ export default {
   width: 100%;
 }
 
+.kpi-row--3 {
+  grid-template-columns: repeat(3, 1fr);
+}
+
 .kpi-card {
   padding: 16px 18px;
   background: #fff;
@@ -1047,7 +1077,7 @@ export default {
 
 .trend-chart-grid {
   display: grid;
-  grid-template-columns: repeat(3, 1fr);
+  grid-template-columns: repeat(2, 1fr);
   gap: 12px;
   width: 100%;
   min-width: 0;
@@ -1055,14 +1085,56 @@ export default {
 
 .trend-chart-item {
   min-width: 0;
+  padding: 12px 14px 6px;
+  background: linear-gradient(180deg, #f8fbff 0%, #fff 55%);
+  border: 1px solid #eef2f7;
+  border-radius: 6px;
+}
+
+.trend-chart-item:last-child {
+  grid-column: 1 / -1;
+}
+
+.trend-chart-item--wide {
+  padding-bottom: 10px;
 }
 
 .chart-subtitle {
-  margin: 0 0 6px;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 4px;
   font-size: 13px;
-  font-weight: 500;
-  color: #606266;
-  text-align: center;
+  font-weight: 600;
+  color: #303133;
+  text-align: left;
+}
+
+.chart-subtitle__dot {
+  width: 8px;
+  height: 8px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.chart-subtitle__dot--skill {
+  background: linear-gradient(135deg, #1890ff, #13c2c2);
+}
+
+.chart-subtitle__dot--prof {
+  background: linear-gradient(135deg, #fa8c16, #597ef7);
+}
+
+.chart-subtitle__dot--mgmt {
+  background: linear-gradient(135deg, #52c41a, #9254de);
+}
+
+.chart-box--trend {
+  height: 268px;
+}
+
+.chart-box--trend-wide {
+  height: 288px;
 }
 
 .chart-box {
@@ -1087,6 +1159,10 @@ export default {
 
 .chart-box--radar {
   height: 340px;
+}
+
+.chart-box--radar-skill {
+  height: 400px;
 }
 
 .stats-section {
@@ -1123,7 +1199,8 @@ export default {
 }
 
 @media (max-width: 1200px) {
-  .kpi-row {
+  .kpi-row,
+  .kpi-row--3 {
     grid-template-columns: repeat(2, 1fr);
   }
 

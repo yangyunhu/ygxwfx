@@ -2,13 +2,20 @@
  * 工时分析看板 — 模拟数据（对齐原型图一）
  */
 import { YUNNAN_CITIES } from "./workHourAnalysisData";
+import { HR_CATEGORY_SEQUENCE_MAP } from "./positionRelation";
 
 export const DEFAULT_DASHBOARD_QUERY = {
   startDate: "2025-01-01",
   endDate: "2025-12-31",
 };
 
-const CUMULATIVE_SPEC_DIMS = ["发电", "输电", "营销", "配电", "调度"];
+/** 技能类全量岗位序列（与人资对照表图二一致） */
+export const SKILL_JOB_SEQUENCES =
+  HR_CATEGORY_SEQUENCE_MAP.find((m) => m.category === "技能类")?.sequences || [];
+
+function shortSkillSequenceLabel(name) {
+  return name.replace(/技能序列$/, "");
+}
 
 function hashSeed(str) {
   let h = 0;
@@ -27,18 +34,43 @@ function dateFactor(startDate, endDate) {
   return Math.min(1.2, Math.max(0.35, days / 180));
 }
 
+function countWorkDays(startDate, endDate) {
+  if (!startDate || !endDate) return 1;
+  const start = new Date(startDate);
+  const end = new Date(endDate);
+  if (Number.isNaN(start.getTime()) || Number.isNaN(end.getTime()) || end < start) return 1;
+  let days = 0;
+  const cursor = new Date(start);
+  while (cursor <= end) {
+    const weekDay = cursor.getDay();
+    if (weekDay !== 0 && weekDay !== 6) days += 1;
+    cursor.setDate(cursor.getDate() + 1);
+  }
+  return Math.max(1, days);
+}
+
+/** 顶部 KPI：出勤工时、出勤总工时、饱和工时 */
 export function buildHourAnalysisKpi(query = {}) {
   const factor = dateFactor(query.startDate, query.endDate);
-  const avg = 191.3 * factor;
-  const median = 185.5 * factor;
-  const std = 18.7 * factor;
+  const workDays = countWorkDays(query.startDate, query.endDate);
+  const onDutyCount = 18600;
+  const attendanceHours = Number((7.65 + 0.15 * (factor - 1)).toFixed(1));
+  const totalAttendanceHours = Math.round(onDutyCount * attendanceHours * workDays * factor);
+  const saturationHours = Math.round(onDutyCount * 10 * workDays * factor);
   return {
-    avgHours: avg.toFixed(1),
-    medianHours: median.toFixed(1),
-    stdDev: std.toFixed(1),
-    rangeMin: Math.round(160 * factor),
-    rangeMax: Math.round(245 * factor),
+    attendanceHours,
+    totalAttendanceHours,
+    saturationHours,
+    totalAttendanceHoursDisplay: formatWanHours(totalAttendanceHours),
+    saturationHoursDisplay: formatWanHours(saturationHours),
   };
+}
+
+function formatWanHours(hours) {
+  if (hours >= 10000) {
+    return `${(hours / 10000).toFixed(1)}万`;
+  }
+  return String(hours);
 }
 
 /** 各地市平均工时 + 全省均线 */
@@ -55,30 +87,16 @@ export function buildCityAvgHoursChart(query = {}) {
   return { categories, values, provincialAvg };
 }
 
-/** 全省人均工时分布 — 累计面积 + 人均柱 + 均线 */
-export function buildProvinceHourDistChart(query = {}) {
-  const factor = dateFactor(query.startDate, query.endDate);
-  const categories = YUNNAN_CITIES.map((c) => c.short);
-  const perCapita = categories.map((_, i) => {
-    const seed = hashSeed(`pc-${query.startDate}-${i}`);
-    return Math.round((7.2 + (seed % 18) / 10) * factor * 10) / 10;
-  });
-  const cumulative = perCapita.map((v, i) =>
-    Math.round((v * (18 + (i % 5))) * 10) / 10
-  );
-  const provincialAvg =
-    Math.round((perCapita.reduce((s, v) => s + v, 0) / perCapita.length) * 100) / 100;
-  return { categories, perCapita, cumulative, provincialAvg };
-}
-
-/** 累计工时与专业相关性 — 雷达 */
+/** 技能类全量岗位序列 — 累计工时雷达 */
 export function buildCumulativeSpecialtyRadar(query = {}) {
   const factor = dateFactor(query.startDate, query.endDate);
-  const seed = hashSeed(`${query.startDate}-${query.endDate}-cum`);
-  const values = CUMULATIVE_SPEC_DIMS.map((_, i) =>
-    Math.round((62 + ((seed + i * 13) % 32)) * factor)
+  const dims = SKILL_JOB_SEQUENCES;
+  const seed = hashSeed(`${query.startDate}-${query.endDate}-skill-seq`);
+  const values = dims.map((_, i) =>
+    Math.round((52 + ((seed + i * 11) % 42) + Math.sin(i * 0.85) * 8) * factor)
   );
-  return { dims: CUMULATIVE_SPEC_DIMS, values };
+  const labels = dims.map(shortSkillSequenceLabel);
+  return { dims, labels, values };
 }
 
 /** 岗位分类与工时相关性 — 分组柱 */
