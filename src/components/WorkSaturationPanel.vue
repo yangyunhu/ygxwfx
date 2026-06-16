@@ -189,117 +189,47 @@
 
     <!-- 4. 饱和度分析 -->
     <div v-show="subTab === 'analysis'" class="sub-tab-body">
-      <section class="panel-section chart-section">
-        <h3 class="block-title"><span class="section-dot" />饱和度分级</h3>
-        <el-form :inline="true" size="small" class="section-form section-form--compact">
-          <el-form-item label="时间：">
-            <el-date-picker v-model="gradingQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
-            <span class="date-sep">~</span>
-            <el-date-picker v-model="gradingQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
+      <section class="panel-section panel-section--flat">
+        <el-form :inline="true" size="small" class="section-form section-form--flat">
+          <el-form-item label="单位：">
+            <el-select v-model="analysisDashboardQuery.unit" style="width: 180px">
+              <el-option
+                v-for="opt in unitOptions.filter((o) => o.value !== 'all')"
+                :key="opt.value"
+                :label="opt.label"
+                :value="opt.value"
+              />
+            </el-select>
           </el-form-item>
           <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleGradingQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetGradingQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" @click="handleAnalysisDashboardQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="resetAnalysisDashboardQuery">重置</el-button>
           </el-form-item>
         </el-form>
-        <div ref="gradingChart" class="chart-box chart-box--sm" />
       </section>
 
-      <section class="panel-section">
-        <h3 class="block-title"><span class="section-dot" />饱和度预警</h3>
-        <el-form :inline="true" size="small" class="section-form section-form--compact">
-          <el-form-item label="单位：">
-            <el-select v-model="warningQuery.unit" style="width: 160px">
-              <el-option v-for="opt in unitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="">
-            <span class="threshold-label">饱和度 &gt;</span>
-            <el-input-number v-model="warningQuery.highThreshold" :min="50" :max="100" size="small" controls-position="right" />
-            <span class="threshold-unit">%</span>
-          </el-form-item>
-          <el-form-item label="">
-            <span class="threshold-label">饱和度 &lt;</span>
-            <el-input-number v-model="warningQuery.lowThreshold" :min="0" :max="50" size="small" controls-position="right" />
-            <span class="threshold-unit">%</span>
-          </el-form-item>
-          <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleWarningQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetWarningQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
-        <el-table :data="pagedWarningData" border stripe size="small" header-cell-class-name="panel-table-header">
-          <el-table-column type="index" label="序号" width="70" align="center" :index="warningIndexMethod" />
-          <el-table-column prop="employeeName" label="员工姓名" width="100" align="center" />
-          <el-table-column prop="department" label="所属部门" min-width="130" show-overflow-tooltip />
-          <el-table-column prop="position" label="岗位" min-width="120" show-overflow-tooltip />
-          <el-table-column label="饱和度" width="100" align="center">
-            <template slot-scope="scope">
-              <span :class="saturationClass(scope.row.saturation)">{{ scope.row.saturation }}%</span>
-            </template>
-          </el-table-column>
-          <el-table-column label="是否异常" width="100" align="center">
-            <template slot-scope="scope">
-              <span :class="scope.row.isAbnormal ? 'abnormal-yes' : ''">{{ scope.row.isAbnormal ? "是" : "否" }}</span>
-            </template>
-          </el-table-column>
-          <el-table-column prop="abnormalRate" label="异常情况" width="100" align="center">
-            <template slot-scope="scope">{{ scope.row.abnormalRate || "—" }}</template>
-          </el-table-column>
-        </el-table>
-        <div class="panel-pagination">
-          <el-pagination
-            :current-page="warningPage"
-            :page-sizes="[10, 25, 50]"
-            :page-size="warningPageSize"
-            layout="total, sizes, prev, pager, next, jumper"
-            :total="filteredWarningData.length"
-            @size-change="onWarningSizeChange"
-            @current-change="(v) => { warningPage = v; }"
-          />
-        </div>
-      </section>
-
-      <section class="panel-section chart-section">
-        <h3 class="block-title"><span class="section-dot" />饱和度对比分析</h3>
-        <el-form :inline="true" size="small" class="section-form section-form--compact">
-          <el-form-item label="单位：">
-            <el-select v-model="compareQuery.unit" style="width: 160px">
-              <el-option v-for="opt in unitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="部门：">
-            <el-select v-model="compareQuery.department" style="width: 150px">
-              <el-option v-for="opt in departmentOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleCompareQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetCompareQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
-        <p class="chart-subtitle">部门平均饱和度</p>
-        <div ref="deptCompareChart" class="chart-box chart-box--sm" />
-        <p class="chart-subtitle">岗位平均饱和度</p>
-        <div ref="posCompareChart" class="chart-box chart-box--sm" />
-      </section>
-
-      <section class="panel-section chart-section">
-        <h3 class="block-title"><span class="section-dot" />饱和度相关性分析</h3>
-        <el-form :inline="true" size="small" class="section-form section-form--compact">
-          <el-form-item label="单位：">
-            <el-select v-model="correlationQuery.unit" style="width: 160px">
-              <el-option v-for="opt in unitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
-            </el-select>
-          </el-form-item>
-          <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleCorrelationQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetCorrelationQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
-        <p class="chart-subtitle">业务用时长与员工绩效结果</p>
-        <div ref="radarChart" class="chart-box chart-box--lg" />
-      </section>
+      <div class="analysis-chart-grid">
+        <section class="panel-section chart-card">
+          <h3 class="block-title"><span class="section-dot" />全省饱和度</h3>
+          <div ref="provinceSatChart" class="chart-box chart-box--md" />
+        </section>
+        <section class="panel-section chart-card">
+          <h3 class="block-title"><span class="section-dot" />专业饱和度</h3>
+          <div ref="specialtySatChart" class="chart-box chart-box--md" />
+        </section>
+        <section class="panel-section chart-card">
+          <h3 class="block-title"><span class="section-dot" />高饱和度人员分布情况</h3>
+          <div ref="highSatPieChart" class="chart-box chart-box--md" />
+        </section>
+        <section class="panel-section chart-card">
+          <h3 class="block-title"><span class="section-dot" />岗位分类饱和度</h3>
+          <div ref="categorySatChart" class="chart-box chart-box--md" />
+        </section>
+        <section class="panel-section chart-card chart-card--full">
+          <h3 class="block-title"><span class="section-dot" />地区饱和度分布</h3>
+          <div ref="regionSatStackChart" class="chart-box chart-box--lg" />
+        </section>
+      </div>
     </div>
 
     <!-- 5. 饱和度预警规则配置 -->
@@ -587,10 +517,6 @@ import {
   DEFAULT_CALC_QUERY,
   DEFAULT_RULE_QUERY,
   DEFAULT_POSITION_QUERY,
-  DEFAULT_GRADING_QUERY,
-  DEFAULT_WARNING_QUERY,
-  DEFAULT_COMPARE_QUERY,
-  DEFAULT_CORRELATION_QUERY,
   DEFAULT_OVERTIME_WARN_RULE_QUERY,
   DEFAULT_OVERTIME_WARN_ANALYSIS_QUERY,
   generateSaturationCalcRows,
@@ -599,11 +525,6 @@ import {
   filterSaturationRuleRows,
   generatePositionLinkRows,
   filterPositionLinkRows,
-  buildGradingChartData,
-  generateWarningRows,
-  filterWarningRows,
-  buildCompareChartData,
-  buildCorrelationRadarData,
   generateOvertimeWarningRuleRows,
   filterOvertimeWarningRuleRows,
   buildOvertimeWarningAnalysisChart,
@@ -611,6 +532,10 @@ import {
   filterOvertimeWarningAlertRows,
   unitLabel,
 } from "../utils/workSaturationModuleData";
+import {
+  DEFAULT_SATURATION_DASHBOARD_QUERY,
+  buildSaturationAnalysisDashboard,
+} from "../utils/saturationAnalysisDashboardData";
 import { downloadTableWithLog } from "../utils/exportLogger";
 
 export default {
@@ -645,16 +570,8 @@ export default {
       positionDialogVisible: false,
       positionForm: {},
       positionEditingId: null,
-      gradingQuery: { ...DEFAULT_GRADING_QUERY },
-      gradingData: buildGradingChartData(DEFAULT_GRADING_QUERY),
-      warningQuery: { ...DEFAULT_WARNING_QUERY },
-      warningAllRows: generateWarningRows(),
-      warningPage: 1,
-      warningPageSize: 10,
-      compareQuery: { ...DEFAULT_COMPARE_QUERY },
-      compareData: buildCompareChartData(DEFAULT_COMPARE_QUERY),
-      correlationQuery: { ...DEFAULT_CORRELATION_QUERY },
-      correlationData: buildCorrelationRadarData(DEFAULT_CORRELATION_QUERY),
+      analysisDashboardQuery: { ...DEFAULT_SATURATION_DASHBOARD_QUERY },
+      analysisDashboardData: buildSaturationAnalysisDashboard(DEFAULT_SATURATION_DASHBOARD_QUERY),
       overtimeLevelOptions: OVERTIME_WARNING_LEVEL_OPTIONS,
       overtimeRuleQuery: { ...DEFAULT_OVERTIME_WARN_RULE_QUERY },
       overtimeRuleAllRows: generateOvertimeWarningRuleRows(),
@@ -693,13 +610,6 @@ export default {
     pagedPositionData() {
       const s = (this.positionPage - 1) * this.positionPageSize;
       return this.filteredPositionData.slice(s, s + this.positionPageSize);
-    },
-    filteredWarningData() {
-      return filterWarningRows(this.warningAllRows, this.warningQuery);
-    },
-    pagedWarningData() {
-      const s = (this.warningPage - 1) * this.warningPageSize;
-      return this.filteredWarningData.slice(s, s + this.warningPageSize);
     },
     filteredOvertimeRuleData() {
       return filterOvertimeWarningRuleRows(this.overtimeRuleAllRows, this.overtimeRuleQuery);
@@ -764,10 +674,17 @@ export default {
     onCalcSizeChange(v) { this.calcPageSize = v; this.calcPage = 1; },
     onRuleSizeChange(v) { this.rulePageSize = v; this.rulePage = 1; },
     onPositionSizeChange(v) { this.positionPageSize = v; this.positionPage = 1; },
-    onWarningSizeChange(v) { this.warningPageSize = v; this.warningPage = 1; },
     ruleIndexMethod(i) { return (this.rulePage - 1) * this.rulePageSize + i + 1; },
     positionIndexMethod(i) { return (this.positionPage - 1) * this.positionPageSize + i + 1; },
-    warningIndexMethod(i) { return (this.warningPage - 1) * this.warningPageSize + i + 1; },
+    handleAnalysisDashboardQuery() {
+      this.analysisDashboardData = buildSaturationAnalysisDashboard(this.analysisDashboardQuery);
+      this.renderAllAnalysisCharts();
+    },
+    resetAnalysisDashboardQuery() {
+      this.analysisDashboardQuery = { ...DEFAULT_SATURATION_DASHBOARD_QUERY };
+      this.analysisDashboardData = buildSaturationAnalysisDashboard(this.analysisDashboardQuery);
+      this.renderAllAnalysisCharts();
+    },
     handleCalcQuery() { this.calcPage = 1; },
     resetCalcQuery() { this.calcQuery = { ...DEFAULT_CALC_QUERY }; this.calcPage = 1; },
     handleCalcExport() {
@@ -874,38 +791,6 @@ export default {
       }
       this.positionDialogVisible = false;
       this.$message.success("配置已保存");
-    },
-    handleGradingQuery() {
-      this.gradingData = buildGradingChartData(this.gradingQuery);
-      this.renderGradingChart();
-    },
-    resetGradingQuery() {
-      this.gradingQuery = { ...DEFAULT_GRADING_QUERY };
-      this.gradingData = buildGradingChartData(this.gradingQuery);
-      this.renderGradingChart();
-    },
-    handleWarningQuery() { this.warningPage = 1; },
-    resetWarningQuery() {
-      this.warningQuery = { ...DEFAULT_WARNING_QUERY };
-      this.warningPage = 1;
-    },
-    handleCompareQuery() {
-      this.compareData = buildCompareChartData(this.compareQuery);
-      this.renderCompareCharts();
-    },
-    resetCompareQuery() {
-      this.compareQuery = { ...DEFAULT_COMPARE_QUERY };
-      this.compareData = buildCompareChartData(this.compareQuery);
-      this.renderCompareCharts();
-    },
-    handleCorrelationQuery() {
-      this.correlationData = buildCorrelationRadarData(this.correlationQuery);
-      this.renderRadarChart();
-    },
-    resetCorrelationQuery() {
-      this.correlationQuery = { ...DEFAULT_CORRELATION_QUERY };
-      this.correlationData = buildCorrelationRadarData(this.correlationQuery);
-      this.renderRadarChart();
     },
     onOvertimeRuleSizeChange(v) { this.overtimeRulePageSize = v; this.overtimeRulePage = 1; },
     onOvertimeAlertSizeChange(v) { this.overtimeAlertPageSize = v; this.overtimeAlertPage = 1; },
@@ -1121,10 +1006,11 @@ export default {
     },
     initCharts(forceReinit = false) {
       const refs = {
-        grading: "gradingChart",
-        deptCompare: "deptCompareChart",
-        posCompare: "posCompareChart",
-        radar: "radarChart",
+        provinceSat: "provinceSatChart",
+        specialtySat: "specialtySatChart",
+        highSatPie: "highSatPieChart",
+        categorySat: "categorySatChart",
+        regionSatStack: "regionSatStackChart",
       };
       Object.keys(refs).forEach((key) => {
         const el = this.$refs[refs[key]];
@@ -1142,130 +1028,197 @@ export default {
       Object.values(this.charts).forEach((c) => c && c.resize());
     },
     renderAllAnalysisCharts() {
-      this.renderGradingChart();
-      this.renderCompareCharts();
-      this.renderRadarChart();
+      this.renderProvinceSatChart();
+      this.renderSpecialtySatChart();
+      this.renderHighSatPieChart();
+      this.renderCategorySatChart();
+      this.renderRegionSatStackChart();
     },
-    renderGradingChart() {
-      const chart = this.charts.grading;
+    renderProvinceSatChart() {
+      const chart = this.charts.provinceSat;
       if (!chart) return;
-      const { days, levels, levelLabels } = this.gradingData;
+      const { categories, values, provincialAvg } = this.analysisDashboardData.province;
       chart.setOption(
         baseChartOption({
           tooltip: {
             trigger: "axis",
             formatter: (params) => {
-              const p = params[0];
-              const lvl = levels[p.dataIndex];
-              return `${p.name}<br/>饱和度分级：<strong>${lvl.label}</strong>`;
+              const bar = params.find((p) => p.seriesName === "饱和度") || params[0];
+              return `${bar.name}<br/>饱和度：<strong>${bar.value}</strong><br/>全省均值：${provincialAvg}`;
             },
           },
-          grid: { left: "4%", right: "3%", top: "12%", bottom: "12%", containLabel: true },
-          xAxis: { type: "category", boundaryGap: false, data: days, axisLabel: { interval: 2, fontSize: 11 } },
+          legend: legendTopCenter(["饱和度", "全省饱和度"]),
+          grid: { left: "2%", right: "3%", top: "14%", bottom: "16%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            axisLabel: { interval: 0, rotate: 35, fontSize: 10 },
+          },
+          yAxis: { type: "value", min: 0, max: 1.2, interval: 0.2 },
+          series: [
+            {
+              name: "饱和度",
+              type: "bar",
+              barMaxWidth: 22,
+              itemStyle: { color: "#1890FF", borderRadius: [2, 2, 0, 0] },
+              data: values,
+            },
+            {
+              name: "全省饱和度",
+              type: "line",
+              symbol: "none",
+              lineStyle: { width: 0 },
+              markLine: {
+                silent: true,
+                symbol: "none",
+                lineStyle: { color: "#FA8C16", type: "dashed", width: 2 },
+                label: { formatter: `全省饱和度 ${provincialAvg}`, color: "#FA8C16", fontSize: 11 },
+                data: [{ yAxis: provincialAvg }],
+              },
+              data: [],
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderSpecialtySatChart() {
+      const chart = this.charts.specialtySat;
+      if (!chart) return;
+      const { names, values } = this.analysisDashboardData.specialty;
+      chart.setOption(
+        baseChartOption({
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: (params) => `${params[0].name}<br/>饱和度：<strong>${params[0].value}</strong>`,
+          },
+          grid: { left: "4%", right: "8%", top: "6%", bottom: "4%", containLabel: true },
+          xAxis: { type: "value", min: 0, max: 1.2, interval: 0.2, splitLine: { lineStyle: { color: "#F0F2F5" } } },
           yAxis: {
-            type: "value",
-            min: 0,
-            max: 2,
-            interval: 1,
-            axisLabel: { formatter: (v) => levelLabels[v] || "", fontSize: 11 },
+            type: "category",
+            data: names,
+            inverse: true,
+            axisTick: { show: false },
+            axisLine: { show: false },
+            axisLabel: { fontSize: 11, color: "#606266" },
           },
           series: [{
-            type: "line",
-            smooth: true,
-            symbol: "circle",
-            symbolSize: 7,
-            lineStyle: { width: 2.5, color: "#52C41A" },
-            itemStyle: { color: "#52C41A" },
-            data: levels.map((l) => l.value),
+            name: "饱和度",
+            type: "bar",
+            barMaxWidth: 14,
+            itemStyle: {
+              color: {
+                type: "linear",
+                x: 0,
+                y: 0,
+                x2: 1,
+                y2: 0,
+                colorStops: [
+                  { offset: 0, color: "#1890FF" },
+                  { offset: 1, color: "#13C2C2" },
+                ],
+              },
+              borderRadius: [0, 3, 3, 0],
+            },
+            data: values,
           }],
         }),
         true
       );
       chart.resize();
     },
-    renderCompareCharts() {
-      this.renderDeptCompareChart();
-      this.renderPosCompareChart();
-    },
-    renderDeptCompareChart() {
-      const chart = this.charts.deptCompare;
+    renderHighSatPieChart() {
+      const chart = this.charts.highSatPie;
       if (!chart) return;
-      const { deptNames, deptSaturation } = this.compareData;
+      const pieData = this.analysisDashboardData.highSatPie;
+      const colors = this.analysisDashboardData.pieColors;
       chart.setOption(
         baseChartOption({
-          tooltip: { trigger: "axis", formatter: (p) => `${p[0].name}<br/>平均饱和度：<strong>${p[0].value}%</strong>` },
-          grid: { left: "2%", right: "3%", top: "8%", bottom: "14%", containLabel: true },
-          xAxis: { type: "category", boundaryGap: false, data: deptNames, axisLabel: { interval: 0, rotate: 20, fontSize: 11 } },
-          yAxis: { type: "value", min: 0, max: 100, interval: 20, axisLabel: { formatter: "{value}%", fontSize: 11 } },
+          tooltip: { trigger: "item", formatter: "{b}<br/>人数：{c} 人 ({d}%)" },
+          color: colors,
           series: [{
-            type: "line",
-            smooth: true,
-            symbol: "circle",
-            symbolSize: 7,
-            lineStyle: { width: 2.5, color: "#52C41A" },
-            itemStyle: { color: "#52C41A" },
-            data: deptSaturation,
-          }],
-        }),
-        true
-      );
-      chart.resize();
-    },
-    renderPosCompareChart() {
-      const chart = this.charts.posCompare;
-      if (!chart) return;
-      const { positionNames, positionSaturation } = this.compareData;
-      chart.setOption(
-        baseChartOption({
-          tooltip: { trigger: "axis" },
-          grid: { left: "2%", right: "3%", top: "8%", bottom: "14%", containLabel: true },
-          xAxis: { type: "category", boundaryGap: false, data: positionNames, axisLabel: { interval: 0, rotate: 20, fontSize: 11 } },
-          yAxis: { type: "value", min: 0, max: 100, interval: 20, axisLabel: { formatter: "{value}%", fontSize: 11 } },
-          series: [{
-            type: "line",
-            smooth: true,
-            symbol: "circle",
-            symbolSize: 7,
-            lineStyle: { width: 2.5, color: "#13C2C2" },
-            itemStyle: { color: "#13C2C2" },
-            data: positionSaturation,
-          }],
-        }),
-        true
-      );
-      chart.resize();
-    },
-    renderRadarChart() {
-      const chart = this.charts.radar;
-      if (!chart) return;
-      const { dims, seriesA, seriesB } = this.correlationData;
-      chart.setOption(
-        baseChartOption({
-          tooltip: {},
-          legend: { ...legendTopCenter(["本期", "上期"]), top: 28 },
-          radar: {
-            indicator: dims.map((name) => ({ name, max: 100 })),
-            center: ["50%", "58%"],
-            radius: "78%",
-            splitNumber: 4,
-            axisName: {
-              fontSize: 12,
+            type: "pie",
+            radius: ["36%", "68%"],
+            center: ["50%", "52%"],
+            avoidLabelOverlap: true,
+            itemStyle: { borderColor: "#fff", borderWidth: 2 },
+            label: {
+              show: true,
+              formatter: "{b}\n{c}",
+              fontSize: 11,
               color: "#606266",
-              lineHeight: 16,
             },
-            splitArea: {
-              areaStyle: { color: ["rgba(24,144,255,0.02)", "rgba(24,144,255,0.06)"] },
-            },
-          },
-          series: [{
-            type: "radar",
-            symbolSize: 8,
-            lineStyle: { width: 2.5 },
-            data: [
-              { name: "本期", value: seriesA, areaStyle: { color: "rgba(24,144,255,0.25)" }, lineStyle: { color: "#1890FF" }, itemStyle: { color: "#1890FF" } },
-              { name: "上期", value: seriesB, areaStyle: { color: "rgba(19,194,194,0.2)" }, lineStyle: { color: "#13C2C2" }, itemStyle: { color: "#13C2C2" } },
-            ],
+            labelLine: { length: 8, length2: 10 },
+            data: pieData,
           }],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderCategorySatChart() {
+      const chart = this.charts.categorySat;
+      if (!chart) return;
+      const { names, values } = this.analysisDashboardData.category;
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis", formatter: (p) => `${p[0].name}<br/>饱和度：<strong>${p[0].value}</strong>` },
+          legend: legendTopCenter(["饱和度"]),
+          grid: { left: "8%", right: "6%", top: "16%", bottom: "10%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: names,
+            axisLabel: { fontSize: 11 },
+          },
+          yAxis: { type: "value", min: 0, max: 1.3, interval: 0.2 },
+          series: [{
+            name: "饱和度",
+            type: "bar",
+            barMaxWidth: 48,
+            itemStyle: {
+              color: {
+                type: "linear",
+                x: 0,
+                y: 0,
+                x2: 0,
+                y2: 1,
+                colorStops: [
+                  { offset: 0, color: "#69C0FF" },
+                  { offset: 1, color: "#1890FF" },
+                ],
+              },
+              borderRadius: [4, 4, 0, 0],
+            },
+            label: { show: true, position: "top", fontSize: 12, color: "#303133", fontWeight: 600 },
+            data: values,
+          }],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderRegionSatStackChart() {
+      const chart = this.charts.regionSatStack;
+      if (!chart) return;
+      const { categories, management, professional, skill } = this.analysisDashboardData.regionStack;
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis", axisPointer: { type: "shadow" } },
+          legend: legendTopCenter(["管理类", "专业技术类", "技能类"]),
+          grid: { left: "2%", right: "2%", top: "14%", bottom: "16%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            axisLabel: { interval: 0, rotate: 35, fontSize: 10 },
+          },
+          yAxis: { type: "value", min: 0, max: 1200, interval: 200 },
+          series: [
+            { name: "管理类", type: "bar", stack: "total", barMaxWidth: 28, itemStyle: { color: "#1890FF" }, data: management },
+            { name: "专业技术类", type: "bar", stack: "total", barMaxWidth: 28, itemStyle: { color: "#FAAD14" }, data: professional },
+            { name: "技能类", type: "bar", stack: "total", barMaxWidth: 28, itemStyle: { color: "#52C41A" }, data: skill },
+          ],
         }),
         true
       );
@@ -1308,6 +1261,31 @@ export default {
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
 }
 
+.panel-section--flat {
+  padding-bottom: 8px;
+  box-shadow: none;
+}
+
+.analysis-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.chart-card {
+  min-width: 0;
+}
+
+.chart-card--full {
+  grid-column: 1 / -1;
+}
+
+.chart-card .block-title {
+  margin-bottom: 8px;
+}
+
 .block-title {
   display: flex;
   align-items: center;
@@ -1339,6 +1317,12 @@ export default {
 .section-form--compact {
   margin-bottom: 10px;
   padding-bottom: 10px;
+}
+
+.section-form--flat {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
 }
 
 .section-form >>> .el-form-item { margin-bottom: 8px; }
@@ -1418,9 +1402,21 @@ export default {
 
 .chart-box--sm { height: 260px; }
 
+.chart-box--md { height: 320px; }
+
 .chart-box--lg {
   height: 420px;
   min-height: 380px;
+}
+
+@media (max-width: 1200px) {
+  .analysis-chart-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .chart-card--full {
+    grid-column: auto;
+  }
 }
 
 @media (max-width: 768px) {

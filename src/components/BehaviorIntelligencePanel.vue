@@ -4,9 +4,10 @@
       <el-tabs v-model="subTab" class="sub-tabs">
         <el-tab-pane label="基本统计指标" name="basic" />
         <el-tab-pane label="预测分析" name="prediction" />
+        <el-tab-pane label="数据采集与整合" name="collection" />
       </el-tabs>
 
-      <section class="query-panel">
+      <section v-show="subTab !== 'collection'" class="query-panel">
         <el-form :inline="true" size="small" class="query-form">
           <el-form-item label="单位：">
             <el-select
@@ -104,6 +105,10 @@
           <div ref="absenteeProbChart" class="chart-box chart-box--prediction" />
         </section>
       </div>
+
+      <div v-show="subTab === 'collection'" class="tab-content">
+        <DataCollectionIntegrationPanel />
+      </div>
     </div>
 
     <el-dialog
@@ -152,6 +157,7 @@ import {
   SATURATION_PREDICTION_EXPORT_MODULES,
   exportSaturationModules,
 } from "../utils/workSaturationExport";
+import DataCollectionIntegrationPanel from "./DataCollectionIntegrationPanel.vue";
 
 const DEPT_COLORS = { bar: "#FAAD14", late: "#52C41A", early: "#EB2F96" };
 const EMP_COLORS = { bar: "#1890FF", late: "#722ED1", early: "#69C0FF" };
@@ -164,6 +170,7 @@ const PROB_CHART_COLORS = {
 
 export default {
   name: "BehaviorIntelligencePanel",
+  components: { DataCollectionIntegrationPanel },
   data() {
     return {
       subTab: "basic",
@@ -219,6 +226,7 @@ export default {
   },
   watch: {
     subTab(val) {
+      if (val === "collection") return;
       this.$nextTick(() => {
         this.initCharts();
         this.renderAllCharts();
