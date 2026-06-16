@@ -49,6 +49,7 @@ import CreditProfileDisplay from '../views/CreditProfileDisplay.vue';
 import PersonalAttendanceSettings from '../views/PersonalAttendanceSettings.vue';
 import PersonalAttendanceStats from '../views/PersonalAttendanceStats.vue';
 import PersonalAttendanceHome from '../views/PersonalAttendanceHome.vue';
+import AttendanceStabilityAnalysis from '../views/AttendanceStabilityAnalysis.vue';
 
 Vue.use(Router);
 
@@ -326,7 +327,7 @@ export default new Router({
     {
       path: '/team-behavior-portrait/attendance-stability',
       name: 'AttendanceStabilityAnalysis',
-      component: ModulePlaceholder,
+      component: AttendanceStabilityAnalysis,
       meta: { title: '出勤稳定性分析', description: '出勤稳定性分析页面，展示员工或班组的出勤稳定情况。' }
     },
     {
