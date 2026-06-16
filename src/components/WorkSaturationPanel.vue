@@ -5,6 +5,7 @@
       <el-tab-pane label="饱和度规则设定" name="rules" />
       <el-tab-pane label="饱和度关联岗位配置" name="positions" />
       <el-tab-pane label="饱和度分析" name="analysis" />
+      <el-tab-pane label="饱和度预警规则配置" name="overtimeWarn" />
     </el-tabs>
 
     <!-- 1. 工作饱和度计算 -->
@@ -301,6 +302,160 @@
       </section>
     </div>
 
+    <!-- 5. 饱和度预警规则配置 -->
+    <div v-show="subTab === 'overtimeWarn'" class="sub-tab-body">
+      <section class="panel-section">
+        <h3 class="block-title"><span class="section-dot" />预警规则配置</h3>
+        <p class="section-desc">预警维度：<strong>加班时长</strong> — 员工结束工作时间超过设定阈值，且连续天数达到要求时触发预警。</p>
+        <el-form :inline="true" size="small" class="section-form">
+          <el-form-item label="单位：">
+            <el-select v-model="overtimeRuleQuery.unit" style="width: 160px">
+              <el-option v-for="opt in unitOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="预警级别：">
+            <el-select v-model="overtimeRuleQuery.level" style="width: 120px">
+              <el-option v-for="opt in overtimeLevelOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item class="section-form__actions">
+            <el-button type="primary" icon="el-icon-search" @click="handleOvertimeRuleQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="resetOvertimeRuleQuery">重置</el-button>
+          </el-form-item>
+        </el-form>
+
+        <div class="section-toolbar">
+          <el-button type="primary" size="small" icon="el-icon-plus" @click="openOvertimeRuleDialog()">新增预警规则</el-button>
+        </div>
+
+        <el-table :data="pagedOvertimeRuleData" border stripe size="small" header-cell-class-name="panel-table-header">
+          <el-table-column type="index" label="序号" width="70" align="center" :index="overtimeRuleIndexMethod" />
+          <el-table-column prop="ruleName" label="规则名称" min-width="160" show-overflow-tooltip />
+          <el-table-column prop="dimension" label="预警维度" width="100" align="center" />
+          <el-table-column prop="endTimeThreshold" label="结束时间阈值" width="120" align="center">
+            <template slot-scope="scope">超过 {{ scope.row.endTimeThreshold }}</template>
+          </el-table-column>
+          <el-table-column prop="consecutiveDays" label="连续天数" width="100" align="center">
+            <template slot-scope="scope">≥ {{ scope.row.consecutiveDays }} 天</template>
+          </el-table-column>
+          <el-table-column prop="level" label="预警级别" width="100" align="center">
+            <template slot-scope="scope">
+              <el-tag :type="levelTagType(scope.row.level)" size="mini">{{ scope.row.level }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="effectScope" label="生效范围" width="110" align="center" />
+          <el-table-column label="状态" width="90" align="center">
+            <template slot-scope="scope">
+              <el-tag :type="scope.row.enabled ? 'success' : 'info'" size="mini">{{ scope.row.enabled ? "启用" : "停用" }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column label="操作" width="120" align="center" fixed="right">
+            <template slot-scope="scope">
+              <el-button type="text" size="small" @click="openOvertimeRuleDialog(scope.row)">编辑</el-button>
+              <el-button type="text" size="small" class="danger-text" @click="handleOvertimeRuleDelete(scope.row)">删除</el-button>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="panel-pagination">
+          <el-pagination
+            :current-page="overtimeRulePage"
+            :page-sizes="[10, 25, 50]"
+            :page-size="overtimeRulePageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="filteredOvertimeRuleData.length"
+            @size-change="onOvertimeRuleSizeChange"
+            @current-change="(v) => { overtimeRulePage = v; }"
+          />
+        </div>
+      </section>
+
+      <section class="panel-section chart-section">
+        <h3 class="block-title"><span class="section-dot" />预警分析展示</h3>
+        <p class="section-desc">
+          分析规则：连续加班结束时间超过 <strong>00:00</strong>，且连续天数 ≥
+          <strong>{{ overtimeAnalysisQuery.minConsecutiveDays }}</strong> 天的预警触发情况。
+        </p>
+        <div class="warn-summary-row">
+          <div class="warn-summary-item">
+            <span class="warn-summary-item__label">累计预警人次</span>
+            <span class="warn-summary-item__value">{{ overtimeAnalysisData.summary.totalWarning }}</span>
+          </div>
+          <div class="warn-summary-item">
+            <span class="warn-summary-item__label">最长连续天数</span>
+            <span class="warn-summary-item__value">{{ overtimeAnalysisData.summary.maxConsecutiveDays }} 天</span>
+          </div>
+          <div class="warn-summary-item">
+            <span class="warn-summary-item__label">日均加班时长</span>
+            <span class="warn-summary-item__value">{{ overtimeAnalysisData.summary.avgOvertimeHours }} h</span>
+          </div>
+        </div>
+        <el-form :inline="true" size="small" class="section-form section-form--compact">
+          <el-form-item label="单位：">
+            <el-select v-model="overtimeAnalysisQuery.unit" style="width: 160px">
+              <el-option v-for="opt in unitOptions.filter((o) => o.value !== 'all')" :key="opt.value" :label="opt.label" :value="opt.value" />
+            </el-select>
+          </el-form-item>
+          <el-form-item label="时间：">
+            <el-date-picker v-model="overtimeAnalysisQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
+            <span class="date-sep">~</span>
+            <el-date-picker v-model="overtimeAnalysisQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
+          </el-form-item>
+          <el-form-item label="连续天数：">
+            <el-input-number v-model="overtimeAnalysisQuery.minConsecutiveDays" :min="3" :max="15" size="small" controls-position="right" />
+            <span class="threshold-unit">天</span>
+          </el-form-item>
+          <el-form-item class="section-form__actions">
+            <el-button type="primary" icon="el-icon-search" @click="handleOvertimeAnalysisQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="resetOvertimeAnalysisQuery">重置</el-button>
+          </el-form-item>
+        </el-form>
+        <p class="chart-subtitle">近30日加班超时与预警触发趋势</p>
+        <div ref="overtimeTrendChart" class="chart-box chart-box--sm" />
+        <p class="chart-subtitle">各部门预警触发人数</p>
+        <div ref="overtimeDeptChart" class="chart-box chart-box--sm" />
+      </section>
+
+      <section class="panel-section">
+        <h3 class="block-title"><span class="section-dot" />预警人员明细</h3>
+        <el-table :data="pagedOvertimeAlertData" border stripe size="small" header-cell-class-name="panel-table-header">
+          <el-table-column type="index" label="序号" width="70" align="center" :index="overtimeAlertIndexMethod" />
+          <el-table-column prop="employeeName" label="员工姓名" width="100" align="center" />
+          <el-table-column prop="department" label="所属部门" min-width="130" show-overflow-tooltip />
+          <el-table-column prop="position" label="岗位" min-width="120" show-overflow-tooltip />
+          <el-table-column prop="lastEndTime" label="最近结束时间" width="120" align="center" />
+          <el-table-column prop="consecutiveDays" label="连续天数" width="100" align="center">
+            <template slot-scope="scope">
+              <span :class="scope.row.consecutiveDays >= overtimeAnalysisQuery.minConsecutiveDays ? 'abnormal-yes' : ''">
+                {{ scope.row.consecutiveDays }} 天
+              </span>
+            </template>
+          </el-table-column>
+          <el-table-column prop="totalOvertimeHours" label="累计加班(h)" width="110" align="center" />
+          <el-table-column prop="warningLevel" label="预警级别" width="100" align="center">
+            <template slot-scope="scope">
+              <el-tag :type="levelTagType(scope.row.warningLevel)" size="mini">{{ scope.row.warningLevel }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="warningStatus" label="预警状态" width="100" align="center">
+            <template slot-scope="scope">
+              <span :class="scope.row.warningStatus === '已触发' ? 'abnormal-yes' : ''">{{ scope.row.warningStatus }}</span>
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="panel-pagination">
+          <el-pagination
+            :current-page="overtimeAlertPage"
+            :page-sizes="[10, 25, 50]"
+            :page-size="overtimeAlertPageSize"
+            layout="total, sizes, prev, pager, next, jumper"
+            :total="filteredOvertimeAlertData.length"
+            @size-change="onOvertimeAlertSizeChange"
+            @current-change="(v) => { overtimeAlertPage = v; }"
+          />
+        </div>
+      </section>
+    </div>
+
     <!-- 规则弹窗 -->
     <el-dialog :title="ruleDialogTitle" :visible.sync="ruleDialogVisible" width="540px" append-to-body>
       <el-form :model="ruleForm" label-width="110px" size="small">
@@ -371,18 +526,64 @@
         <el-button type="primary" @click="savePosition">保存</el-button>
       </div>
     </el-dialog>
+
+    <!-- 加班预警规则弹窗 -->
+    <el-dialog :title="overtimeRuleDialogTitle" :visible.sync="overtimeRuleDialogVisible" width="560px" append-to-body>
+      <el-form :model="overtimeRuleForm" label-width="120px" size="small">
+        <el-form-item label="规则名称" required>
+          <el-input v-model="overtimeRuleForm.ruleName" />
+        </el-form-item>
+        <el-form-item label="预警维度">
+          <el-input v-model="overtimeRuleForm.dimension" disabled />
+        </el-form-item>
+        <el-form-item label="结束时间阈值">
+          <span class="threshold-label">超过</span>
+          <el-time-picker
+            v-model="overtimeRuleForm.endTimeThreshold"
+            value-format="HH:mm"
+            format="HH:mm"
+            placeholder="选择时间"
+            style="width: 140px"
+          />
+        </el-form-item>
+        <el-form-item label="连续天数">
+          <el-input-number v-model="overtimeRuleForm.consecutiveDays" :min="1" :max="30" controls-position="right" />
+          <span class="threshold-unit">天</span>
+        </el-form-item>
+        <el-form-item label="预警级别">
+          <el-select v-model="overtimeRuleForm.level" style="width: 100%">
+            <el-option label="高" value="高" />
+            <el-option label="中" value="中" />
+            <el-option label="低" value="低" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="生效范围">
+          <el-select v-model="overtimeRuleForm.effectScope" style="width: 100%">
+            <el-option v-for="s in effectScopeOptions" :key="s" :label="s" :value="s" />
+          </el-select>
+        </el-form-item>
+        <el-form-item label="启用状态">
+          <el-switch v-model="overtimeRuleForm.enabled" />
+        </el-form-item>
+      </el-form>
+      <div slot="footer">
+        <el-button @click="overtimeRuleDialogVisible = false">取消</el-button>
+        <el-button type="primary" @click="saveOvertimeRule">保存</el-button>
+      </div>
+    </el-dialog>
   </div>
 </template>
 
 <script>
 import * as echarts from "echarts";
-import { baseChartOption, legendTopCenter } from "../utils/chartTheme";
+import { baseChartOption, legendTopCenter, legendBottomCenter } from "../utils/chartTheme";
 import {
   MODULE_UNIT_OPTIONS,
   MODULE_DEPARTMENT_OPTIONS,
   SATURATION_LEVEL_OPTIONS,
   ATTENDANCE_MODE_OPTIONS,
   EFFECT_SCOPE_OPTIONS,
+  OVERTIME_WARNING_LEVEL_OPTIONS,
   DEFAULT_CALC_QUERY,
   DEFAULT_RULE_QUERY,
   DEFAULT_POSITION_QUERY,
@@ -390,6 +591,8 @@ import {
   DEFAULT_WARNING_QUERY,
   DEFAULT_COMPARE_QUERY,
   DEFAULT_CORRELATION_QUERY,
+  DEFAULT_OVERTIME_WARN_RULE_QUERY,
+  DEFAULT_OVERTIME_WARN_ANALYSIS_QUERY,
   generateSaturationCalcRows,
   filterSaturationCalcRows,
   generateSaturationRuleRows,
@@ -401,6 +604,11 @@ import {
   filterWarningRows,
   buildCompareChartData,
   buildCorrelationRadarData,
+  generateOvertimeWarningRuleRows,
+  filterOvertimeWarningRuleRows,
+  buildOvertimeWarningAnalysisChart,
+  generateOvertimeWarningAlertRows,
+  filterOvertimeWarningAlertRows,
   unitLabel,
 } from "../utils/workSaturationModuleData";
 import { downloadTableWithLog } from "../utils/exportLogger";
@@ -447,6 +655,19 @@ export default {
       compareData: buildCompareChartData(DEFAULT_COMPARE_QUERY),
       correlationQuery: { ...DEFAULT_CORRELATION_QUERY },
       correlationData: buildCorrelationRadarData(DEFAULT_CORRELATION_QUERY),
+      overtimeLevelOptions: OVERTIME_WARNING_LEVEL_OPTIONS,
+      overtimeRuleQuery: { ...DEFAULT_OVERTIME_WARN_RULE_QUERY },
+      overtimeRuleAllRows: generateOvertimeWarningRuleRows(),
+      overtimeRulePage: 1,
+      overtimeRulePageSize: 10,
+      overtimeRuleDialogVisible: false,
+      overtimeRuleForm: {},
+      overtimeRuleEditingId: null,
+      overtimeAnalysisQuery: { ...DEFAULT_OVERTIME_WARN_ANALYSIS_QUERY },
+      overtimeAnalysisData: buildOvertimeWarningAnalysisChart(DEFAULT_OVERTIME_WARN_ANALYSIS_QUERY),
+      overtimeAlertAllRows: generateOvertimeWarningAlertRows(),
+      overtimeAlertPage: 1,
+      overtimeAlertPageSize: 10,
       charts: {},
       resizeHandler: null,
     };
@@ -480,26 +701,49 @@ export default {
       const s = (this.warningPage - 1) * this.warningPageSize;
       return this.filteredWarningData.slice(s, s + this.warningPageSize);
     },
+    filteredOvertimeRuleData() {
+      return filterOvertimeWarningRuleRows(this.overtimeRuleAllRows, this.overtimeRuleQuery);
+    },
+    pagedOvertimeRuleData() {
+      const s = (this.overtimeRulePage - 1) * this.overtimeRulePageSize;
+      return this.filteredOvertimeRuleData.slice(s, s + this.overtimeRulePageSize);
+    },
+    filteredOvertimeAlertData() {
+      return filterOvertimeWarningAlertRows(this.overtimeAlertAllRows, {
+        unit: this.overtimeAnalysisQuery.unit,
+        minConsecutiveDays: this.overtimeAnalysisQuery.minConsecutiveDays,
+      });
+    },
+    pagedOvertimeAlertData() {
+      const s = (this.overtimeAlertPage - 1) * this.overtimeAlertPageSize;
+      return this.filteredOvertimeAlertData.slice(s, s + this.overtimeAlertPageSize);
+    },
     ruleDialogTitle() {
       return this.ruleEditingId ? "编辑规则" : "新增规则";
     },
     positionDialogTitle() {
       return this.positionEditingId ? "修改饱和度关联岗位" : "新增饱和度关联岗位配置";
     },
+    overtimeRuleDialogTitle() {
+      return this.overtimeRuleEditingId ? "编辑预警规则" : "新增预警规则";
+    },
   },
   watch: {
     panelActive(val) {
       if (val && this.subTab === "analysis") this.ensureChartsReady();
+      if (val && this.subTab === "overtimeWarn") this.ensureOvertimeChartsReady();
     },
     subTab(val) {
       if (!this.panelActive) return;
       if (val === "analysis") this.ensureChartsReady();
+      if (val === "overtimeWarn") this.ensureOvertimeChartsReady();
     },
   },
   mounted() {
     this.resizeHandler = () => this.resizeCharts();
     window.addEventListener("resize", this.resizeHandler);
     if (this.panelActive && this.subTab === "analysis") this.ensureChartsReady();
+    if (this.panelActive && this.subTab === "overtimeWarn") this.ensureOvertimeChartsReady();
   },
   beforeDestroy() {
     if (this.resizeHandler) window.removeEventListener("resize", this.resizeHandler);
@@ -662,6 +906,209 @@ export default {
       this.correlationQuery = { ...DEFAULT_CORRELATION_QUERY };
       this.correlationData = buildCorrelationRadarData(this.correlationQuery);
       this.renderRadarChart();
+    },
+    onOvertimeRuleSizeChange(v) { this.overtimeRulePageSize = v; this.overtimeRulePage = 1; },
+    onOvertimeAlertSizeChange(v) { this.overtimeAlertPageSize = v; this.overtimeAlertPage = 1; },
+    overtimeRuleIndexMethod(i) { return (this.overtimeRulePage - 1) * this.overtimeRulePageSize + i + 1; },
+    overtimeAlertIndexMethod(i) { return (this.overtimeAlertPage - 1) * this.overtimeAlertPageSize + i + 1; },
+    handleOvertimeRuleQuery() { this.overtimeRulePage = 1; },
+    resetOvertimeRuleQuery() {
+      this.overtimeRuleQuery = { ...DEFAULT_OVERTIME_WARN_RULE_QUERY };
+      this.overtimeRulePage = 1;
+    },
+    openOvertimeRuleDialog(row) {
+      if (row) {
+        this.overtimeRuleEditingId = row.id;
+        this.overtimeRuleForm = { ...row };
+      } else {
+        this.overtimeRuleEditingId = null;
+        this.overtimeRuleForm = {
+          ruleName: "",
+          dimension: "加班时长",
+          endTimeThreshold: "00:00",
+          consecutiveDays: 5,
+          level: "高",
+          effectScope: "全体员工",
+          enabled: true,
+          changeUser: "张三",
+          prevRule: "",
+        };
+      }
+      this.overtimeRuleDialogVisible = true;
+    },
+    saveOvertimeRule() {
+      if (!this.overtimeRuleForm.ruleName) {
+        this.$message.warning("请填写规则名称");
+        return;
+      }
+      const payload = {
+        ...this.overtimeRuleForm,
+        dimension: "加班时长",
+        changeTime: new Date().toISOString().slice(0, 16).replace("T", " "),
+        changeUser: "张三",
+        prevRule: this.overtimeRuleForm.prevRule
+          || `结束时间超过 ${this.overtimeRuleForm.endTimeThreshold}；连续天数 ≥ ${this.overtimeRuleForm.consecutiveDays}`,
+        unitKey: this.overtimeRuleQuery.unit === "all" ? "kunming" : this.overtimeRuleQuery.unit,
+        unit: unitLabel(this.overtimeRuleQuery.unit === "all" ? "kunming" : this.overtimeRuleQuery.unit),
+      };
+      if (this.overtimeRuleEditingId) {
+        const idx = this.overtimeRuleAllRows.findIndex((r) => r.id === this.overtimeRuleEditingId);
+        if (idx >= 0) this.$set(this.overtimeRuleAllRows, idx, { ...this.overtimeRuleAllRows[idx], ...payload });
+      } else {
+        const newId = Math.max(0, ...this.overtimeRuleAllRows.map((r) => r.id)) + 1;
+        this.overtimeRuleAllRows.unshift({ id: newId, ...payload });
+      }
+      this.overtimeRuleDialogVisible = false;
+      this.$message.success("预警规则已保存");
+    },
+    handleOvertimeRuleDelete(row) {
+      this.$confirm(`确定删除预警规则「${row.ruleName}」？`, "提示", { type: "warning" })
+        .then(() => {
+          this.overtimeRuleAllRows = this.overtimeRuleAllRows.filter((r) => r.id !== row.id);
+          this.$message.success("已删除");
+        })
+        .catch(() => {});
+    },
+    handleOvertimeAnalysisQuery() {
+      this.overtimeAnalysisData = buildOvertimeWarningAnalysisChart(this.overtimeAnalysisQuery);
+      this.overtimeAlertPage = 1;
+      this.renderOvertimeAnalysisCharts();
+    },
+    resetOvertimeAnalysisQuery() {
+      this.overtimeAnalysisQuery = { ...DEFAULT_OVERTIME_WARN_ANALYSIS_QUERY };
+      this.overtimeAnalysisData = buildOvertimeWarningAnalysisChart(this.overtimeAnalysisQuery);
+      this.overtimeAlertPage = 1;
+      this.renderOvertimeAnalysisCharts();
+    },
+    ensureOvertimeChartsReady() {
+      this.$nextTick(() => {
+        requestAnimationFrame(() => {
+          this.initOvertimeCharts(true);
+          this.renderOvertimeAnalysisCharts();
+          this.resizeCharts();
+        });
+      });
+    },
+    initOvertimeCharts(forceReinit = false) {
+      const refs = {
+        overtimeTrend: "overtimeTrendChart",
+        overtimeDept: "overtimeDeptChart",
+      };
+      Object.keys(refs).forEach((key) => {
+        const el = this.$refs[refs[key]];
+        if (!el) return;
+        if (forceReinit && this.charts[key]) {
+          this.charts[key].dispose();
+          delete this.charts[key];
+        }
+        if (!this.charts[key] && el.clientWidth > 0) {
+          this.charts[key] = echarts.init(el);
+        }
+      });
+    },
+    renderOvertimeAnalysisCharts() {
+      this.renderOvertimeTrendChart();
+      this.renderOvertimeDeptChart();
+    },
+    renderOvertimeTrendChart() {
+      const chart = this.charts.overtimeTrend;
+      if (!chart) return;
+      const d = this.overtimeAnalysisData;
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis" },
+          legend: legendBottomCenter(["加班超时人次", "预警触发人次", "日均加班时长(h)"]),
+          grid: { left: "2%", right: "4%", top: "12%", bottom: "16%", containLabel: true },
+          xAxis: {
+            type: "category",
+            boundaryGap: true,
+            data: d.dates,
+            axisLabel: { interval: 2, fontSize: 11 },
+          },
+          yAxis: [
+            {
+              type: "value",
+              name: "人次",
+              min: 0,
+              axisLabel: { fontSize: 10 },
+              splitLine: { lineStyle: { color: "#EEEEEE" } },
+            },
+            {
+              type: "value",
+              name: "工时(h)",
+              min: 0,
+              axisLabel: { fontSize: 10 },
+              splitLine: { show: false },
+            },
+          ],
+          series: [
+            {
+              name: "加班超时人次",
+              type: "bar",
+              barMaxWidth: 14,
+              itemStyle: { color: "#91D5FF", borderRadius: [2, 2, 0, 0] },
+              data: d.overtimePersonCount,
+            },
+            {
+              name: "预警触发人次",
+              type: "bar",
+              barMaxWidth: 14,
+              itemStyle: { color: "#F5222D", borderRadius: [2, 2, 0, 0] },
+              data: d.warningPersonCount,
+            },
+            {
+              name: "日均加班时长(h)",
+              type: "line",
+              yAxisIndex: 1,
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 5,
+              lineStyle: { width: 2, color: "#FA8C16" },
+              itemStyle: { color: "#FA8C16" },
+              data: d.overtimeHours,
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderOvertimeDeptChart() {
+      const chart = this.charts.overtimeDept;
+      if (!chart) return;
+      const d = this.overtimeAnalysisData;
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis", formatter: (p) => `${p[0].name}<br/>预警人数：<strong>${p[0].value}</strong> 人` },
+          grid: { left: "2%", right: "3%", top: "10%", bottom: "14%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: d.deptNames,
+            axisLabel: { interval: 0, rotate: 20, fontSize: 11 },
+          },
+          yAxis: { type: "value", min: 0, name: "人数", axisLabel: { fontSize: 10 } },
+          series: [{
+            name: "预警人数",
+            type: "bar",
+            barMaxWidth: 36,
+            itemStyle: {
+              color: {
+                type: "linear",
+                x: 0, y: 0, x2: 0, y2: 1,
+                colorStops: [
+                  { offset: 0, color: "#FF7875" },
+                  { offset: 1, color: "#FFA39E" },
+                ],
+              },
+              borderRadius: [3, 3, 0, 0],
+            },
+            label: { show: true, position: "top", fontSize: 10, color: "#F5222D" },
+            data: d.deptWarningCount,
+          }],
+        }),
+        true
+      );
+      chart.resize();
     },
     ensureChartsReady() {
       this.$nextTick(() => {
@@ -916,6 +1363,42 @@ export default {
 .sat-critical { color: #909399; font-weight: 600; }
 .abnormal-yes { color: #f5222d; font-weight: 600; }
 .danger-text { color: #f56c6c; }
+
+.section-desc {
+  margin: -4px 0 12px;
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.warn-summary-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.warn-summary-item {
+  flex: 1;
+  min-width: 140px;
+  padding: 10px 14px;
+  background: #fff7e6;
+  border: 1px solid #ffe7ba;
+  border-radius: 4px;
+}
+
+.warn-summary-item__label {
+  display: block;
+  font-size: 12px;
+  color: #909399;
+  margin-bottom: 4px;
+}
+
+.warn-summary-item__value {
+  font-size: 20px;
+  font-weight: 600;
+  color: #fa8c16;
+}
 
 .chart-subtitle {
   margin: 8px 0 4px;

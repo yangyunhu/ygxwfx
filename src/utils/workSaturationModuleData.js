@@ -365,3 +365,167 @@ export function buildCorrelationRadarData(query = {}) {
 
   return { dims, seriesA, seriesB };
 }
+
+/** ========== 饱和度预警规则配置（加班时长维度） ========== */
+
+export const OVERTIME_WARNING_LEVEL_OPTIONS = [
+  { label: "全部级别", value: "all" },
+  { label: "高", value: "高" },
+  { label: "中", value: "中" },
+  { label: "低", value: "低" },
+];
+
+export const DEFAULT_OVERTIME_WARN_RULE_QUERY = {
+  unit: "all",
+  level: "all",
+};
+
+export const DEFAULT_OVERTIME_WARN_ANALYSIS_QUERY = {
+  unit: "kunming",
+  startDate: "2025-01-01",
+  endDate: "2025-12-31",
+  minConsecutiveDays: 5,
+};
+
+const OVERTIME_END_TIMES = ["23:30", "00:15", "00:45", "01:20", "02:10", "00:05", "01:05"];
+
+/** 预警规则列表 */
+export function generateOvertimeWarningRuleRows() {
+  const units = UNIT_OPTIONS.filter((u) => u.value !== "all");
+  const levels = ["高", "中", "低"];
+  const scopes = EFFECT_SCOPE_OPTIONS;
+  const rows = [
+    {
+      id: 1,
+      unitKey: "all",
+      unit: "全部单位",
+      ruleName: "连续加班超时预警",
+      dimension: "加班时长",
+      endTimeThreshold: "00:00",
+      consecutiveDays: 5,
+      level: "高",
+      effectScope: "全体员工",
+      enabled: true,
+      changeTime: "2025-01-01 09:00",
+      changeUser: "系统管理员",
+      prevRule: "结束时间 ≥ 00:00；连续天数 ≥ 5",
+    },
+  ];
+
+  for (let i = 0; i < 24; i += 1) {
+    const unit = units[i % units.length];
+    const days = 3 + (i % 5);
+    rows.push({
+      id: i + 2,
+      unitKey: unit.value,
+      unit: unit.label,
+      ruleName: `${shortUnitLabel(unit.value)}加班时长预警-${i + 1}`,
+      dimension: "加班时长",
+      endTimeThreshold: i % 3 === 0 ? "00:00" : "23:30",
+      consecutiveDays: days,
+      level: levels[i % 3],
+      effectScope: scopes[i % scopes.length],
+      enabled: i % 7 !== 0,
+      changeTime: i % 4 === 0 ? "2025-03-15 14:20" : "",
+      changeUser: "张三",
+      prevRule: `连续天数 ≥ ${Math.max(1, days - 1)}；结束时间 ≥ 23:30`,
+    });
+  }
+  return rows;
+}
+
+export function filterOvertimeWarningRuleRows(rows, query = {}) {
+  const { unit = "all", level = "all" } = query;
+  let result = rows;
+  if (unit !== "all") {
+    result = result.filter((r) => r.unitKey === unit || r.unitKey === "all");
+  }
+  if (level !== "all") result = result.filter((r) => r.level === level);
+  return result;
+}
+
+/** 预警分析 — 近30日趋势 */
+export function buildOvertimeWarningAnalysisChart(query = {}) {
+  const { unit = "kunming", startDate, endDate, minConsecutiveDays = 5 } = query;
+  const dates = [];
+  const overtimePersonCount = [];
+  const warningPersonCount = [];
+  const overtimeHours = [];
+
+  for (let i = 1; i <= 30; i += 1) {
+    dates.push(`${i}日`);
+    const seed = hashSeed(`${unit}-${startDate}-${endDate}-${i}-ot`);
+    const base = 2 + (seed % 8);
+    const otCount = base + (seed % 4);
+    const warnCount = otCount >= minConsecutiveDays
+      ? Math.max(0, Math.floor(otCount * 0.35) + (seed % 3))
+      : Math.max(0, (seed % 2));
+    overtimePersonCount.push(otCount);
+    warningPersonCount.push(warnCount);
+    overtimeHours.push(Math.round((3.5 + (seed % 6) + warnCount * 0.8) * 10) / 10);
+  }
+
+  const deptNames = ["人力资源部", "营销业务部", "安监部", "生产技术部", "数字化部", "线路班"];
+  const deptWarningCount = deptNames.map((name, idx) => {
+    const seed = hashSeed(`${unit}-${name}-${minConsecutiveDays}-${idx}`);
+    return 1 + (seed % 9);
+  });
+
+  return {
+    dates,
+    overtimePersonCount,
+    warningPersonCount,
+    overtimeHours,
+    deptNames,
+    deptWarningCount,
+    summary: {
+      totalWarning: warningPersonCount.reduce((s, v) => s + v, 0),
+      maxConsecutiveDays: minConsecutiveDays + 3,
+      avgOvertimeHours: Math.round(
+        (overtimeHours.reduce((s, v) => s + v, 0) / overtimeHours.length) * 10
+      ) / 10,
+    },
+  };
+}
+
+/** 触发预警人员明细 */
+export function generateOvertimeWarningAlertRows() {
+  const units = UNIT_OPTIONS.filter((u) => u.value !== "all");
+  const departments = MODULE_DEPARTMENT_OPTIONS.filter((d) => d.value !== "all");
+  const rows = [];
+
+  for (let i = 0; i < 86; i += 1) {
+    const unit = units[i % units.length];
+    const dept = departments[i % departments.length];
+    const seed = hashSeed(`ot-warn-${i}`);
+    const consecutiveDays = 5 + (seed % 6);
+    const lastEndTime = OVERTIME_END_TIMES[seed % OVERTIME_END_TIMES.length];
+    const totalOvertimeHours = Math.round((12 + (seed % 28) + consecutiveDays * 1.2) * 10) / 10;
+    const triggered = consecutiveDays >= 5;
+
+    rows.push({
+      id: i + 1,
+      unitKey: unit.value,
+      unit: unit.label,
+      employeeName: pickEmployeeName(unit.value, dept.value, i + 2000),
+      department: dept.value,
+      position: POSITIONS[i % POSITIONS.length],
+      lastEndTime,
+      consecutiveDays,
+      totalOvertimeHours,
+      warningLevel: consecutiveDays >= 8 ? "高" : consecutiveDays >= 6 ? "中" : "高",
+      warningStatus: triggered ? "已触发" : "观察中",
+      triggered,
+    });
+  }
+  return rows;
+}
+
+export function filterOvertimeWarningAlertRows(rows, query = {}) {
+  const { unit = "all", minConsecutiveDays = 5, onlyTriggered = true } = query;
+  let result = rows;
+  if (unit !== "all") result = result.filter((r) => r.unitKey === unit);
+  result = result.filter((r) => r.consecutiveDays >= minConsecutiveDays);
+  if (onlyTriggered) result = result.filter((r) => r.triggered);
+  return result.sort((a, b) => b.consecutiveDays - a.consecutiveDays);
+}
