@@ -155,7 +155,7 @@
           <div ref="leaveTypeChart" class="chart-box" />
         </section>
 
-        <section class="chart-card">
+        <section class="chart-card chart-card--full">
           <div class="chart-card__header chart-card__header--wrap">
             <h3 class="chart-card__title">出差与培训工时趋势</h3>
             <div class="chart-card__filters">
@@ -1096,6 +1096,7 @@ export default {
         }),
         true
       );
+      chart.resize();
     },
 
     syncLeaveDistributionView() {
@@ -1496,6 +1497,10 @@ export default {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 16px;
+}
+
+.chart-card--full {
+  grid-column: 1 / -1;
 }
 
 .leave-dist-table {
