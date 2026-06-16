@@ -200,6 +200,16 @@
         <el-button type="success" size="small" icon="el-icon-download" @click="handleExportAttendance">
           导出
         </el-button>
+        <el-button
+          type="warning"
+          size="small"
+          icon="el-icon-refresh"
+          :loading="syncLoading"
+          @click="handleSyncAttendance"
+        >
+          {{ syncLoading ? '同步中...' : '数据同步' }}
+        </el-button>
+        <span v-if="lastSyncTime" class="sync-time">最近同步：{{ lastSyncTime }}</span>
         <div class="status-indicators">
           <span class="indicator"><i class="dot abnormal-correct"></i>异常修正数据</span>
           <span class="indicator"><i class="dot abnormal"></i>异常数据</span>
@@ -208,7 +218,12 @@
       </div>
 
       <!-- 考勤表格 -->
-      <div class="attendance-table-wrapper">
+      <div
+        class="attendance-table-wrapper"
+        v-loading="syncLoading"
+        element-loading-text="正在同步最新考勤数据..."
+        element-loading-spinner="el-icon-loading"
+      >
         <el-table
           ref="attendanceTable"
           :data="filteredViewingMembers"
@@ -282,7 +297,11 @@ export default {
       viewingGroupName: '',
       viewingMonth: '',
       viewingMembers: [],
-      memberSearchKeyword: ''
+      memberSearchKeyword: '',
+      viewingMemberCount: 0,
+      syncLoading: false,
+      lastSyncTime: '',
+      syncTimer: null,
     };
   },
   created() {
@@ -642,11 +661,33 @@ export default {
     handleView(group) {
       this.viewingGroupName = group.name;
       this.viewingMonth = this.selectedMonth || new Date().toISOString().slice(0, 7);
-      
-      // 模拟生成考勤组成员数据
+      this.viewingMemberCount = group.memberCount;
+      this.lastSyncTime = '';
+
       this.viewingMembers = this.generateMockAttendanceData(group.memberCount);
-      
+
       this.viewDialogVisible = true;
+    },
+
+    // 手动触发数据同步
+    handleSyncAttendance() {
+      if (this.syncLoading) return;
+
+      this.syncLoading = true;
+      if (this.syncTimer) clearTimeout(this.syncTimer);
+
+      this.syncTimer = setTimeout(() => {
+        this.viewingMembers = this.generateMockAttendanceData(this.viewingMemberCount);
+        this.lastSyncTime = this.formatSyncTime(new Date());
+        this.syncLoading = false;
+        this.syncTimer = null;
+        this.$message.success('考勤数据已同步至最新');
+      }, 1500);
+    },
+
+    formatSyncTime(date) {
+      const pad = (n) => String(n).padStart(2, '0');
+      return `${date.getFullYear()}-${pad(date.getMonth() + 1)}-${pad(date.getDate())} ${pad(date.getHours())}:${pad(date.getMinutes())}:${pad(date.getSeconds())}`;
     },
     
     // 生成模拟考勤数据
@@ -835,6 +876,13 @@ export default {
     
     // 关闭查看对话框
     handleViewDialogClose() {
+      if (this.syncTimer) {
+        clearTimeout(this.syncTimer);
+        this.syncTimer = null;
+      }
+      this.syncLoading = false;
+      this.lastSyncTime = '';
+      this.viewingMemberCount = 0;
       this.memberSearchKeyword = '';
       this.viewingMembers = [];
     },
@@ -1089,6 +1137,12 @@ export default {
   display: flex;
   gap: 20px;
   margin-left: auto;
+}
+
+.sync-time {
+  font-size: 12px;
+  color: #909399;
+  white-space: nowrap;
 }
 
 .indicator {
