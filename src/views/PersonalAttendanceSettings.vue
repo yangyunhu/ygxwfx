@@ -1,5 +1,5 @@
 <template>
-  <div class="personal-settings-showcase">
+  <div class="personal-app-showcase personal-settings-showcase">
     <header class="showcase-header">
       <h1 class="showcase-title">个人出勤管理 APP · 我的设置</h1>
       <p class="showcase-desc">以下为「我的设置」模块原型页面，包含主页面、基本信息、出勤规则与出勤模式选择。</p>
@@ -204,8 +204,12 @@
 </template>
 
 <script>
+import personalAppShowcaseScale from "../mixins/personalAppShowcaseScale";
+import "../styles/personalAppShowcase.css";
+
 export default {
   name: "PersonalAttendanceSettings",
+  mixins: [personalAppShowcaseScale],
   data() {
     return {
       user: {
@@ -243,177 +247,42 @@ export default {
 </script>
 
 <style scoped>
-.personal-settings-showcase {
-  min-height: calc(100vh - 100px);
-  padding: 28px 24px 40px;
-  background: linear-gradient(160deg, #eef2f8 0%, #e8edf5 45%, #f5f7fb 100%);
-  box-sizing: border-box;
-}
-
-.showcase-header {
-  max-width: 1280px;
-  margin: 0 auto 28px;
-  text-align: center;
-}
-
-.showcase-title {
-  margin: 0 0 8px;
-  font-size: 22px;
-  font-weight: 600;
-  color: #1f2d3d;
-}
-
-.showcase-desc {
-  margin: 0;
-  font-size: 14px;
-  color: #606266;
-}
-
-.mockup-grid-wrap {
-  overflow-x: auto;
-  padding-bottom: 12px;
-  margin: 0 auto;
-  max-width: 100%;
-}
-
-.mockup-grid-wrap::-webkit-scrollbar {
-  height: 6px;
-}
-
-.mockup-grid-wrap::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
-  border-radius: 3px;
-}
-
-.mockup-grid {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 20px;
-  justify-content: center;
-  width: max-content;
-  min-width: 100%;
-  margin: 0 auto;
-  align-items: flex-start;
-}
-
-.mockup-item {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.mockup-label {
-  margin: 14px 0 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.phone-frame {
-  width: 280px;
-  height: 660px;
-  background: #fff;
-  border-radius: 36px;
-  box-shadow:
-    0 24px 48px rgba(15, 35, 75, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    inset 0 0 0 2px #fafafa;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.phone-notch {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 28px;
-  background: #fff;
-  border-radius: 0 0 18px 18px;
-  z-index: 2;
-}
-
-.status-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 22px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #303133;
-  background: #fff;
-}
-
-.status-bar__icons {
-  display: flex;
-  gap: 4px;
-  font-size: 11px;
-}
-
-.screen {
-  flex: 1;
-  min-height: 0;
-  position: relative;
-  background: #f3f5f9;
-}
-
-.screen--scroll {
-  overflow-y: auto;
-  padding: 10px 12px 12px;
-}
-
-.screen--no-pad-top {
-  padding-top: 0;
-}
-
 .profile-header {
   display: flex;
   align-items: center;
   gap: 12px;
-  padding: 14px 12px;
-  margin-bottom: 10px;
+  padding: 16px 14px;
+  margin-bottom: 8px;
   background: #fff;
   border-radius: 12px;
   box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
+  flex-shrink: 0;
 }
 
 .profile-avatar {
-  width: 48px;
-  height: 48px;
+  width: 52px;
+  height: 52px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1890ff, #69c0ff);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 24px;
+  font-size: 26px;
   flex-shrink: 0;
 }
 
 .profile-name {
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 600;
   color: #303133;
   margin-bottom: 4px;
 }
 
 .profile-dept {
-  font-size: 11px;
+  font-size: 12px;
   color: #909399;
   line-height: 1.3;
-}
-
-.card {
-  background: #fff;
-  border-radius: 12px;
-  box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
-  margin-bottom: 10px;
-  overflow: hidden;
 }
 
 .card--menu {
@@ -422,7 +291,7 @@ export default {
 
 .card--avatar {
   text-align: center;
-  padding: 24px 12px 18px;
+  padding: 28px 14px 20px;
 }
 
 .card--info {
@@ -433,7 +302,7 @@ export default {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 14px 14px;
+  padding: 15px 16px;
   font-size: 14px;
   color: #303133;
   border-bottom: 1px solid #f0f2f5;
@@ -489,49 +358,23 @@ export default {
   opacity: 0;
 }
 
-.sub-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 4px 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.sub-nav--flat {
-  background: #fff;
-  margin: 0 -12px 0;
-  padding: 10px 14px;
-  border-bottom: 1px solid #eef0f4;
-}
-
 .sub-nav--overlay {
   position: relative;
   z-index: 2;
   background: rgba(255, 255, 255, 0.95);
 }
 
-.sub-nav i {
-  font-size: 18px;
-  color: #606266;
-}
-
-.sub-nav__placeholder {
-  width: 18px;
-}
-
 .avatar-large {
-  width: 64px;
-  height: 64px;
-  margin: 0 auto 8px;
+  width: 72px;
+  height: 72px;
+  margin: 0 auto 10px;
   border-radius: 50%;
   background: linear-gradient(135deg, #1890ff, #69c0ff);
   color: #fff;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 32px;
+  font-size: 36px;
 }
 
 .avatar-tip {
@@ -544,7 +387,7 @@ export default {
   justify-content: space-between;
   align-items: flex-start;
   gap: 12px;
-  padding: 13px 14px;
+  padding: 14px 16px;
   border-bottom: 1px solid #f0f2f5;
   font-size: 13px;
 }
@@ -562,11 +405,11 @@ export default {
   color: #303133;
   text-align: right;
   word-break: break-all;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .section-block {
-  margin-bottom: 10px;
+  margin-bottom: 8px;
 }
 
 .section-title {
@@ -579,6 +422,7 @@ export default {
   display: flex;
   flex-direction: column;
   background: #8c939d;
+  overflow: hidden;
 }
 
 .picker-backdrop {
@@ -609,7 +453,7 @@ export default {
 
 .picker-option {
   text-align: center;
-  padding: 13px;
+  padding: 14px;
   font-size: 15px;
   color: #606266;
 }
@@ -634,47 +478,5 @@ export default {
 
 .btn-close {
   color: #606266;
-}
-
-.tab-bar {
-  flex-shrink: 0;
-  display: flex;
-  border-top: 1px solid #eee;
-  background: #fff;
-  padding: 6px 0 10px;
-}
-
-.tab-bar__item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 10px;
-  color: #909399;
-}
-
-.tab-bar__item i {
-  font-size: 20px;
-}
-
-.tab-bar__item.is-active {
-  color: #1890ff;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .personal-settings-showcase {
-    padding: 16px 12px 32px;
-  }
-
-  .mockup-grid {
-    justify-content: flex-start;
-    padding: 0 4px;
-  }
-
-  .phone-frame {
-    width: 260px;
-  }
 }
 </style>

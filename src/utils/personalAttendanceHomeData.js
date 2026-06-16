@@ -116,9 +116,7 @@ export const ATTENDANCE_LIST_TABS = [
 export const ATTENDANCE_LIST_ITEMS = [
   { date: "2023-05-06", weekday: "星期六", value: "8工时" },
   { date: "2023-05-05", weekday: "星期五", value: "8工时" },
-  { date: "2023-05-04", weekday: "星期四", value: "请假" },
   { date: "2023-05-03", weekday: "星期三", value: "8工时" },
-  { date: "2023-05-02", weekday: "星期二", value: "7.5工时" },
 ];
 
 export const BUSINESS_LIST_TABS = [
@@ -131,7 +129,6 @@ export const BUSINESS_LIST_ITEMS = [
   { date: "2023-05-06", weekday: "星期六", value: "8工时" },
   { date: "2023-05-05", weekday: "星期五", value: "8工时" },
   { date: "2023-05-03", weekday: "星期三", value: "8工时" },
-  { date: "2023-05-02", weekday: "星期二", value: "7.5工时" },
 ];
 
 export const LEAVE_LIST_TABS = [

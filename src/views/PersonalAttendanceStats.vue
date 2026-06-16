@@ -1,5 +1,5 @@
 <template>
-  <div class="personal-stats-showcase">
+  <div class="personal-app-showcase personal-stats-showcase">
     <header class="showcase-header">
       <h1 class="showcase-title">个人出勤管理 APP · 出勤统计</h1>
       <p class="showcase-desc">支持年度 / 季度 / 月度切换的数据统计视图，以及出勤率分析与趋势图表。</p>
@@ -196,6 +196,8 @@ import {
   STAT_ITEMS,
   FIELD_ITEMS,
 } from "../utils/personalAttendanceStatsData";
+import personalAppShowcaseScale from "../mixins/personalAppShowcaseScale";
+import "../styles/personalAppShowcase.css";
 
 function gaugeOption(value, color) {
   return {
@@ -231,6 +233,7 @@ function gaugeOption(value, color) {
 
 export default {
   name: "PersonalAttendanceStats",
+  mixins: [personalAppShowcaseScale],
   data() {
     const summary = getAttendanceSummary();
     return {
@@ -348,141 +351,20 @@ export default {
         );
       }
       this.resizeCharts();
+      this.updateShowcaseScale();
     },
   },
 };
 </script>
 
 <style scoped>
-.personal-stats-showcase {
-  min-height: calc(100vh - 100px);
-  padding: 28px 24px 40px;
-  background: linear-gradient(160deg, #eef2f8 0%, #e8edf5 45%, #f5f7fb 100%);
-  box-sizing: border-box;
-}
-
-.showcase-header {
-  max-width: 1280px;
-  margin: 0 auto 28px;
-  text-align: center;
-}
-
-.showcase-title {
-  margin: 0 0 8px;
-  font-size: 22px;
-  font-weight: 600;
-  color: #1f2d3d;
-}
-
-.showcase-desc {
-  margin: 0;
-  font-size: 14px;
-  color: #606266;
-}
-
-.mockup-grid-wrap {
-  overflow-x: auto;
-  padding-bottom: 12px;
-  margin: 0 auto;
-  max-width: 100%;
-}
-
-.mockup-grid-wrap::-webkit-scrollbar {
-  height: 6px;
-}
-
-.mockup-grid-wrap::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
-  border-radius: 3px;
-}
-
-.mockup-grid {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 20px;
-  justify-content: center;
-  width: max-content;
-  min-width: 100%;
-  margin: 0 auto;
-  align-items: flex-start;
-}
-
-.mockup-item {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.mockup-label {
-  margin: 14px 0 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.phone-frame {
-  width: 280px;
-  height: 660px;
-  background: #fff;
-  border-radius: 36px;
-  box-shadow:
-    0 24px 48px rgba(15, 35, 75, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    inset 0 0 0 2px #fafafa;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.phone-notch {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 28px;
-  background: #fff;
-  border-radius: 0 0 18px 18px;
-  z-index: 2;
-}
-
-.status-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 22px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #303133;
-  background: #fff;
-}
-
-.status-bar__icons {
-  display: flex;
-  gap: 4px;
-  font-size: 11px;
-}
-
-.screen {
-  flex: 1;
-  min-height: 0;
-  background: #f3f5f9;
-}
-
-.screen--scroll {
-  overflow-y: auto;
-  padding: 10px 12px 12px;
-}
-
 .filter-bar {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 8px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .period-tabs {
@@ -520,12 +402,13 @@ export default {
   display: flex;
   align-items: center;
   gap: 8px;
-  padding: 10px 12px;
+  padding: 8px 12px;
   background: #fff;
   border-radius: 10px;
-  margin-bottom: 10px;
+  margin-bottom: 8px;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
   font-size: 12px;
+  flex-shrink: 0;
 }
 
 .search-bar__dept {
@@ -548,52 +431,27 @@ export default {
 }
 
 .card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
-}
-
-.card__title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 12px;
-}
-
-.card__title--sm {
-  font-size: 14px;
   margin-bottom: 8px;
 }
 
-.card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
+.card__title {
+  margin-bottom: 8px;
 }
 
-.card__extra {
-  font-size: 12px;
-  color: #909399;
-}
-
-.card__extra strong {
-  color: #1890ff;
-  font-size: 14px;
+.card__title--sm {
+  margin-bottom: 6px;
 }
 
 .card__unit {
-  font-size: 11px;
+  font-size: 10px;
   color: #909399;
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .stat-grid {
   display: grid;
-  gap: 10px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
 }
 
 .stat-grid--3 {
@@ -602,43 +460,43 @@ export default {
 
 .stat-cell {
   text-align: center;
-  padding: 8px 4px;
+  padding: 6px 4px;
   border-radius: 8px;
   background: #fafbfc;
 }
 
 .stat-cell--compact {
-  padding: 10px 4px;
+  padding: 8px 4px;
 }
 
 .stat-cell__icon {
-  width: 32px;
-  height: 32px;
-  margin: 0 auto 6px;
+  width: 28px;
+  height: 28px;
+  margin: 0 auto 4px;
   border-radius: 8px;
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
-}
-
-.stat-cell__icon--sm {
-  width: 28px;
-  height: 28px;
-  background: #e6f7ff;
-  color: #1890ff;
   font-size: 14px;
 }
 
+.stat-cell__icon--sm {
+  width: 24px;
+  height: 24px;
+  background: #e6f7ff;
+  color: #1890ff;
+  font-size: 12px;
+}
+
 .stat-cell__value {
-  font-size: 18px;
+  font-size: 16px;
   font-weight: 700;
   color: #303133;
   line-height: 1.2;
 }
 
 .stat-cell__label {
-  font-size: 11px;
+  font-size: 10px;
   color: #909399;
   margin-top: 2px;
 }
@@ -647,20 +505,20 @@ export default {
   display: flex;
   flex-direction: column;
   align-items: center;
-  padding-top: 6px;
+  padding-top: 4px;
   border-top: 1px dashed #eef0f4;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .rate-ring {
   position: relative;
-  width: 80px;
-  height: 80px;
+  width: 68px;
+  height: 68px;
 }
 
 .rate-ring__svg {
-  width: 80px;
-  height: 80px;
+  width: 68px;
+  height: 68px;
   transform: rotate(-90deg);
 }
 
@@ -685,20 +543,20 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 16px;
+  font-size: 14px;
   color: #1890ff;
 }
 
 .rate-row__label {
-  font-size: 12px;
+  font-size: 11px;
   color: #909399;
-  margin-top: 4px;
+  margin-top: 2px;
 }
 
 .gauge-row {
   display: flex;
   justify-content: space-around;
-  gap: 8px;
+  gap: 6px;
 }
 
 .gauge-box {
@@ -707,28 +565,28 @@ export default {
 }
 
 .mini-chart {
-  height: 110px;
+  height: 88px;
   width: 100%;
 }
 
 .gauge-box__label {
-  font-size: 12px;
+  font-size: 11px;
   color: #606266;
-  margin-top: -4px;
+  margin-top: -6px;
 }
 
 .chart-legend {
-  font-size: 11px;
+  font-size: 10px;
   color: #909399;
   display: flex;
   align-items: center;
-  gap: 8px;
+  gap: 6px;
 }
 
 .dot {
   display: inline-block;
-  width: 8px;
-  height: 8px;
+  width: 7px;
+  height: 7px;
   border-radius: 50%;
   margin-right: 2px;
 }
@@ -737,49 +595,7 @@ export default {
 .dot--green { background: #52c41a; }
 
 .chart-box {
-  height: 130px;
+  height: 96px;
   width: 100%;
-}
-
-.tab-bar {
-  flex-shrink: 0;
-  display: flex;
-  border-top: 1px solid #eee;
-  background: #fff;
-  padding: 6px 0 10px;
-}
-
-.tab-bar__item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 10px;
-  color: #909399;
-}
-
-.tab-bar__item i {
-  font-size: 20px;
-}
-
-.tab-bar__item.is-active {
-  color: #1890ff;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .personal-stats-showcase {
-    padding: 16px 12px 32px;
-  }
-
-  .mockup-grid {
-    justify-content: flex-start;
-    padding: 0 4px;
-  }
-
-  .phone-frame {
-    width: 260px;
-  }
 }
 </style>

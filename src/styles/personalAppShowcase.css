@@ -1,0 +1,226 @@
+/* 个人出勤 APP 原型展示 — 共享布局（三模块共用） */
+.personal-app-showcase {
+  min-height: calc(100vh - 100px);
+  padding: 20px 16px 32px;
+  background: linear-gradient(160deg, #eef2f8 0%, #e8edf5 45%, #f5f7fb 100%);
+  box-sizing: border-box;
+  overflow: hidden;
+}
+
+.personal-app-showcase .showcase-header {
+  max-width: 100%;
+  margin: 0 auto 20px;
+  text-align: center;
+}
+
+.personal-app-showcase .showcase-title {
+  margin: 0 0 6px;
+  font-size: 22px;
+  font-weight: 600;
+  color: #1f2d3d;
+}
+
+.personal-app-showcase .showcase-desc {
+  margin: 0;
+  font-size: 14px;
+  color: #606266;
+}
+
+.personal-app-showcase .mockup-grid-wrap {
+  overflow: hidden;
+  width: 100%;
+  margin: 0 auto;
+}
+
+.personal-app-showcase .mockup-grid {
+  display: flex;
+  flex-wrap: nowrap;
+  gap: 16px;
+  justify-content: center;
+  width: max-content;
+  margin: 0 auto;
+  align-items: flex-start;
+  transform-origin: top center;
+}
+
+.personal-app-showcase .mockup-item {
+  flex: 0 0 auto;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+}
+
+.personal-app-showcase .mockup-label {
+  margin: 10px 0 0;
+  font-size: 13px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.personal-app-showcase .phone-frame {
+  width: 360px;
+  height: 780px;
+  background: #fff;
+  border-radius: 40px;
+  box-shadow:
+    0 24px 48px rgba(15, 35, 75, 0.12),
+    0 0 0 1px rgba(0, 0, 0, 0.06),
+    inset 0 0 0 2px #fafafa;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
+  position: relative;
+}
+
+.personal-app-showcase .phone-notch {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 130px;
+  height: 28px;
+  background: #fff;
+  border-radius: 0 0 18px 18px;
+  z-index: 2;
+}
+
+.personal-app-showcase .status-bar {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 10px 24px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: #303133;
+  background: #fff;
+}
+
+.personal-app-showcase .status-bar__icons {
+  display: flex;
+  gap: 4px;
+  font-size: 11px;
+}
+
+.personal-app-showcase .screen {
+  flex: 1;
+  min-height: 0;
+  background: #f3f5f9;
+  overflow: hidden;
+}
+
+.personal-app-showcase .screen--scroll {
+  overflow: hidden;
+  padding: 10px 14px 10px;
+  display: flex;
+  flex-direction: column;
+}
+
+.personal-app-showcase .screen--no-pad-top {
+  padding-top: 0;
+}
+
+.personal-app-showcase .tab-bar {
+  flex-shrink: 0;
+  display: flex;
+  border-top: 1px solid #eee;
+  background: #fff;
+  padding: 6px 0 10px;
+}
+
+.personal-app-showcase .tab-bar__item {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  font-size: 10px;
+  color: #909399;
+}
+
+.personal-app-showcase .tab-bar__item i {
+  font-size: 20px;
+}
+
+.personal-app-showcase .tab-bar__item.is-active {
+  color: #1890ff;
+  font-weight: 600;
+}
+
+.personal-app-showcase .sub-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 8px 4px 10px;
+  font-size: 15px;
+  font-weight: 600;
+  color: #303133;
+  flex-shrink: 0;
+}
+
+.personal-app-showcase .sub-nav--flat {
+  background: #fff;
+  margin: 0 -14px 0;
+  padding: 10px 16px;
+  border-bottom: 1px solid #eef0f4;
+}
+
+.personal-app-showcase .sub-nav i {
+  font-size: 18px;
+  color: #606266;
+}
+
+.personal-app-showcase .sub-nav__placeholder {
+  width: 18px;
+}
+
+.personal-app-showcase .card {
+  background: #fff;
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 8px;
+  box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
+  flex-shrink: 0;
+}
+
+.personal-app-showcase .card__title {
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+}
+
+.personal-app-showcase .card__title--sm {
+  font-size: 13px;
+  margin-bottom: 6px;
+}
+
+.personal-app-showcase .card__head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 2px;
+}
+
+.personal-app-showcase .card__extra {
+  font-size: 11px;
+  color: #909399;
+}
+
+.personal-app-showcase .card__extra strong {
+  color: #1890ff;
+  font-size: 13px;
+}
+
+.personal-app-showcase .screen--scroll,
+.personal-app-showcase .screen--picker {
+  scrollbar-width: none;
+  -ms-overflow-style: none;
+}
+
+.personal-app-showcase .screen--scroll::-webkit-scrollbar,
+.personal-app-showcase .screen--picker::-webkit-scrollbar {
+  display: none;
+  width: 0;
+  height: 0;
+}

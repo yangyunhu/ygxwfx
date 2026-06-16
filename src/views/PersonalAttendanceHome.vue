@@ -1,5 +1,5 @@
 <template>
-  <div class="personal-home-showcase">
+  <div class="personal-app-showcase personal-home-showcase">
     <header class="showcase-header">
       <h1 class="showcase-title">个人出勤管理 APP · 首页</h1>
       <p class="showcase-desc">
@@ -432,9 +432,12 @@ import {
   WEEK_HEADERS,
   buildCalendarCells,
 } from "../utils/personalAttendanceHomeData";
+import personalAppShowcaseScale from "../mixins/personalAppShowcaseScale";
+import "../styles/personalAppShowcase.css";
 
 export default {
   name: "PersonalAttendanceHome",
+  mixins: [personalAppShowcaseScale],
   data() {
     const cal = CALENDAR_MONTH;
     return {
@@ -468,138 +471,12 @@ export default {
 </script>
 
 <style scoped>
-.personal-home-showcase {
-  min-height: calc(100vh - 100px);
-  padding: 28px 24px 40px;
-  background: linear-gradient(160deg, #eef2f8 0%, #e8edf5 45%, #f5f7fb 100%);
-  box-sizing: border-box;
-}
-
-.showcase-header {
-  max-width: 1280px;
-  margin: 0 auto 28px;
-  text-align: center;
-}
-
-.showcase-title {
-  margin: 0 0 8px;
-  font-size: 22px;
-  font-weight: 600;
-  color: #1f2d3d;
-}
-
-.showcase-desc {
-  margin: 0;
-  font-size: 14px;
-  color: #606266;
-}
-
-.mockup-grid-wrap {
-  overflow-x: auto;
-  padding-bottom: 12px;
-  margin: 0 auto;
-  max-width: 100%;
-}
-
-.mockup-grid-wrap::-webkit-scrollbar {
-  height: 6px;
-}
-
-.mockup-grid-wrap::-webkit-scrollbar-thumb {
-  background: #c0c4cc;
-  border-radius: 3px;
-}
-
-.mockup-grid {
-  display: flex;
-  flex-wrap: nowrap;
-  gap: 20px;
-  justify-content: center;
-  width: max-content;
-  min-width: 100%;
-  margin: 0 auto;
-  align-items: flex-start;
-}
-
-.mockup-item {
-  flex: 0 0 auto;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-}
-
-.mockup-label {
-  margin: 14px 0 0;
-  font-size: 14px;
-  font-weight: 500;
-  color: #303133;
-}
-
-.phone-frame {
-  width: 280px;
-  height: 660px;
-  background: #fff;
-  border-radius: 36px;
-  box-shadow:
-    0 24px 48px rgba(15, 35, 75, 0.12),
-    0 0 0 1px rgba(0, 0, 0, 0.06),
-    inset 0 0 0 2px #fafafa;
-  overflow: hidden;
-  display: flex;
-  flex-direction: column;
-  position: relative;
-}
-
-.phone-notch {
-  position: absolute;
-  top: 0;
-  left: 50%;
-  transform: translateX(-50%);
-  width: 120px;
-  height: 28px;
-  background: #fff;
-  border-radius: 0 0 18px 18px;
-  z-index: 2;
-}
-
-.status-bar {
-  flex-shrink: 0;
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 10px 22px 6px;
-  font-size: 12px;
-  font-weight: 600;
-  color: #303133;
-  background: #fff;
-}
-
-.status-bar__icons {
-  display: flex;
-  gap: 4px;
-  font-size: 11px;
-}
-
-.screen {
-  flex: 1;
-  min-height: 0;
-  background: #f3f5f9;
-}
-
-.screen--scroll {
-  overflow-y: auto;
-  padding: 10px 12px 12px;
-}
-
-.screen--no-pad-top {
-  padding-top: 0;
-}
-
 .home-header {
   display: flex;
   align-items: flex-start;
   justify-content: space-between;
-  margin-bottom: 12px;
+  margin-bottom: 8px;
+  flex-shrink: 0;
 }
 
 .home-header__user {
@@ -627,10 +504,10 @@ export default {
 }
 
 .home-header__dept {
-  font-size: 10px;
+  font-size: 11px;
   color: #909399;
   margin-top: 2px;
-  max-width: 130px;
+  max-width: 180px;
   line-height: 1.3;
 }
 
@@ -644,16 +521,36 @@ export default {
 .legend-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px 12px;
-  margin-bottom: 10px;
+  gap: 6px 14px;
+  margin-bottom: 8px;
   padding: 0 2px;
+  flex-shrink: 0;
+}
+
+.card--calendar {
+  padding: 10px 12px 12px;
+}
+
+.calendar-nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  font-size: 14px;
+  font-weight: 600;
+  color: #303133;
+  margin-bottom: 8px;
+  padding: 0 4px;
+}
+
+.card--mini {
+  margin-top: 8px;
 }
 
 .legend-item {
   display: inline-flex;
   align-items: center;
   gap: 4px;
-  font-size: 10px;
+  font-size: 11px;
   color: #606266;
 }
 
@@ -664,60 +561,8 @@ export default {
   flex-shrink: 0;
 }
 
-.card {
-  background: #fff;
-  border-radius: 12px;
-  padding: 14px 12px;
-  margin-bottom: 10px;
-  box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
-}
-
-.card--calendar {
-  padding: 12px 10px 14px;
-}
-
 .card--mini {
-  margin-top: 10px;
-}
-
-.card__title {
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 12px;
-}
-
-.card__title--sm {
-  font-size: 14px;
-  margin-bottom: 8px;
-}
-
-.card__head {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  margin-bottom: 4px;
-}
-
-.card__extra {
-  font-size: 12px;
-  color: #909399;
-}
-
-.card__extra strong {
-  color: #1890ff;
-  font-size: 14px;
-}
-
-.calendar-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  font-size: 14px;
-  font-weight: 600;
-  color: #303133;
-  margin-bottom: 10px;
-  padding: 0 4px;
+  margin-top: 8px;
 }
 
 .calendar-nav--sm {
@@ -762,12 +607,11 @@ export default {
   justify-content: center;
   position: relative;
   border-radius: 8px;
-  min-height: 32px;
+  min-height: 36px;
 }
 
 .calendar-cell--sm {
-  min-height: 26px;
-  border-radius: 6px;
+  min-height: 30px;
 }
 
 .calendar-cell.is-empty {
@@ -806,10 +650,11 @@ export default {
 
 .punch-row {
   display: flex;
-  gap: 20px;
-  margin: 14px 0 12px;
+  gap: 24px;
+  margin: 10px 0 8px;
   padding: 0 4px;
   justify-content: center;
+  flex-shrink: 0;
 }
 
 .punch-btn {
@@ -822,16 +667,16 @@ export default {
   padding: 0;
   border: none;
   border-radius: 50%;
-  width: 88px;
-  height: 88px;
+  width: 92px;
+  height: 92px;
   cursor: pointer;
-  font-size: 13px;
+  font-size: 14px;
   font-weight: 600;
   box-shadow: 0 4px 16px rgba(24, 144, 255, 0.25);
 }
 
 .punch-btn i {
-  font-size: 28px;
+  font-size: 30px;
 }
 
 .punch-btn--in {
@@ -848,45 +693,76 @@ export default {
 
 .link-btn {
   text-align: center;
-  padding: 12px;
+  padding: 10px;
   background: #fff;
   border-radius: 10px;
   font-size: 13px;
   color: #1890ff;
   font-weight: 500;
   box-shadow: 0 1px 4px rgba(0, 0, 0, 0.05);
-}
-
-.sub-nav {
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  padding: 8px 4px 12px;
-  font-size: 15px;
-  font-weight: 600;
-  color: #303133;
-}
-
-.sub-nav--flat {
-  background: #fff;
-  margin: 0 -12px 0;
-  padding: 10px 14px;
-  border-bottom: 1px solid #eef0f4;
-}
-
-.sub-nav i {
-  font-size: 18px;
-  color: #606266;
-}
-
-.sub-nav__placeholder {
-  width: 18px;
+  flex-shrink: 0;
 }
 
 .stat-grid {
   display: grid;
-  gap: 8px;
-  margin-bottom: 8px;
+  gap: 6px;
+  margin-bottom: 6px;
+}
+
+.stat-cell {
+  text-align: center;
+  padding: 6px 4px;
+  border-radius: 8px;
+  background: #fafbfc;
+}
+
+.stat-cell--compact {
+  padding: 8px 4px;
+}
+
+.stat-cell__value {
+  font-size: 16px;
+  font-weight: 700;
+  color: #303133;
+  line-height: 1.2;
+}
+
+.stat-cell__label {
+  font-size: 10px;
+  color: #909399;
+  margin-top: 2px;
+}
+
+.detail-tabs {
+  display: flex;
+  overflow: hidden;
+  background: #fff;
+  margin: 0 -14px;
+  padding: 0 6px;
+  border-bottom: 1px solid #eef0f4;
+  flex-shrink: 0;
+}
+
+.detail-tabs--3 .detail-tab {
+  flex: 1;
+  text-align: center;
+}
+
+.detail-tab {
+  flex: 1;
+  min-width: 0;
+  padding: 8px 4px;
+  font-size: 11px;
+  color: #606266;
+  border-bottom: 2px solid transparent;
+  text-align: center;
+  white-space: nowrap;
+}
+
+.detail-tab.is-active {
+  color: #1890ff;
+  font-weight: 600;
+  border-bottom-color: #1890ff;
 }
 
 .stat-grid--3 {
@@ -900,62 +776,11 @@ export default {
   margin-right: auto;
 }
 
-.stat-cell {
-  text-align: center;
-  padding: 8px 4px;
-  border-radius: 8px;
-  background: #fafbfc;
-}
-
-.stat-cell--compact {
-  padding: 10px 4px;
-}
-
-.stat-cell__value {
-  font-size: 18px;
-  font-weight: 700;
-  color: #303133;
-  line-height: 1.2;
-}
-
-.stat-cell__label {
-  font-size: 11px;
-  color: #909399;
-  margin-top: 2px;
-}
-
-.detail-tabs {
-  display: flex;
-  gap: 0;
-  overflow-x: auto;
-  background: #fff;
-  margin: 0 -12px;
-  padding: 0 8px;
-  border-bottom: 1px solid #eef0f4;
-}
-
-.detail-tabs--3 {
-  justify-content: space-around;
-}
-
-.detail-tab {
-  flex-shrink: 0;
-  padding: 10px 10px;
-  font-size: 12px;
-  color: #606266;
-  border-bottom: 2px solid transparent;
-}
-
-.detail-tab.is-active {
-  color: #1890ff;
-  font-weight: 600;
-  border-bottom-color: #1890ff;
-}
-
 .list-summary {
-  padding: 12px 4px 8px;
+  padding: 8px 4px 6px;
   font-size: 12px;
   color: #909399;
+  flex-shrink: 0;
 }
 
 .list-summary strong {
@@ -969,13 +794,15 @@ export default {
   border-radius: 12px;
   overflow: hidden;
   box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
+  flex: 1;
+  min-height: 0;
 }
 
 .record-item {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 12px 14px;
+  padding: 10px 14px;
   border-bottom: 1px solid #f0f2f5;
 }
 
@@ -1009,7 +836,7 @@ export default {
 }
 
 .punch-list {
-  margin-top: 10px;
+  margin-top: 8px;
 }
 
 .punch-record {
@@ -1018,8 +845,8 @@ export default {
   gap: 12px;
   background: #fff;
   border-radius: 12px;
-  padding: 16px 14px;
-  margin-bottom: 10px;
+  padding: 14px;
+  margin-bottom: 8px;
   box-shadow: 0 2px 8px rgba(15, 35, 75, 0.06);
 }
 
@@ -1041,51 +868,9 @@ export default {
 }
 
 .punch-record__time {
-  font-size: 20px;
+  font-size: 18px;
   font-weight: 700;
   color: #303133;
   margin-top: 4px;
-}
-
-.tab-bar {
-  flex-shrink: 0;
-  display: flex;
-  border-top: 1px solid #eee;
-  background: #fff;
-  padding: 6px 0 10px;
-}
-
-.tab-bar__item {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  gap: 2px;
-  font-size: 10px;
-  color: #909399;
-}
-
-.tab-bar__item i {
-  font-size: 20px;
-}
-
-.tab-bar__item.is-active {
-  color: #1890ff;
-  font-weight: 600;
-}
-
-@media (max-width: 768px) {
-  .personal-home-showcase {
-    padding: 16px 12px 32px;
-  }
-
-  .mockup-grid {
-    justify-content: flex-start;
-    padding: 0 4px;
-  }
-
-  .phone-frame {
-    width: 260px;
-  }
 }
 </style>
