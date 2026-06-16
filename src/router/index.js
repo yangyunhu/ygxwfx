@@ -52,6 +52,7 @@ import PersonalAttendanceHome from '../views/PersonalAttendanceHome.vue';
 import AttendanceStabilityAnalysis from '../views/AttendanceStabilityAnalysis.vue';
 import AttendancePatternAnalysis from '../views/AttendancePatternAnalysis.vue';
 import LeaveBehaviorAnalysis from '../views/LeaveBehaviorAnalysis.vue';
+import ComprehensiveEvaluation from '../views/ComprehensiveEvaluation.vue';
 
 Vue.use(Router);
 
@@ -347,7 +348,7 @@ export default new Router({
     {
       path: '/team-behavior-portrait/comprehensive-evaluation',
       name: 'ComprehensiveEvaluation',
-      component: ModulePlaceholder,
+      component: ComprehensiveEvaluation,
       meta: { title: '员工行为画像综合评估', description: '员工行为画像综合评估页面，提供多维度的行为画像综合评分与展示。' }
     },
     {
