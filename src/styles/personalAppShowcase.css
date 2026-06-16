@@ -49,6 +49,22 @@
   align-items: flex-start;
 }
 
+.personal-app-showcase .mockup-grid--cols-4 {
+  display: grid;
+  grid-template-columns: repeat(4, 360px);
+  gap: 20px 16px;
+  justify-content: center;
+  width: max-content;
+}
+
+.personal-app-showcase.personal-home-showcase {
+  overflow: visible;
+}
+
+.personal-app-showcase.personal-home-showcase .mockup-grid-wrap {
+  overflow: visible;
+}
+
 .personal-app-showcase .mockup-item {
   flex: 0 0 auto;
   display: flex;

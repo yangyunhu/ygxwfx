@@ -9,7 +9,7 @@
 
     <div class="mockup-grid-wrap">
       <div class="mockup-grid-scaler">
-      <div class="mockup-grid">
+      <div class="mockup-grid mockup-grid--cols-4">
         <!-- ① 出勤日历 -->
         <div class="mockup-item">
           <div class="phone-frame">
