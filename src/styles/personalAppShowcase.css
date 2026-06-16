@@ -30,6 +30,14 @@
   overflow: hidden;
   width: 100%;
   margin: 0 auto;
+  display: flex;
+  justify-content: center;
+  align-items: flex-start;
+}
+
+.personal-app-showcase .mockup-grid-scaler {
+  overflow: hidden;
+  flex-shrink: 0;
 }
 
 .personal-app-showcase .mockup-grid {
@@ -38,9 +46,7 @@
   gap: 16px;
   justify-content: center;
   width: max-content;
-  margin: 0 auto;
   align-items: flex-start;
-  transform-origin: top center;
 }
 
 .personal-app-showcase .mockup-item {

@@ -8,6 +8,7 @@
     </header>
 
     <div class="mockup-grid-wrap">
+      <div class="mockup-grid-scaler">
       <div class="mockup-grid">
         <!-- ① 出勤日历 -->
         <div class="mockup-item">
@@ -406,6 +407,7 @@
           </div>
           <p class="mockup-label">⑥ 请假时长明细</p>
         </div>
+      </div>
       </div>
     </div>
   </div>

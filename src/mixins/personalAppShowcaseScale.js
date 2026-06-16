@@ -1,4 +1,4 @@
-/** 个人出勤 APP 原型 — 按容器宽度等比缩放，避免出现横向滚动条 */
+/** 个人出勤 APP 原型 — 等比缩放并居中，避免布局占位错位 */
 export default {
   mounted() {
     this.$nextTick(() => {
@@ -23,22 +23,32 @@ export default {
   methods: {
     updateShowcaseScale() {
       const wrap = this.$el && this.$el.querySelector(".mockup-grid-wrap");
-      const grid = wrap && wrap.querySelector(".mockup-grid");
-      if (!wrap || !grid) return;
+      const scaler = wrap && wrap.querySelector(".mockup-grid-scaler");
+      const grid = scaler && scaler.querySelector(".mockup-grid");
+      if (!wrap || !scaler || !grid) return;
 
       grid.style.transform = "";
-      wrap.style.height = "";
+      grid.style.transformOrigin = "";
+      scaler.style.width = "";
+      scaler.style.height = "";
+      wrap.style.minHeight = "";
 
       const available = wrap.clientWidth;
-      const natural = grid.scrollWidth;
-      const scale = natural > 0 ? Math.min(1, available / natural) : 1;
+      const naturalWidth = grid.scrollWidth;
+      const naturalHeight = grid.offsetHeight;
+      if (!naturalWidth || !naturalHeight) return;
 
-      grid.style.transformOrigin = "top center";
-      grid.style.transform = scale < 1 ? `scale(${scale})` : "";
+      const scale = Math.min(1, available / naturalWidth);
+
+      if (scale < 1) {
+        scaler.style.width = `${Math.ceil(naturalWidth * scale)}px`;
+        scaler.style.height = `${Math.ceil(naturalHeight * scale)}px`;
+        grid.style.transformOrigin = "top left";
+        grid.style.transform = `scale(${scale})`;
+      }
 
       this.$nextTick(() => {
-        const height = grid.getBoundingClientRect().height;
-        wrap.style.height = `${height + 4}px`;
+        wrap.style.minHeight = `${scaler.offsetHeight + 8}px`;
       });
     },
   },

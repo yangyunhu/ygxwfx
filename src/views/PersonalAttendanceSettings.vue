@@ -6,6 +6,7 @@
     </header>
 
     <div class="mockup-grid-wrap">
+      <div class="mockup-grid-scaler">
       <div class="mockup-grid">
       <!-- 1. 我的设置 -->
       <div class="mockup-item">
@@ -197,6 +198,7 @@
           </div>
         </div>
         <p class="mockup-label">④ 出勤模式选择</p>
+      </div>
       </div>
       </div>
     </div>

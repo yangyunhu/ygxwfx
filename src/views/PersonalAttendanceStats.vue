@@ -6,6 +6,7 @@
     </header>
 
     <div class="mockup-grid-wrap">
+      <div class="mockup-grid-scaler">
     <div class="mockup-grid">
       <!-- 年度 / 季度 / 月度 统计卡片 -->
       <div v-for="preset in periodMockups" :key="preset.key" class="mockup-item">
@@ -178,6 +179,7 @@
         </div>
         <p class="mockup-label">④ 出勤趋势分析</p>
       </div>
+    </div>
     </div>
     </div>
   </div>
