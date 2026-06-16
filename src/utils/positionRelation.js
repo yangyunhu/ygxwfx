@@ -64,6 +64,57 @@ export const HR_CATEGORY_SEQUENCE_MAP = [
   },
 ];
 
+/** 筛选下拉：岗位类别 */
+export function getPositionCategoryFilterOptions() {
+  return [
+    { label: "全部类别", value: "" },
+    ...HR_CATEGORY_SEQUENCE_MAP.map((item) => ({
+      label: item.category,
+      value: item.category,
+    })),
+  ];
+}
+
+/** 筛选下拉：指定类别下的岗位序列（含「全部序列」） */
+export function getPositionSequenceOptionsByCategory(category = "") {
+  const base = [{ label: "全部序列", value: "" }];
+  if (!category) return base;
+  const item = HR_CATEGORY_SEQUENCE_MAP.find((m) => m.category === category);
+  if (!item) return base;
+  return base.concat(item.sequences.map((seq) => ({ label: seq, value: seq })));
+}
+
+/** 未选类别时，按类别分组的岗位序列（用于 el-option-group） */
+export function getPositionSequenceOptionGroups() {
+  return HR_CATEGORY_SEQUENCE_MAP.map((item) => ({
+    label: item.category,
+    options: item.sequences.map((seq) => ({ label: seq, value: seq })),
+  }));
+}
+
+/** 根据岗位序列反查所属岗位类别 */
+export function findPositionCategoryBySequence(sequence = "") {
+  if (!sequence) return "";
+  const item = HR_CATEGORY_SEQUENCE_MAP.find((m) => m.sequences.includes(sequence));
+  return item ? item.category : "";
+}
+
+/** 校验序列是否属于指定类别（未选类别时仅校验是否存在） */
+export function isSequenceInCategory(sequence = "", category = "") {
+  if (!sequence) return true;
+  if (!category) return !!findPositionCategoryBySequence(sequence);
+  const item = HR_CATEGORY_SEQUENCE_MAP.find((m) => m.category === category);
+  return item ? item.sequences.includes(sequence) : false;
+}
+
+export function getPositionCategoryLabel(value = "") {
+  return value || "全部类别";
+}
+
+export function getPositionSequenceLabel(value = "") {
+  return value || "全部序列";
+}
+
 const POST_NAME_SUFFIX = ["专责", "高级专责", "业务员", "员", "助理"];
 
 function slugId(prefix, category, name, index) {

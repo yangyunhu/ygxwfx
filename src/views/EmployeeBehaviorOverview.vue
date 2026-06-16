@@ -1103,7 +1103,13 @@ export default {
     },
 
     handleViewComparison() {
-      this.$message.info("查看考勤数据对比详情功能待开发");
+      this.$router.push({
+        path: "/behavior-visual-dashboard/unit-attendance-comparison",
+        query: {
+          startDate: this.queryParams.startDate || "",
+          endDate: this.queryParams.endDate || "",
+        },
+      });
     },
 
     openExportDialog() {

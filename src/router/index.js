@@ -41,6 +41,7 @@ import AbnormalDataManagement from '../views/AbnormalDataManagement.vue';
 import AttendanceConfigManagement from '../views/AttendanceConfigManagement.vue';
 import AttendanceStatistics from '../views/AttendanceStatistics.vue';
 import EmployeeBehaviorOverview from '../views/EmployeeBehaviorOverview.vue';
+import UnitAttendanceComparison from '../views/UnitAttendanceComparison.vue';
 import WorkSaturationAnalysis from '../views/WorkSaturationAnalysis.vue';
 import ModelManagement from '../views/ModelManagement.vue';
 import CreditEvaluationStandard from '../views/CreditEvaluationStandard.vue';
@@ -93,6 +94,12 @@ export default new Router({
       name: 'EmployeeBehaviorOverview',
       component: EmployeeBehaviorOverview,
       meta: { title: '员工行为总览', description: '员工行为总览页面，展示员工出勤情况综合视图。' }
+    },
+    {
+      path: '/behavior-visual-dashboard/unit-attendance-comparison',
+      name: 'UnitAttendanceComparison',
+      component: UnitAttendanceComparison,
+      meta: { title: '各单位考勤数据对比', description: '各单位考勤数据对比页面，横向对比各供电局出勤指标。' }
     },
     {
       path: '/behavior-intelligence-scenarios/model-management',

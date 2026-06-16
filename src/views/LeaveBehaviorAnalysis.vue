@@ -70,6 +70,29 @@
               <div ref="leaveTypeChart" class="chart-box" />
             </div>
           </div>
+          <div class="chart-card chart-card--full">
+            <div class="chart-card__header">
+              <div class="chart-card__title">各单位请假情况</div>
+              <div class="chart-card__controls">
+                <span class="control-label">休假类型：</span>
+                <el-select
+                  v-model="unitLeaveTypeFilter"
+                  size="small"
+                  filterable
+                  class="leave-type-filter"
+                  @change="handleUnitLeaveTypeChange"
+                >
+                  <el-option
+                    v-for="opt in leaveTypeFilterOptions"
+                    :key="opt.value"
+                    :label="opt.label"
+                    :value="opt.value"
+                  />
+                </el-select>
+              </div>
+            </div>
+            <div ref="unitLeaveChart" class="chart-box chart-box--wide" />
+          </div>
         </div>
 
         <!-- Tab2 表格 -->
@@ -118,8 +141,12 @@ import {
   YEAR_OPTIONS,
   generateLeaveDurationRows,
   getLeaveDistributionChartData,
+  getLeaveByUnitChartData,
   getDefaultDistQuery,
   getDefaultDurationQuery,
+  LEAVE_TYPE_FILTER_OPTIONS,
+  DEFAULT_UNIT_LEAVE_TYPE,
+  LEAVE_TYPE_COLORS,
 } from "../utils/leaveBehaviorAnalysisData";
 import { downloadTableWithLog } from "../utils/exportLogger";
 
@@ -139,6 +166,8 @@ export default {
       durationPage: 1,
       durationPageSize: 10,
       tableHeight: "calc(100vh - 340px)",
+      leaveTypeFilterOptions: LEAVE_TYPE_FILTER_OPTIONS,
+      unitLeaveTypeFilter: DEFAULT_UNIT_LEAVE_TYPE,
       charts: {},
       resizeHandler: null,
     };
@@ -146,6 +175,9 @@ export default {
   computed: {
     chartData() {
       return getLeaveDistributionChartData(this.appliedDistQuery);
+    },
+    unitLeaveChartData() {
+      return getLeaveByUnitChartData(this.appliedDistQuery, this.unitLeaveTypeFilter);
     },
     filteredDurationRows() {
       const { unit, department, year } = this.appliedDurationQuery;
@@ -172,6 +204,14 @@ export default {
       handler() {
         if (this.activeTab === "timeDist") {
           this.$nextTick(() => this.renderCharts());
+        }
+      },
+    },
+    unitLeaveChartData: {
+      deep: true,
+      handler() {
+        if (this.activeTab === "timeDist") {
+          this.$nextTick(() => this.renderUnitLeaveChart());
         }
       },
     },
@@ -202,6 +242,7 @@ export default {
     handleDistReset() {
       this.distQuery = getDefaultDistQuery();
       this.appliedDistQuery = getDefaultDistQuery();
+      this.unitLeaveTypeFilter = DEFAULT_UNIT_LEAVE_TYPE;
     },
     handleDurationSearch() {
       this.appliedDurationQuery = { ...this.durationQuery };
@@ -223,6 +264,7 @@ export default {
         unit: this.filterLabel(unit, "全部单位"),
         department: this.filterLabel(department, "全部部门"),
         granularity: granularity === "quarter" ? "季度" : "月度",
+        leaveType: this.unitLeaveTypeFilter,
       };
     },
     durationExportMeta() {
@@ -239,9 +281,17 @@ export default {
     },
     exportCharts() {
       const { trend, typeDistribution } = this.chartData;
+      const unitLeave = this.unitLeaveChartData;
       const rows = [
         ...trend.map((item) => ["请假时间分布", item.label, item.value, "次", ""]),
         ...typeDistribution.map((item) => ["请假类型分布", item.name, item.value, `${item.percent}%`, ""]),
+        ...unitLeave.categories.map((unit, i) => [
+          "各单位请假情况",
+          unit,
+          unitLeave.totalDays[i],
+          unitLeave.typeDays[i],
+          `总请假天数 / ${unitLeave.selectedLeaveType}`,
+        ]),
       ];
       downloadTableWithLog({
         headers: ["数据类型", "时间/类别", "数值", "占比/单位", "备注"],
@@ -284,7 +334,7 @@ export default {
       this.$message.success(`已导出 ${source.length} 条记录`);
     },
     initAndRenderCharts() {
-      const refs = { trend: "leaveTrendChart", type: "leaveTypeChart" };
+      const refs = { trend: "leaveTrendChart", type: "leaveTypeChart", unitLeave: "unitLeaveChart" };
       Object.entries(refs).forEach(([key, refName]) => {
         const el = this.$refs[refName];
         if (el && !this.charts[key]) {
@@ -292,6 +342,9 @@ export default {
         }
       });
       this.renderCharts();
+    },
+    handleUnitLeaveTypeChange() {
+      this.renderUnitLeaveChart();
     },
     renderCharts() {
       if (!this.charts.trend) return;
@@ -360,7 +413,70 @@ export default {
         true
       );
 
+      this.renderUnitLeaveChart();
       Object.values(this.charts).forEach((c) => c && c.resize());
+    },
+    renderUnitLeaveChart() {
+      const chart = this.charts.unitLeave;
+      if (!chart) return;
+      const { categories, totalDays, typeDays, selectedLeaveType } = this.unitLeaveChartData;
+      const typeColor = LEAVE_TYPE_COLORS[selectedLeaveType] || "#FA8C16";
+      const values = [...totalDays, ...typeDays];
+      const maxVal = values.length ? Math.max(...values) : 30;
+      const yMax = Math.ceil((maxVal + 5) / 10) * 10;
+
+      chart.setOption(
+        baseChartOption({
+          tooltip: {
+            trigger: "axis",
+            axisPointer: { type: "shadow" },
+            formatter: (params) => {
+              if (!params || !params.length) return "";
+              const lines = [`${params[0].axisValue}`];
+              params.forEach((p) => {
+                lines.push(`${p.marker}${p.seriesName}：${p.value} 天`);
+              });
+              return lines.join("<br/>");
+            },
+          },
+          legend: {
+            data: ["总请假天数", selectedLeaveType],
+            top: 0,
+            left: "center",
+          },
+          grid: { left: "2%", right: "2%", top: "14%", bottom: "12%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            axisLabel: { interval: 0, rotate: 35, fontSize: 11 },
+          },
+          yAxis: {
+            type: "value",
+            name: "天数",
+            min: 0,
+            max: Math.max(yMax, 20),
+            interval: Math.max(Math.ceil(yMax / 5), 5),
+          },
+          series: [
+            {
+              name: "总请假天数",
+              type: "bar",
+              barMaxWidth: 22,
+              itemStyle: { color: "#1890FF", borderRadius: [2, 2, 0, 0] },
+              data: totalDays,
+            },
+            {
+              name: selectedLeaveType,
+              type: "bar",
+              barMaxWidth: 22,
+              itemStyle: { color: typeColor, borderRadius: [2, 2, 0, 0] },
+              data: typeDays,
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
     },
   },
 };
@@ -434,6 +550,37 @@ export default {
   display: grid;
   grid-template-columns: 1fr 1fr;
   gap: 16px;
+  margin-bottom: 16px;
+}
+
+.chart-card--full {
+  margin-top: 0;
+}
+
+.chart-card__header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 8px;
+}
+
+.chart-card__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 13px;
+  color: #606266;
+}
+
+.leave-type-filter {
+  width: 150px;
+}
+
+.chart-box--wide {
+  height: 360px;
 }
 
 .chart-card {

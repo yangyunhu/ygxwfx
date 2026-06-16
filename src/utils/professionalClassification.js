@@ -174,6 +174,14 @@ export function getProfessionalLevel1Options() {
   return PROFESSIONAL_CLASSIFICATION_TREE_WITH_ID.map((n) => n.name);
 }
 
+/** 图二筛选默认：运维检修 / 变电 / 变电站运行维护 */
+export const DEFAULT_PROFESSIONAL_PATH = ["运维检修", "变电", "变电站运行维护"];
+
+export function formatProfessionalPath(path) {
+  if (!path || !path.length) return "全部专业";
+  return Array.isArray(path) ? path.join(" / ") : String(path);
+}
+
 /** 路径数组是否匹配筛选（前缀匹配） */
 export function matchProfessionalPath(itemPathText, filterPath) {
   if (!filterPath || !filterPath.length) return true;

@@ -7,15 +7,41 @@ import {
   UNIT_OPTIONS,
   DEPARTMENT_OPTIONS,
 } from "./attendanceStabilityData";
+import { LEAVE_TYPE_NAMES } from "./behaviorModeSettings";
 
 export { UNIT_OPTIONS, DEPARTMENT_OPTIONS };
 
-export const LEAVE_TYPES = ["事假", "病假", "年休假"];
+/** 休假类型（与人资休假台账一致） */
+export const LEAVE_TYPES = [...LEAVE_TYPE_NAMES];
+
+export const LEAVE_TYPE_FILTER_OPTIONS = LEAVE_TYPES.map((name) => ({
+  label: name,
+  value: name,
+}));
+
+/** 各单位请假对比图默认筛选类型 */
+export const DEFAULT_UNIT_LEAVE_TYPE = "年休假";
+
+const UNIT_SHORT_NAMES = [
+  "昆明", "曲靖", "玉溪", "保山", "昭通", "丽江", "普洱", "临沧",
+  "楚雄", "红河", "文山", "西双版纳", "大理", "德宏", "怒江", "迪庆",
+];
 
 export const LEAVE_TYPE_COLORS = {
   事假: "#1890FF",
   病假: "#33C3A1",
   年休假: "#1A558E",
+  探亲假: "#722ED1",
+  婚假: "#EB2F96",
+  丧假: "#595959",
+  流产假: "#FA541C",
+  产假: "#13C2C2",
+  哺乳假: "#FAAD14",
+  陪护假: "#2F54EB",
+  节育假: "#A0D911",
+  育儿假: "#F759AB",
+  父母护理假: "#597EF7",
+  其他: "#8C8C8C",
 };
 
 export const YEAR_OPTIONS = [
@@ -59,6 +85,10 @@ function buildEmployeeName(index) {
 
 function filterSeed(filter = {}) {
   let seed = 0;
+  if (filter.startDate) seed += filter.startDate.length * 3;
+  if (filter.endDate) seed += filter.endDate.length * 5;
+  if (filter.positionCategory) seed += filter.positionCategory.length * 7;
+  if (filter.positionSequence) seed += filter.positionSequence.length * 11;
   if (filter.unit) seed += filter.unit.length * 7;
   if (filter.department) seed += filter.department.length * 13;
   if (filter.granularity) seed += filter.granularity === "quarter" ? 31 : 17;
@@ -68,9 +98,13 @@ function filterSeed(filter = {}) {
 
 function pickLeaveType(index) {
   const r = seededRandom(index + 5100);
-  if (r < 0.48) return "事假";
-  if (r < 0.78) return "年休假";
-  return "病假";
+  let acc = 0;
+  const weights = [0.22, 0.18, 0.12, 0.08, 0.06, 0.04, 0.03, 0.05, 0.04, 0.04, 0.02, 0.05, 0.04, 0.03];
+  for (let i = 0; i < LEAVE_TYPES.length; i += 1) {
+    acc += weights[i] || 0.03;
+    if (r < acc) return LEAVE_TYPES[i];
+  }
+  return LEAVE_TYPES[LEAVE_TYPES.length - 1];
 }
 
 function buildLeaveDurations(index, leaveType) {
@@ -134,17 +168,51 @@ function buildQuarterlyTrend(seed) {
 
 /** 请假类型分布 */
 function buildLeaveTypeDistribution(seed) {
-  const base = [
-    { name: "事假", value: 10 + Math.floor(seededRandom(seed + 301) * 6) },
-    { name: "年休假", value: 5 + Math.floor(seededRandom(seed + 302) * 4) },
-    { name: "病假", value: 1 + Math.floor(seededRandom(seed + 303) * 4) },
-  ];
-  const total = base.reduce((sum, item) => sum + item.value, 0);
-  return base.map((item) => ({
-    ...item,
-    percent: total ? Math.round((item.value / total) * 100) : 0,
-    color: LEAVE_TYPE_COLORS[item.name],
+  const base = LEAVE_TYPES.map((name, idx) => ({
+    name,
+    value: 1 + Math.floor(seededRandom(seed + 301 + idx * 11) * (name === "年休假" ? 10 : name === "事假" ? 8 : 5)),
   }));
+  const total = base.reduce((sum, item) => sum + item.value, 0);
+  return base
+    .filter((item) => item.value > 0)
+    .sort((a, b) => b.value - a.value)
+    .slice(0, 6)
+    .map((item) => ({
+      ...item,
+      percent: total ? Math.round((item.value / total) * 100) : 0,
+      color: LEAVE_TYPE_COLORS[item.name] || "#1890FF",
+    }));
+}
+
+/** 各单位请假天数（总天数 + 分类型天数） */
+function buildLeaveDaysByUnit(seed, selectedLeaveType = DEFAULT_UNIT_LEAVE_TYPE) {
+  return UNIT_SHORT_NAMES.map((name, idx) => {
+    const byType = {};
+    LEAVE_TYPES.forEach((type, typeIdx) => {
+      const base = type === "年休假" ? 8 : type === "事假" ? 5 : type === "病假" ? 4 : 2;
+      const spread = type === "年休假" ? 12 : type === "产假" ? 10 : 6;
+      byType[type] = Math.round(base + seededRandom(seed + idx * 97 + typeIdx * 23) * spread);
+    });
+    const total = LEAVE_TYPES.reduce((sum, type) => sum + byType[type], 0);
+    return {
+      name,
+      total,
+      selected: byType[selectedLeaveType] || 0,
+      selectedType: selectedLeaveType,
+    };
+  });
+}
+
+/** Tab1：各单位请假对比图 */
+export function getLeaveByUnitChartData(filter = {}, selectedLeaveType = DEFAULT_UNIT_LEAVE_TYPE) {
+  const seed = filterSeed(filter) + (selectedLeaveType ? selectedLeaveType.length * 29 : 0);
+  const rows = buildLeaveDaysByUnit(seed, selectedLeaveType);
+  return {
+    selectedLeaveType,
+    categories: rows.map((r) => r.name),
+    totalDays: rows.map((r) => r.total),
+    typeDays: rows.map((r) => r.selected),
+  };
 }
 
 /** Tab1：图表数据 */

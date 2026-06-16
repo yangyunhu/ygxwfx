@@ -48,6 +48,10 @@
           <i class="el-icon-document"></i>
           <span>员工行为总览</span>
         </el-menu-item>
+        <el-menu-item index="/behavior-visual-dashboard/unit-attendance-comparison">
+          <i class="el-icon-document"></i>
+          <span>各单位考勤数据对比</span>
+        </el-menu-item>
       </el-submenu>
 
       <el-submenu index="0-2">
