@@ -313,7 +313,7 @@ export default {
         { key: "total", label: "总应出勤人数", value: d.totalShouldAttendance, valueClass: "" },
         { key: "actual", label: "实际出勤人数", value: d.actualAttendance, valueClass: "is-primary" },
         { key: "rate", label: "整体出勤率", value: d.overallRate, valueClass: "is-success" },
-        { key: "leave", label: "请假时长", value: d.leaveDuration, valueClass: "" },
+        { key: "noRecord", label: "无考勤记录人员", value: d.noAttendancePersonnel, valueClass: "is-warning" },
         { key: "comparison", label: "考勤数据对比", value: "", valueClass: "" },
       ];
     },
@@ -394,6 +394,91 @@ export default {
       const s = this.snapshot;
       const mode = getMainChartSeriesMode(this.activeMetric);
       const C = PROTOTYPE_COLORS;
+
+      if (mode.showNoRecord) {
+        const noRecordData = s.main.noRecord || [];
+        const maxVal = Math.max(...noRecordData, 1);
+        const leftMax = Math.ceil(maxVal / 5) * 5 + 5;
+        const leftInterval = leftMax <= 20 ? 5 : Math.ceil(leftMax / 5);
+
+        chart.setOption(
+          {
+            color: [C.orange],
+            textStyle: { color: "#606266", fontSize: 11 },
+            tooltip: {
+              trigger: "axis",
+              axisPointer: { type: "shadow" },
+              backgroundColor: "rgba(255,255,255,0.98)",
+              borderColor: "#E8E8E8",
+              borderWidth: 1,
+              padding: [10, 14],
+              textStyle: { color: "#303133", fontSize: 12 },
+              extraCssText: "box-shadow: 0 2px 8px rgba(0,0,0,0.08); border-radius: 4px;",
+              formatter(params) {
+                if (!params || !params.length) return "";
+                const p = params[0];
+                return `<div style="font-weight:600;margin-bottom:4px;">${p.axisValue}</div>
+                  <div>无考勤记录人员：<strong>${p.value}</strong> 人</div>`;
+              },
+            },
+            legend: {
+              data: ["无考勤记录人员"],
+              top: 8,
+              left: "center",
+              icon: "rect",
+              itemWidth: 12,
+              itemHeight: 8,
+              textStyle: { color: "#606266", fontSize: 11 },
+            },
+            grid: { left: "2%", right: "2%", top: "14%", bottom: "8%", containLabel: true },
+            xAxis: {
+              type: "category",
+              data: s.categories,
+              axisLine: { lineStyle: { color: "#E8E8E8" } },
+              axisTick: { show: false },
+              axisLabel: {
+                color: "#606266",
+                fontSize: 11,
+                interval: 0,
+                rotate: s.categories.length > 12 ? 35 : 0,
+              },
+            },
+            yAxis: {
+              type: "value",
+              name: "人数",
+              nameTextStyle: { color: "#909399", fontSize: 11 },
+              min: 0,
+              max: leftMax,
+              interval: leftInterval,
+              axisLine: { show: false },
+              axisTick: { show: false },
+              axisLabel: { color: "#606266", fontSize: 11 },
+              splitLine: { lineStyle: { color: "#F0F0F0", type: "solid" } },
+            },
+            series: [{
+              name: "无考勤记录人员",
+              type: "bar",
+              barMaxWidth: 36,
+              itemStyle: {
+                color: C.orange,
+                borderRadius: [4, 4, 0, 0],
+              },
+              label: {
+                show: true,
+                position: "top",
+                distance: 6,
+                fontSize: 11,
+                color: C.orange,
+                formatter: (p) => `${p.value}人`,
+              },
+              data: noRecordData,
+            }],
+          },
+          true
+        );
+        return;
+      }
+
       const legend = [];
       const series = [];
 
@@ -992,12 +1077,13 @@ export default {
 
     handleCardClick(type) {
       this.activeMetric = type;
+      this.rebuildSnapshot();
       this.renderMainChart();
       const labels = {
         total: "总应出勤人数",
         actual: "实际出勤人数",
         rate: "整体出勤率",
-        leave: "请假时长",
+        noRecord: "无考勤记录人员",
       };
       this.$message.info(`主图已切换为「${labels[type]}」视角`);
     },

@@ -43,6 +43,7 @@ const UNIT_BASE = {
   leaveSick: [12, 10, 15, 8, 18, 15, 20, 12, 10, 15, 12, 10, 15, 12, 10, 8],
   leaveAnnual: [25, 20, 18, 12, 22, 32, 8, 18, 16, 10, 15, 16, 12, 7, 7, 6],
   leaveHours: [10.5, 9.8, 11.2, 8.6, 12.1, 14.3, 7.5, 9.1, 10.0, 11.5, 9.3, 8.8, 10.2, 9.0, 8.5, 7.9],
+  noRecord: [12, 10, 9, 11, 6, 7, 8, 7, 9, 10, 8, 7, 10, 9, 8, 7],
 };
 
 function scaleNum(n, factor) {
@@ -93,6 +94,7 @@ function buildUnitRows(units, factor) {
       leaveSick: scaleNum(UNIT_BASE.leaveSick[idx], factor),
       leaveAnnual: scaleNum(UNIT_BASE.leaveAnnual[idx], factor),
       leaveHours: Math.round(UNIT_BASE.leaveHours[idx] * factor * 10) / 10,
+      noRecordCount: scaleNum(UNIT_BASE.noRecord[idx], factor),
     };
   });
 }
@@ -111,6 +113,7 @@ function buildDepartmentRows(unitFilter, factor) {
       let leaveSick = 0;
       let leaveAnnual = 0;
       let leaveHours = 0;
+      let noRecordCount = 0;
       UNIT_META.forEach((u, uIdx) => {
         const seed = (uIdx + 1) * (dIdx + 3);
         const unitScale = UNIT_BASE.should[uIdx] / 3000;
@@ -127,6 +130,7 @@ function buildDepartmentRows(unitFilter, factor) {
         leaveSick += scaleNum(2 + (seed % 5), factor);
         leaveAnnual += scaleNum(3 + (seed % 6), factor);
         leaveHours += Math.round((4 + (seed % 6)) * factor * 10) / 10;
+        noRecordCount += scaleNum(2 + (seed % 4), factor);
       });
       const count = UNIT_META.length;
       return {
@@ -145,6 +149,7 @@ function buildDepartmentRows(unitFilter, factor) {
         leaveSick,
         leaveAnnual,
         leaveHours: Math.round(leaveHours * 10) / 10,
+        noRecordCount,
       };
     });
   }
@@ -174,6 +179,7 @@ function buildDepartmentRows(unitFilter, factor) {
         leaveSick: scaleNum(2 + (seed % 5), factor),
         leaveAnnual: scaleNum(3 + (seed % 6), factor),
         leaveHours: Math.round((4 + (seed % 6)) * factor * 10) / 10,
+        noRecordCount: scaleNum(2 + (seed % 4), factor),
       });
     });
   });
@@ -188,12 +194,11 @@ function buildStats(rows) {
   const totalShould = sumField(rows, "should");
   const totalActual = sumField(rows, "actual");
   const rate = totalShould ? ((totalActual / totalShould) * 100).toFixed(1) : "0.0";
-  const leaveHours = Math.round(sumField(rows, "leaveHours") * 10) / 10;
   return {
     totalShouldAttendance: totalShould,
     actualAttendance: totalActual,
     overallRate: `${rate}%`,
-    leaveDuration: `${leaveHours}h`,
+    noAttendancePersonnel: sumField(rows, "noRecordCount"),
   };
 }
 
@@ -253,13 +258,13 @@ export function buildOverviewSnapshot(queryParams, leaveQueryParams = {}, active
     dimension: queryParams.dimension,
     unitFilter: queryParams.unit,
     dimensionLabel: isDepartment ? "部门" : "单位",
-    mainChartTitle: isDepartment
-      ? queryParams.unit === "all"
-        ? "各部门出勤概况"
-        : "所选单位各部门出勤概况"
-      : queryParams.unit === "all"
-        ? "各单位出勤概况"
-        : "所选单位出勤概况",
+    mainChartTitle: activeMetric === "noRecord"
+      ? (isDepartment
+        ? (queryParams.unit === "all" ? "各部门无考勤记录人员分布" : "所选单位各部门无考勤记录人员分布")
+        : (queryParams.unit === "all" ? "各单位无考勤记录人员分布" : "所选单位无考勤记录人员分布"))
+      : (isDepartment
+        ? (queryParams.unit === "all" ? "各部门出勤概况" : "所选单位各部门出勤概况")
+        : (queryParams.unit === "all" ? "各单位出勤概况" : "所选单位出勤概况")),
     categories,
     rows,
     stats,
@@ -267,6 +272,7 @@ export function buildOverviewSnapshot(queryParams, leaveQueryParams = {}, active
       should: rows.map((r) => r.should),
       actual: rows.map((r) => r.actual),
       rate: rows.map((r) => r.rate),
+      noRecord: rows.map((r) => r.noRecordCount),
     },
     punctuality: {
       onTime: rows.map((r) => r.onTimeRate),
@@ -328,6 +334,7 @@ export function getMainChartSeriesMode(activeMetric) {
     total: { showShould: true, showActual: true, showRate: true, emphasis: "should" },
     actual: { showShould: true, showActual: true, showRate: true, emphasis: "actual" },
     rate: { showShould: false, showActual: false, showRate: true, emphasis: "rate" },
+    noRecord: { showShould: false, showActual: false, showRate: false, showNoRecord: true, emphasis: "noRecord" },
     leave: { showShould: true, showActual: true, showRate: false, emphasis: "should" },
   };
   return modes[activeMetric] || modes.total;
