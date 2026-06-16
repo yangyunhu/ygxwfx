@@ -11,8 +11,33 @@
     <div class="main-container">
       <!-- 异常数据审批管理页签内容 -->
       <div v-if="activeTab === 'approval'" class="tab-content">
-        <!-- 查询条件 -->
-        <div class="query-section">
+        <!-- 双视角切换（开发演示） -->
+        <div class="role-switch-bar">
+          <div class="role-switch-bar__left">
+            <span class="role-switch-bar__label">功能视角</span>
+            <el-radio-group v-model="viewRole" size="small" @change="handleRoleChange">
+              <el-radio-button label="employee">员工视角</el-radio-button>
+              <el-radio-button label="auditor">审核员视角</el-radio-button>
+            </el-radio-group>
+          </div>
+          <div class="role-switch-bar__hint">
+            <template v-if="viewRole === 'employee'">
+              <i class="el-icon-user" />
+              当前员工：<strong>{{ currentEmployee.name }}</strong>
+              · {{ currentEmployee.unit }} · {{ currentEmployee.department }}
+              <span class="hint-desc">— 仅展示本人异常考勤，可提交申诉材料并选择审批人</span>
+            </template>
+            <template v-else>
+              <i class="el-icon-s-check" />
+              当前审核员：<strong>{{ currentAuditor.name }}</strong>
+              · {{ currentAuditor.role }}
+              <span class="hint-desc">— 查看各单位员工提交的异常申诉并进行审批</span>
+            </template>
+          </div>
+        </div>
+
+        <!-- 查询条件（仅审核员视角） -->
+        <div v-if="viewRole === 'auditor'" class="query-section">
         <el-form :inline="true" class="query-form">
           <el-form-item label="单位:">
             <el-select
@@ -61,9 +86,10 @@
               style="width: 120px;"
               clearable
             >
-              <el-option label="待确认" value="pending"></el-option>
-              <el-option label="已确认" value="confirmed"></el-option>
-              <el-option label="退回" value="returned"></el-option>
+              <el-option label="待申诉" value="wait_appeal"></el-option>
+              <el-option label="审批中" value="approving"></el-option>
+              <el-option label="已通过" value="confirmed"></el-option>
+              <el-option label="已退回" value="returned"></el-option>
             </el-select>
           </el-form-item>
           <el-form-item label="日期范围:">
@@ -95,24 +121,24 @@
       <!-- 统计卡片 -->
       <div class="stats-cards">
         <div class="stat-card">
-          <div class="stat-label">流程发起数</div>
-          <div class="stat-value">{{ stats.totalInitiated }}</div>
+          <div class="stat-label">{{ viewRole === 'employee' ? '我的异常记录' : '待审/全部' }}</div>
+          <div class="stat-value">{{ roleStats.total }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">待确认</div>
-          <div class="stat-value pending">{{ stats.pending }}</div>
+          <div class="stat-label">{{ viewRole === 'employee' ? '待申诉' : '待审核' }}</div>
+          <div class="stat-value pending">{{ viewRole === 'employee' ? roleStats.waitAppeal : roleStats.approving }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">流程闭环数</div>
-          <div class="stat-value">{{ stats.totalClosed }}</div>
+          <div class="stat-label">审批中</div>
+          <div class="stat-value">{{ roleStats.approving }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">已确认</div>
-          <div class="stat-value confirmed">{{ stats.confirmed }}</div>
+          <div class="stat-label">已通过</div>
+          <div class="stat-value confirmed">{{ roleStats.confirmed }}</div>
         </div>
         <div class="stat-card">
-          <div class="stat-label">退回</div>
-          <div class="stat-value returned">{{ stats.returned }}</div>
+          <div class="stat-label">已退回</div>
+          <div class="stat-value returned">{{ roleStats.returned }}</div>
         </div>
       </div>
 
@@ -131,48 +157,59 @@
             </template>
           </el-table-column>
           <el-table-column prop="processId" label="流程编号" width="180" show-overflow-tooltip></el-table-column>
-          <el-table-column prop="name" label="人员姓名" width="100" align="center"></el-table-column>
-          <el-table-column prop="unit" label="所属单位" width="150" show-overflow-tooltip></el-table-column>
-          <el-table-column prop="department" label="所属部门" width="150" show-overflow-tooltip></el-table-column>
-          <el-table-column prop="team" label="班组" width="100" align="center"></el-table-column>
-          <el-table-column prop="attendanceGroup" label="考勤组" width="180" show-overflow-tooltip></el-table-column>
-          <el-table-column prop="approvalTime" label="审批时间" width="120" align="center"></el-table-column>
+          <el-table-column v-if="viewRole === 'auditor'" prop="name" label="人员姓名" width="100" align="center"></el-table-column>
+          <el-table-column prop="unit" label="所属单位" width="140" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="department" label="所属部门" width="130" show-overflow-tooltip></el-table-column>
+          <el-table-column prop="abnormalTypeLabel" label="异常类型" width="90" align="center">
+            <template slot-scope="scope">
+              <el-tag size="small" type="warning">{{ scope.row.abnormalTypeLabel }}</el-tag>
+            </template>
+          </el-table-column>
+          <el-table-column prop="eventTime" label="异常时间" width="150" align="center"></el-table-column>
+          <el-table-column v-if="viewRole === 'auditor'" prop="team" label="班组" width="100" align="center"></el-table-column>
+          <el-table-column prop="attendanceGroup" label="考勤组" min-width="160" show-overflow-tooltip></el-table-column>
           <el-table-column label="状态" width="100" align="center">
             <template slot-scope="scope">
-              <el-tag
-                :type="getStatusType(scope.row.status)"
-                size="small"
-              >
-                {{ getStatusText(scope.row.status) }}
+              <el-tag :type="getRoleStatusType(scope.row.status)" size="small">
+                {{ getRoleStatusText(scope.row.status) }}
               </el-tag>
             </template>
           </el-table-column>
-          <el-table-column label="操作" width="100" align="center" fixed="right">
+          <el-table-column label="操作" width="110" align="center" fixed="right">
             <template slot-scope="scope">
-              <el-button
-                v-if="scope.row.status === 'pending'"
-                type="text"
-                size="small"
-                @click="handleProcess(scope.row)"
-              >
-                去处理
-              </el-button>
-              <el-button
-                v-else-if="scope.row.status === 'returned'"
-                type="text"
-                size="small"
-                @click="handleReapply(scope.row)"
-              >
-                重新
-              </el-button>
-              <el-button
-                v-else
-                type="text"
-                size="small"
-                @click="handleView(scope.row)"
-              >
-                查看
-              </el-button>
+              <!-- 员工视角 -->
+              <template v-if="viewRole === 'employee'">
+                <el-button
+                  v-if="scope.row.status === 'wait_appeal' || scope.row.status === 'returned'"
+                  type="text"
+                  size="small"
+                  @click="openEmployeeAppeal(scope.row)"
+                >
+                  {{ scope.row.status === 'returned' ? '重新申诉' : '去申诉' }}
+                </el-button>
+                <el-button
+                  v-else
+                  type="text"
+                  size="small"
+                  @click="openEmployeeProgress(scope.row)"
+                >
+                  查看进度
+                </el-button>
+              </template>
+              <!-- 审核员视角 -->
+              <template v-else>
+                <el-button
+                  v-if="scope.row.status === 'approving'"
+                  type="text"
+                  size="small"
+                  @click="openAuditorReview(scope.row)"
+                >
+                  去审核
+                </el-button>
+                <el-button v-else type="text" size="small" @click="openAuditorView(scope.row)">
+                  查看
+                </el-button>
+              </template>
             </template>
           </el-table-column>
         </el-table>
@@ -633,26 +670,149 @@
       </div>
     </el-dialog>
 
-    <!-- 异常处理对话框 -->
+    <!-- 异常处理 / 申诉 / 审核对话框 -->
     <el-dialog
-      :title="'异常处理 - ' + (processingRow ? processingRow.processId : '')"
+      :title="processDialogTitle"
       :visible.sync="processDialogVisible"
-      width="70%"
+      width="72%"
       top="5vh"
       @close="handleProcessDialogClose"
     >
       <div class="process-dialog-content">
-        <!-- 顶部操作按钮 -->
-        <div class="dialog-header-actions">
+        <!-- 审核员：顶部操作 -->
+        <div v-if="dialogMode === 'auditor-review'" class="dialog-header-actions">
           <el-button-group>
             <el-button size="small" icon="el-icon-back" @click="handleReturn">退回</el-button>
-            <el-button type="primary" size="small" icon="el-icon-check" @click="handleSubmit">确认提交</el-button>
-            <el-button size="small" icon="el-icon-back" @click="processDialogVisible = false">返回</el-button>
+            <el-button type="primary" size="small" icon="el-icon-check" @click="handleAuditorApprove">通过</el-button>
+            <el-button size="small" @click="processDialogVisible = false">返回</el-button>
           </el-button-group>
         </div>
 
-        <!-- 审批意见 -->
+        <!-- 审批流程进度（步骤条） -->
         <div class="section-block">
+          <div class="section-title">
+            <i class="el-icon-s-operation"></i>
+            <span>审批流程进度</span>
+          </div>
+          <el-steps :active="workflowActiveStep" align-center finish-status="success" class="workflow-steps">
+            <el-step title="员工申诉" description="提交材料" />
+            <el-step title="部门审批" description="部门主管" />
+            <el-step title="人资审批" description="人资专责" />
+            <el-step title="领导审批" description="分管领导" />
+          </el-steps>
+        </div>
+
+        <!-- 基本信息 -->
+        <div class="section-block">
+          <div class="section-title">
+            <i class="el-icon-info"></i>
+            <span>异常信息</span>
+          </div>
+          <el-descriptions :column="3" border size="small">
+            <el-descriptions-item label="异常记录编号">{{ abnormalDetail.recordId }}</el-descriptions-item>
+            <el-descriptions-item label="异常发生时间">{{ abnormalDetail.eventTime }}</el-descriptions-item>
+            <el-descriptions-item label="异常类型">
+              <el-tag size="small" type="warning">{{ abnormalDetail.detail }}</el-tag>
+            </el-descriptions-item>
+            <el-descriptions-item v-if="viewRole === 'auditor'" label="申诉员工">{{ processingRow ? processingRow.name : '—' }}</el-descriptions-item>
+            <el-descriptions-item v-if="viewRole === 'auditor'" label="所属单位">{{ processingRow ? processingRow.unit : '—' }}</el-descriptions-item>
+            <el-descriptions-item v-if="viewRole === 'auditor'" label="所属部门">{{ processingRow ? processingRow.department : '—' }}</el-descriptions-item>
+          </el-descriptions>
+        </div>
+
+        <!-- 员工申诉：选择审批人 -->
+        <div v-if="dialogMode === 'employee-appeal'" class="section-block">
+          <div class="section-title">
+            <i class="el-icon-user"></i>
+            <span>选择审批人</span>
+          </div>
+          <el-form label-width="100px" size="small">
+            <el-form-item label="审批链路:" required>
+              <el-select
+                v-model="appealForm.approvers"
+                multiple
+                placeholder="请按顺序选择审批人（部门主管 → 人资 → 领导）"
+                style="width: 100%"
+              >
+                <el-option
+                  v-for="opt in approverOptions"
+                  :key="opt.value"
+                  :label="opt.label"
+                  :value="opt.value"
+                />
+              </el-select>
+              <div class="form-tip">申诉将依次流转至所选审批人，请至少选择部门主管。</div>
+            </el-form-item>
+          </el-form>
+        </div>
+
+        <!-- 申诉说明 / 证明材料 -->
+        <div class="section-block">
+          <div class="section-title">
+            <i class="el-icon-files"></i>
+            <span>{{ dialogMode === 'employee-appeal' ? '申诉材料' : '证明信息' }}</span>
+          </div>
+          <el-form label-width="80px" size="small">
+            <el-form-item label="异常说明:">
+              <el-input
+                v-model="abnormalDetail.description"
+                type="textarea"
+                :rows="3"
+                :disabled="!isAppealEditable"
+                :placeholder="isAppealEditable ? '请说明异常原因及情况' : ''"
+                maxlength="2000"
+                show-word-limit
+              ></el-input>
+            </el-form-item>
+          </el-form>
+
+          <div v-if="dialogMode === 'employee-appeal'" class="upload-row">
+            <el-upload
+              action="#"
+              :auto-upload="false"
+              :show-file-list="false"
+              :on-change="handleMockUpload"
+            >
+              <el-button size="small" type="primary" plain icon="el-icon-upload2">上传证明材料</el-button>
+            </el-upload>
+            <span class="form-tip">支持 png、jpg、pdf、docx，单文件不超过 10MB</span>
+          </div>
+
+          <div class="attachments-section">
+            <div class="attachments-label">证明材料:</div>
+            <div v-if="abnormalDetail.attachments.length" class="attachments-list">
+              <div
+                v-for="(file, index) in abnormalDetail.attachments"
+                :key="index"
+                class="attachment-item"
+              >
+                <div class="file-icon">
+                  <i v-if="file.type === 'image'" class="el-icon-picture-outline"></i>
+                  <i v-else class="el-icon-document"></i>
+                </div>
+                <div class="file-info">
+                  <div class="file-name">{{ file.name }}</div>
+                  <div class="file-size">({{ file.size }})</div>
+                </div>
+                <div class="file-actions">
+                  <el-button type="text" size="mini" @click="handleDownloadAttachment(file)">下载</el-button>
+                  <el-button type="text" size="mini" @click="handlePreviewAttachment(file)">预览</el-button>
+                  <el-button
+                    v-if="isAppealEditable"
+                    type="text"
+                    size="mini"
+                    style="color: #F56C6C;"
+                    @click="handleDeleteAttachment(index)"
+                  >删除</el-button>
+                </div>
+              </div>
+            </div>
+            <div v-else class="attachments-empty">暂无证明材料</div>
+          </div>
+        </div>
+
+        <!-- 审核员：审批意见 -->
+        <div v-if="dialogMode === 'auditor-review'" class="section-block">
           <div class="section-title">
             <i class="el-icon-document"></i>
             <span>审批意见</span>
@@ -667,86 +827,16 @@
           ></el-input>
         </div>
 
-        <!-- 基本信息 -->
-        <div class="section-block">
-          <div class="section-title">
-            <i class="el-icon-info"></i>
-            <span>基本信息</span>
-          </div>
-          <el-descriptions :column="3" border size="small">
-            <el-descriptions-item label="异常记录编号">
-              {{ abnormalDetail.recordId }}
-            </el-descriptions-item>
-            <el-descriptions-item label="异常发生事件">
-              {{ abnormalDetail.eventTime }}
-            </el-descriptions-item>
-            <el-descriptions-item label="异常详情">
-              <el-tag size="small" type="warning">{{ abnormalDetail.detail }}</el-tag>
-            </el-descriptions-item>
-          </el-descriptions>
-        </div>
-
-        <!-- 证明信息 -->
-        <div class="section-block">
-          <div class="section-title">
-            <i class="el-icon-files"></i>
-            <span>证明信息</span>
-          </div>
-          <el-form label-width="80px" size="small">
-            <el-form-item label="异常说明:">
-              <el-input
-                v-model="abnormalDetail.description"
-                type="textarea"
-                :rows="3"
-                disabled
-                maxlength="2000"
-                show-word-limit
-              ></el-input>
-            </el-form-item>
-          </el-form>
-
-          <!-- 证明材料 -->
-          <div class="attachments-section">
-            <div class="attachments-label">证明材料:</div>
-            <div class="attachments-list">
-              <div
-                v-for="(file, index) in abnormalDetail.attachments"
-                :key="index"
-                class="attachment-item"
-              >
-                <div class="file-icon">
-                  <i v-if="file.type === 'image'" class="el-icon-picture-outline"></i>
-                  <i v-else-if="file.type === 'pdf'" class="el-icon-document"></i>
-                  <i v-else class="el-icon-document"></i>
-                </div>
-                <div class="file-info">
-                  <div class="file-name">{{ file.name }}</div>
-                  <div class="file-size">({{ file.size }})</div>
-                </div>
-                <div class="file-actions">
-                  <el-button type="text" size="mini" @click="handleDownloadAttachment(file)">下载</el-button>
-                  <el-button type="text" size="mini" @click="handlePreviewAttachment(file)">预览</el-button>
-                  <el-button type="text" size="mini" style="color: #F56C6C;" @click="handleDeleteAttachment(index)">删除</el-button>
-                </div>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        <!-- 审批记录 -->
+        <!-- 审批记录时间线 -->
         <div class="section-block">
           <div class="section-title">
             <i class="el-icon-tickets"></i>
             <span>审批记录</span>
           </div>
           <div class="approval-timeline">
-            <div
-              v-for="record in approvalRecords"
-              :key="record.step"
-              class="timeline-item"
-            >
+            <div v-for="record in approvalRecords" :key="record.step" class="timeline-item">
               <div class="timeline-step">
-                <div class="step-number">{{ record.step }}</div>
+                <div class="step-number" :class="'step-number--' + record.status">{{ record.step }}</div>
               </div>
               <div class="timeline-content">
                 <div class="timeline-header">
@@ -754,17 +844,18 @@
                   <span class="timeline-time">{{ record.time }}</span>
                 </div>
                 <div class="timeline-body">
-                  <span class="info-item">申请人: {{ record.applicant }}</span>
+                  <span class="info-item">处理人: {{ record.applicant }}</span>
                   <span class="info-item">所属部门: {{ record.department }}</span>
                   <span v-if="record.status === 'approved'" class="status-approved">
-                    【通过】 审批意见: {{ record.opinion }}
+                    【通过】 {{ record.opinion }}
+                  </span>
+                  <span v-else-if="record.status === 'rejected'" class="status-rejected">
+                    【退回】 {{ record.opinion }}
                   </span>
                   <span v-else-if="record.status === 'submitted'" class="status-submitted">
                     已提交，等待审批
                   </span>
-                  <span v-else class="status-pending">
-                    待审批
-                  </span>
+                  <span v-else class="status-pending">待处理</span>
                 </div>
               </div>
             </div>
@@ -773,8 +864,8 @@
       </div>
 
       <div slot="footer" class="dialog-footer">
-        <el-button @click="processDialogVisible = false">取消</el-button>
-        <el-button type="primary" @click="handleSubmit">确认提交</el-button>
+        <el-button @click="processDialogVisible = false">{{ dialogMode === 'employee-appeal' ? '取消' : '关闭' }}</el-button>
+        <el-button v-if="dialogMode === 'employee-appeal'" type="primary" @click="handleSubmitAppeal">提交申诉</el-button>
       </div>
     </el-dialog>
   </div>
@@ -782,12 +873,33 @@
 
 <script>
 import * as echarts from 'echarts';
+import {
+  DEMO_CURRENT_EMPLOYEE,
+  DEMO_CURRENT_AUDITOR,
+  APPROVER_OPTIONS,
+  EMPLOYEE_STATUS_MAP,
+  AUDITOR_STATUS_MAP,
+  cloneRecords,
+  getEmployeeRecords,
+  getAuditorRecords,
+  calcApprovalStats,
+  buildWorkflowTimeline,
+} from '../utils/abnormalApprovalData';
 
 export default {
   name: "AbnormalDataManagement",
   data() {
     return {
       activeTab: 'approval',
+      viewRole: 'employee',
+      dialogMode: 'employee-appeal',
+      currentEmployee: DEMO_CURRENT_EMPLOYEE,
+      currentAuditor: DEMO_CURRENT_AUDITOR,
+      approverOptions: APPROVER_OPTIONS,
+      allApprovalRecords: cloneRecords(),
+      appealForm: {
+        approvers: [],
+      },
       queryParams: {
         unit: '',
         department: '',
@@ -802,6 +914,7 @@ export default {
         confirmed: 522,
         returned: 174
       },
+      roleStats: { total: 0, waitAppeal: 0, approving: 0, confirmed: 0, returned: 0, closed: 0 },
       tableData: [],
       total: 0,
       pageSize: 10,
@@ -884,105 +997,178 @@ export default {
       warningDetailCurrentPage: 1
     };
   },
+  computed: {
+    processDialogTitle() {
+      const id = this.processingRow ? this.processingRow.processId : '';
+      const titles = {
+        'employee-appeal': `异常申诉 - ${id}`,
+        'employee-view': `审批进度 - ${id}`,
+        'auditor-review': `异常审核 - ${id}`,
+        'auditor-view': `审批详情 - ${id}`,
+      };
+      return titles[this.dialogMode] || `异常处理 - ${id}`;
+    },
+    isAppealEditable() {
+      return this.dialogMode === 'employee-appeal';
+    },
+    workflowActiveStep() {
+      if (!this.processingRow) return 0;
+      const step = this.processingRow.currentStep;
+      if (this.processingRow.status === 'wait_appeal') return 0;
+      if (this.processingRow.status === 'confirmed') return 4;
+      return Math.max(0, step - 1);
+    },
+  },
   created() {
     this.loadData();
     this.loadLedgerData();
     // 默认不加载预警数据，等用户切换到预警页签时再加载
   },
   methods: {
-    // 加载数据
+    // 加载审批列表（按视角）
     loadData() {
-      // 模拟数据
-      const mockData = [
-        {
-          id: 1,
-          processId: 'GD202502150200000006',
-          name: '张伟',
-          unit: '云南电网有限责任公司',
-          department: '人力资源部',
-          team: '干部管理科',
-          attendanceGroup: '人力资源部-干部管理科考勤组',
-          approvalTime: '2025-02-15',
-          status: 'pending'
-        },
-        {
-          id: 2,
-          processId: 'GD202502150200000005',
-          name: '李芳',
-          unit: '云南电网有限责任公司',
-          department: '财务部',
-          team: '会计核算科',
-          attendanceGroup: '财务部考勤组',
-          approvalTime: '2025-02-15',
-          status: 'confirmed'
-        },
-        {
-          id: 3,
-          processId: 'GD202502150200000004',
-          name: '王娜',
-          unit: '云南电网有限责任公司',
-          department: '生产技术部',
-          team: '运行检修班',
-          attendanceGroup: '生产技术部考勤组',
-          approvalTime: '2025-02-14',
-          status: 'confirmed'
-        },
-        {
-          id: 4,
-          processId: 'GD202502150200000003',
-          name: '刘敏',
-          unit: '云南电网有限责任公司',
-          department: '人力资源部',
-          team: '薪酬绩效科',
-          attendanceGroup: '人力资源部-薪酬绩效科考勤组',
-          approvalTime: '2025-02-14',
-          status: 'confirmed'
-        },
-        {
-          id: 5,
-          processId: 'GD202502150200000002',
-          name: '陈静',
-          unit: '云南电网有限责任公司',
-          department: '财务部',
-          team: '资金管理科',
-          attendanceGroup: '财务部考勤组',
-          approvalTime: '2025-02-13',
-          status: 'returned'
-        },
-        {
-          id: 6,
-          processId: 'GD202502150200000001',
-          name: '杨洋',
-          unit: '云南电网有限责任公司',
-          department: '人力资源部',
-          team: '干部管理科',
-          attendanceGroup: '人力资源部-干部管理科考勤组',
-          approvalTime: '2025-02-12',
-          status: 'confirmed'
+      let filtered = this.viewRole === 'employee'
+        ? getEmployeeRecords(this.allApprovalRecords, this.currentEmployee)
+        : getAuditorRecords(this.allApprovalRecords);
+
+      if (this.viewRole === 'auditor') {
+        if (this.queryParams.unit) {
+          filtered = filtered.filter((item) =>
+            item.unit.includes(this.getUnitName(this.queryParams.unit))
+          );
         }
-      ];
 
-      // 根据查询条件过滤
-      let filtered = [...mockData];
-      
-      if (this.queryParams.unit) {
-        filtered = filtered.filter(item => 
-          item.unit.includes(this.getUnitName(this.queryParams.unit))
-        );
-      }
-      
-      if (this.queryParams.department) {
-        filtered = filtered.filter(item => 
-          item.department.includes(this.getDepartmentName(this.queryParams.department))
-        );
-      }
-      
-      if (this.queryParams.status) {
-        filtered = filtered.filter(item => item.status === this.queryParams.status);
+        if (this.queryParams.department) {
+          const deptName = this.getDepartmentName(this.queryParams.department);
+          if (deptName) {
+            filtered = filtered.filter((item) => item.department.includes(deptName));
+          }
+        }
+
+        if (this.queryParams.status) {
+          filtered = filtered.filter((item) => item.status === this.queryParams.status);
+        }
       }
 
+      this.roleStats = calcApprovalStats(filtered);
       this.tableData = filtered;
       this.total = filtered.length;
+    },
+
+    handleRoleChange() {
+      this.queryParams = {
+        unit: '',
+        department: '',
+        attendanceGroup: '',
+        status: '',
+        dateRange: [],
+      };
+      this.currentPage = 1;
+      this.loadData();
+    },
+
+    getRoleStatusText(status) {
+      const map = this.viewRole === 'employee' ? EMPLOYEE_STATUS_MAP : AUDITOR_STATUS_MAP;
+      return (map[status] && map[status].text) || status;
+    },
+
+    getRoleStatusType(status) {
+      const map = this.viewRole === 'employee' ? EMPLOYEE_STATUS_MAP : AUDITOR_STATUS_MAP;
+      return (map[status] && map[status].type) || 'info';
+    },
+
+    fillDialogFromRow(row) {
+      this.abnormalDetail = {
+        recordId: row.processId,
+        eventTime: row.eventTime,
+        detail: row.abnormalTypeLabel,
+        description: row.description || '',
+        attachments: row.attachments.map((f) => ({ ...f })),
+      };
+      this.appealForm.approvers = [...row.approvers];
+      this.approvalRecords = buildWorkflowTimeline(row);
+    },
+
+    openEmployeeAppeal(row) {
+      this.dialogMode = 'employee-appeal';
+      this.processingRow = row;
+      this.fillDialogFromRow(row);
+      this.approvalForm = { opinion: '', action: 'confirm' };
+      this.processDialogVisible = true;
+    },
+
+    openEmployeeProgress(row) {
+      this.dialogMode = 'employee-view';
+      this.processingRow = row;
+      this.fillDialogFromRow(row);
+      this.processDialogVisible = true;
+    },
+
+    openAuditorReview(row) {
+      this.dialogMode = 'auditor-review';
+      this.processingRow = row;
+      this.fillDialogFromRow(row);
+      this.approvalForm = { opinion: '', action: 'confirm' };
+      this.processDialogVisible = true;
+    },
+
+    openAuditorView(row) {
+      this.dialogMode = 'auditor-view';
+      this.processingRow = row;
+      this.fillDialogFromRow(row);
+      this.processDialogVisible = true;
+    },
+
+    handleMockUpload(file) {
+      const ext = (file.name.split('.').pop() || '').toLowerCase();
+      const typeMap = { png: 'image', jpg: 'image', jpeg: 'image', pdf: 'pdf', docx: 'word', pptx: 'pdf' };
+      this.abnormalDetail.attachments.push({
+        name: file.name,
+        size: `${Math.max(1, Math.round((file.size || 1024) / 1024))}KB`,
+        type: typeMap[ext] || 'word',
+      });
+    },
+
+    handleSubmitAppeal() {
+      if (!this.abnormalDetail.description.trim()) {
+        this.$message.warning('请填写异常说明');
+        return;
+      }
+      if (!this.appealForm.approvers.length) {
+        this.$message.warning('请至少选择一名审批人');
+        return;
+      }
+      if (!this.abnormalDetail.attachments.length) {
+        this.$message.warning('请上传证明材料');
+        return;
+      }
+
+      this.$confirm('确认提交异常申诉？提交后将进入审批流程。', '提示', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      }).then(() => {
+        const row = this.allApprovalRecords.find((r) => r.id === this.processingRow.id);
+        if (row) {
+          row.description = this.abnormalDetail.description;
+          row.attachments = this.abnormalDetail.attachments.map((f) => ({ ...f }));
+          row.approvers = [...this.appealForm.approvers];
+          row.status = 'approving';
+          row.currentStep = 2;
+        }
+        this.$message.success('申诉已提交，请留意审批进度');
+        this.processDialogVisible = false;
+        this.loadData();
+      }).catch(() => {});
+    },
+
+    handleAuditorApprove() {
+      if (!this.approvalForm.opinion.trim()) {
+        this.$message.warning('请填写审批意见');
+        return;
+      }
+      this.approvalForm.action = 'confirm';
+      this.submitAuditorAction('通过');
     },
 
     // 获取单位名称
@@ -998,9 +1184,12 @@ export default {
     // 获取部门名称
     getDepartmentName(value) {
       const map = {
-        'legal': '法规部',
-        'service': '综合服务中心',
-        'union': '工会办'
+        hr: '人力资源部',
+        finance: '财务部',
+        production: '生产技术部',
+        legal: '法规部',
+        service: '综合服务中心',
+        union: '工会办',
       };
       return map[value] || '';
     },
@@ -1046,59 +1235,28 @@ export default {
       this.$message.info('已重置查询条件');
     },
 
-    // 去处理
-    handleProcess(row) {
-      this.processingRow = row;
-      
-      // 模拟加载异常详细信息
-      this.abnormalDetail = {
-        recordId: row.processId,
-        eventTime: `${row.approvalTime} 12:00`,
-        detail: '缺卡',
-        description: '该员工在2025-02-15上午9:00未打卡，下午18:00正常打卡。经核实，当天早上因交通拥堵导致迟到，已提前向部门主管报备。',
-        attachments: [
-          { name: '证明材料.png', size: '289KB', type: 'image' },
-          { name: '证明材料.pptx', size: '289KB', type: 'pdf' },
-          { name: '证明材料.docx', size: '289KB', type: 'word' }
-        ]
-      };
-
-      // 模拟加载审批记录
-      this.approvalRecords = [
-        { step: 1, type: '提交审批', time: '2026-01-04 09:12:11', applicant: row.name, department: row.department, status: 'submitted', opinion: '' },
-        { step: 2, type: '部门审批', time: '2026-01-04 09:12:11', applicant: '王二', department: row.department, status: 'approved', opinion: '同意' },
-        { step: 3, type: '人资审批', time: '2026-01-04 09:12:11', applicant: row.name, department: row.department, status: 'approved', opinion: '同意' },
-        { step: 4, type: '领导审批', time: '2026-01-04 09:12:11', applicant: row.name, department: row.department, status: 'pending', opinion: '' }
-      ];
-
-      // 重置表单
-      this.approvalForm = {
-        opinion: '',
-        action: 'confirm'
-      };
-
-      this.processDialogVisible = true;
-    },
-
-    // 确认提交
-    handleSubmit() {
-      if (!this.approvalForm.opinion.trim()) {
-        this.$message.warning('请填写审批意见');
-        return;
-      }
-
-      const actionText = this.approvalForm.action === 'confirm' ? '确认' : '退回';
-      
-      this.$confirm(`确定要${actionText}该异常数据吗？`, '提示', {
+    // 审核员提交（通过 / 退回）
+    submitAuditorAction(actionText) {
+      this.$confirm(`确定要${actionText}该异常申诉吗？`, '提示', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }).then(() => {
-        // TODO: 调用后端API提交审批结果
+        const row = this.allApprovalRecords.find((r) => r.id === this.processingRow.id);
+        if (row) {
+          if (this.approvalForm.action === 'return') {
+            row.status = 'returned';
+            row.returnReason = this.approvalForm.opinion;
+          } else if (row.currentStep >= 4) {
+            row.status = 'confirmed';
+            row.currentStep = 4;
+          } else {
+            row.currentStep += 1;
+            if (row.currentStep >= 4) row.status = 'confirmed';
+          }
+        }
         this.$message.success(`${actionText}成功`);
         this.processDialogVisible = false;
-        
-        // 刷新列表
         this.loadData();
       }).catch(() => {
         this.$message.info('已取消操作');
@@ -1107,17 +1265,16 @@ export default {
 
     // 关闭对话框
     handleProcessDialogClose() {
-      this.approvalForm = {
-        opinion: '',
-        action: 'confirm'
-      };
+      this.approvalForm = { opinion: '', action: 'confirm' };
+      this.appealForm = { approvers: [] };
       this.processingRow = null;
+      this.dialogMode = 'employee-appeal';
       this.abnormalDetail = {
         recordId: '',
         eventTime: '',
         detail: '',
         description: '',
-        attachments: []
+        attachments: [],
       };
       this.approvalRecords = [];
     },
@@ -1149,7 +1306,11 @@ export default {
     // 退回
     handleReturn() {
       this.approvalForm.action = 'return';
-      this.$message.info('已选择退回操作，请填写审批意见后提交');
+      if (!this.approvalForm.opinion.trim()) {
+        this.$message.info('请填写退回原因后点击「通过」旁的流程将使用退回逻辑；也可直接填写意见后确认退回');
+        return;
+      }
+      this.submitAuditorAction('退回');
     },
 
     // 获取审批状态标签类型
@@ -1165,14 +1326,15 @@ export default {
 
     // 重新提交
     handleReapply(row) {
-      this.$message.info(`重新提交流程: ${row.processId}`);
-      // TODO: 打开重新提交对话框
+      this.openEmployeeAppeal(row);
     },
 
-    // 查看详情
     handleView(row) {
-      this.$message.info(`查看详情: ${row.processId}`);
-      // TODO: 打开详情对话框
+      if (this.viewRole === 'employee') {
+        this.openEmployeeProgress(row);
+      } else {
+        this.openAuditorView(row);
+      }
     },
 
     // 标签页切换
@@ -1811,10 +1973,11 @@ export default {
         '人员姓名': row.name,
         '所属单位': row.unit,
         '所属部门': row.department,
+        '异常类型': row.abnormalTypeLabel,
+        '异常时间': row.eventTime,
         '班组': row.team,
         '考勤组': row.attendanceGroup,
-        '审批时间': row.approvalTime,
-        '状态': this.getStatusText(row.status)
+        '状态': this.getRoleStatusText(row.status),
       }));
 
       // 使用 CSV 导出
@@ -1896,6 +2059,49 @@ export default {
   padding: 16px;
   overflow: hidden;
   min-height: 0;
+}
+
+/* 双视角切换 */
+.role-switch-bar {
+  background: linear-gradient(90deg, #ecf5ff 0%, #fff 100%);
+  border: 1px solid #d9ecff;
+  border-radius: 4px;
+  padding: 12px 16px;
+  margin-bottom: 16px;
+  flex-shrink: 0;
+}
+
+.role-switch-bar__left {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 8px;
+}
+
+.role-switch-bar__label {
+  font-size: 13px;
+  font-weight: 600;
+  color: #303133;
+}
+
+.role-switch-bar__hint {
+  font-size: 13px;
+  color: #606266;
+  line-height: 1.6;
+}
+
+.role-switch-bar__hint i {
+  color: #409eff;
+  margin-right: 4px;
+}
+
+.role-switch-bar__hint strong {
+  color: #303133;
+}
+
+.hint-desc {
+  color: #909399;
+  margin-left: 4px;
 }
 
 /* 查询条件区域 */
@@ -2140,6 +2346,51 @@ export default {
   border-radius: 50%;
   font-size: 14px;
   font-weight: 600;
+}
+
+.step-number--approved {
+  background-color: #67c23a;
+}
+
+.step-number--rejected {
+  background-color: #f56c6c;
+}
+
+.step-number--pending {
+  background-color: #e6a23c;
+}
+
+.step-number--submitted {
+  background-color: #909399;
+}
+
+.workflow-steps {
+  margin: 8px 0 4px;
+}
+
+.form-tip {
+  font-size: 12px;
+  color: #909399;
+  margin-top: 6px;
+  line-height: 1.5;
+}
+
+.upload-row {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.attachments-empty {
+  font-size: 13px;
+  color: #c0c4cc;
+  padding: 12px 0;
+}
+
+.status-rejected {
+  color: #f56c6c;
+  font-weight: 500;
 }
 
 .timeline-content {
