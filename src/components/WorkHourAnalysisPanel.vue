@@ -6,45 +6,33 @@
     </el-tabs>
 
     <div v-show="subTab === 'analysis'" class="sub-tab-body">
-      <section class="chart-section">
-        <h3 class="section-title">
-          <span class="section-dot" />
-          按工时类型展示
-        </h3>
-        <el-form :inline="true" size="small" class="section-form">
-          <el-form-item label="专业：">
-            <el-select v-model="typeQuery.specialty" placeholder="请选择" style="width: 120px">
-              <el-option
-                v-for="opt in specialtyOptions"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
-              />
-            </el-select>
-          </el-form-item>
-          <el-form-item label="时间：">
-            <el-date-picker
-              v-model="typeQuery.startDate"
-              type="date"
-              placeholder="开始日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
+      <section class="chart-section chart-section--flat">
+        <el-form :inline="true" size="small" class="section-form section-form--compact">
+          <el-form-item label="时间范围：">
+            <el-date-picker v-model="dashboardQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
             <span class="date-sep">~</span>
-            <el-date-picker
-              v-model="typeQuery.endDate"
-              type="date"
-              placeholder="结束日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
+            <el-date-picker v-model="dashboardQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
           </el-form-item>
           <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleTypeQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetTypeQuery">重置</el-button>
+            <el-button type="primary" icon="el-icon-search" @click="handleDashboardQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="resetDashboardQuery">重置</el-button>
           </el-form-item>
         </el-form>
-        <div ref="typeChart" class="chart-box" />
+      </section>
+
+      <div class="kpi-row">
+        <div v-for="item in kpiItems" :key="item.key" class="kpi-card">
+          <div class="kpi-card__value">
+            {{ item.value }}<span v-if="item.suffix" class="kpi-card__unit">{{ item.suffix }}</span>
+          </div>
+          <div class="kpi-card__label">{{ item.label }}</div>
+          <div v-if="item.desc" class="kpi-card__desc">{{ item.desc }}</div>
+        </div>
+      </div>
+
+      <section class="chart-section">
+        <h3 class="section-title"><span class="section-dot" />各地市平均工时对比</h3>
+        <div ref="cityAvgChart" class="chart-box" />
       </section>
 
       <section class="chart-section">
@@ -67,21 +55,9 @@
         </div>
         <el-form :inline="true" size="small" class="section-form">
           <el-form-item label="时间：">
-            <el-date-picker
-              v-model="hoursDistQuery.startDate"
-              type="date"
-              placeholder="开始日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
+            <el-date-picker v-model="hoursDistQuery.startDate" type="date" placeholder="开始日期" value-format="yyyy-MM-dd" style="width: 140px" />
             <span class="date-sep">~</span>
-            <el-date-picker
-              v-model="hoursDistQuery.endDate"
-              type="date"
-              placeholder="结束日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
+            <el-date-picker v-model="hoursDistQuery.endDate" type="date" placeholder="结束日期" value-format="yyyy-MM-dd" style="width: 140px" />
           </el-form-item>
           <el-form-item class="section-form__actions">
             <el-button type="primary" icon="el-icon-search" @click="handleHoursDistQuery">查询</el-button>
@@ -94,81 +70,59 @@
       <section class="chart-section">
         <div class="section-header-row">
           <h3 class="section-title section-title--plain">专业与作业工时相关性</h3>
-          <el-button type="primary" size="small" plain icon="el-icon-download" @click="handleSpecialtyCorrExport">
-            导出明细
-          </el-button>
+          <el-button type="primary" size="small" plain icon="el-icon-download" @click="handleSpecialtyCorrExport">导出明细</el-button>
         </div>
         <el-form :inline="true" size="small" class="section-form">
           <el-form-item label="专业：">
             <el-select v-model="specialtyCorrQuery.specialty" placeholder="请选择" style="width: 120px">
-              <el-option
-                v-for="opt in specialtyOptions"
-                :key="opt.value"
-                :label="opt.label"
-                :value="opt.value"
-              />
+              <el-option v-for="opt in specialtyOptions" :key="opt.value" :label="opt.label" :value="opt.value" />
             </el-select>
           </el-form-item>
           <el-form-item label="时间：">
-            <el-date-picker
-              v-model="specialtyCorrQuery.startDate"
-              type="date"
-              placeholder="开始日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
+            <el-date-picker v-model="specialtyCorrQuery.startDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
             <span class="date-sep">~</span>
-            <el-date-picker
-              v-model="specialtyCorrQuery.endDate"
-              type="date"
-              placeholder="结束日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
+            <el-date-picker v-model="specialtyCorrQuery.endDate" type="date" value-format="yyyy-MM-dd" style="width: 140px" />
           </el-form-item>
           <el-form-item class="section-form__actions">
             <el-button type="primary" icon="el-icon-search" @click="handleSpecialtyCorrQuery">查询</el-button>
             <el-button icon="el-icon-refresh" @click="resetSpecialtyCorrQuery">重置</el-button>
           </el-form-item>
         </el-form>
-        <div ref="specialtyCorrChart" class="chart-box" />
+        <div ref="specialtyCorrChart" class="chart-box chart-box--radar" />
+      </section>
+
+      <div class="chart-grid-2">
+        <section class="chart-section">
+          <h3 class="section-title"><span class="section-dot" />全省人均工时分布情况</h3>
+          <div ref="provinceDistChart" class="chart-box chart-box--md" />
+        </section>
+        <section class="chart-section">
+          <h3 class="section-title"><span class="section-dot" />累计工时与专业相关性</h3>
+          <div ref="cumulativeRadarChart" class="chart-box chart-box--radar" />
+        </section>
+      </div>
+
+      <section class="chart-section">
+        <h3 class="section-title"><span class="section-dot" />岗位分类与工时相关性</h3>
+        <div ref="postCategoryChart" class="chart-box" />
       </section>
 
       <section class="chart-section">
-        <h3 class="section-title">
-          <span class="section-dot" />
-          按单位及部门展示
-        </h3>
-        <el-form :inline="true" size="small" class="section-form">
-          <el-form-item label="时间：">
-            <el-date-picker
-              v-model="unitDeptQuery.startDate"
-              type="date"
-              placeholder="开始日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
-            <span class="date-sep">~</span>
-            <el-date-picker
-              v-model="unitDeptQuery.endDate"
-              type="date"
-              placeholder="结束日期"
-              value-format="yyyy-MM-dd"
-              style="width: 140px"
-            />
-          </el-form-item>
-          <el-form-item label="">
-            <el-radio-group v-model="unitDeptQuery.dimension" size="small">
-              <el-radio label="unit">按单位</el-radio>
-              <el-radio label="department">按部门</el-radio>
-            </el-radio-group>
-          </el-form-item>
-          <el-form-item class="section-form__actions">
-            <el-button type="primary" icon="el-icon-search" @click="handleUnitDeptQuery">查询</el-button>
-            <el-button icon="el-icon-refresh" @click="resetUnitDeptQuery">重置</el-button>
-          </el-form-item>
-        </el-form>
-        <div ref="unitDeptChart" class="chart-box" />
+        <h3 class="section-title"><span class="section-dot" />岗位分类工时趋势</h3>
+        <div class="trend-chart-grid">
+          <div class="trend-chart-item">
+            <p class="chart-subtitle">技能类</p>
+            <div ref="trendSkillChart" class="chart-box chart-box--sm" />
+          </div>
+          <div class="trend-chart-item">
+            <p class="chart-subtitle">专业技术类</p>
+            <div ref="trendProfChart" class="chart-box chart-box--sm" />
+          </div>
+          <div class="trend-chart-item">
+            <p class="chart-subtitle">管理类</p>
+            <div ref="trendMgmtChart" class="chart-box chart-box--sm" />
+          </div>
+        </div>
       </section>
     </div>
 
@@ -259,14 +213,10 @@ import { baseChartOption, legendTopCenter, legendBottomCenter, withAlpha, PROTOT
 import { UNIT_OPTIONS } from "../utils/behaviorOverviewData";
 import {
   SPECIALTY_OPTIONS,
-  DEFAULT_HOUR_ANALYSIS_QUERY,
-  DEFAULT_UNIT_DEPT_QUERY,
   DEFAULT_UNIT_HOURS_DIST_QUERY,
   DEFAULT_DISTRIBUTION_QUERY,
   DIST_STATS_UNIT_OPTIONS,
   DIST_STATS_SPECIALTY_OPTIONS,
-  buildHourTypeByCity,
-  buildSpecialtyHourDiff,
   buildSpecialtyWorkCorrelation,
   generateSpecialtyStatsRows,
   filterSpecialtyStatsRows,
@@ -275,18 +225,21 @@ import {
   SPECIALTY_RADAR_INDICATORS,
   DEFAULT_SPECIALTY_CORR_QUERY,
 } from "../utils/workHourAnalysisData";
+import {
+  DEFAULT_DASHBOARD_QUERY,
+  buildHourAnalysisKpi,
+  buildCityAvgHoursChart,
+  buildProvinceHourDistChart,
+  buildCumulativeSpecialtyRadar,
+  buildPostCategoryBarChart,
+  buildPostCategoryTrendCharts,
+} from "../utils/workHourAnalysisDashboardData";
 import { buildWorkHoursDistributionData } from "../utils/unitAttendanceComparisonData";
 import {
   professionalToCascaderOptions,
   DEFAULT_PROFESSIONAL_PATH,
 } from "../utils/professionalClassification";
 import { downloadTableWithLog } from "../utils/exportLogger";
-
-const HOUR_TYPE_COLORS = {
-  businessTrip: "#1890FF",
-  training: "#FAAD14",
-  attendance: "#13C2C2",
-};
 
 export default {
   name: "WorkHourAnalysisPanel",
@@ -303,23 +256,26 @@ export default {
       unitOptions: UNIT_OPTIONS.filter((u) => u.value !== "all"),
       distUnitOptions: DIST_STATS_UNIT_OPTIONS,
       distSpecialtyOptions: DIST_STATS_SPECIALTY_OPTIONS,
-      typeQuery: { ...DEFAULT_HOUR_ANALYSIS_QUERY },
+      dashboardQuery: { ...DEFAULT_DASHBOARD_QUERY },
+      dashboardKpi: buildHourAnalysisKpi(DEFAULT_DASHBOARD_QUERY),
+      cityAvgData: buildCityAvgHoursChart(DEFAULT_DASHBOARD_QUERY),
+      provinceDistData: buildProvinceHourDistChart(DEFAULT_DASHBOARD_QUERY),
+      cumulativeRadarData: buildCumulativeSpecialtyRadar(DEFAULT_DASHBOARD_QUERY),
+      postCategoryData: buildPostCategoryBarChart(DEFAULT_DASHBOARD_QUERY),
+      postTrendData: buildPostCategoryTrendCharts(DEFAULT_DASHBOARD_QUERY),
       specialtyCorrQuery: { ...DEFAULT_SPECIALTY_CORR_QUERY },
       hoursDistQuery: { ...DEFAULT_UNIT_HOURS_DIST_QUERY },
       hoursDistProfessionalPath: [...DEFAULT_PROFESSIONAL_PATH],
       professionalCascaderProps: { checkStrictly: true, expandTrigger: "hover" },
-      unitDeptQuery: { ...DEFAULT_UNIT_DEPT_QUERY },
       distQuery: { ...DEFAULT_DISTRIBUTION_QUERY },
       distAllRows: generateSpecialtyStatsRows(),
       distCurrentPage: 1,
       distPageSize: 10,
-      typeData: buildHourTypeByCity(DEFAULT_HOUR_ANALYSIS_QUERY),
       specialtyCorrData: buildSpecialtyWorkCorrelation(DEFAULT_SPECIALTY_CORR_QUERY),
       hoursDistData: buildWorkHoursDistributionData(
         DEFAULT_UNIT_HOURS_DIST_QUERY,
         DEFAULT_PROFESSIONAL_PATH
       ),
-      unitDeptData: buildSpecialtyHourDiff(DEFAULT_UNIT_DEPT_QUERY),
       charts: {},
       resizeHandler: null,
       resizeObserver: null,
@@ -336,6 +292,15 @@ export default {
     professionalCategoryOptions() {
       return professionalToCascaderOptions();
     },
+    kpiItems() {
+      const k = this.dashboardKpi;
+      return [
+        { key: "avg", label: "整体平均工时", value: k.avgHours, suffix: "h", desc: "全员整体水平" },
+        { key: "median", label: "工时中位数", value: k.medianHours, suffix: "h", desc: "多数员工工时" },
+        { key: "std", label: "整体标准差", value: k.stdDev, suffix: "", desc: "分配均衡度" },
+        { key: "range", label: "工时区间", value: `${k.rangeMin}h ~ ${k.rangeMax}h`, suffix: "", desc: "全局整体水平" },
+      ];
+    },
   },
   watch: {
     panelActive(val) {
@@ -344,10 +309,6 @@ export default {
     subTab(val) {
       if (!this.panelActive) return;
       if (val === "analysis") this.ensureChartsReady();
-    },
-    "unitDeptQuery.dimension"() {
-      this.refreshUnitDeptData();
-      this.$nextTick(() => this.renderUnitDeptChart());
     },
   },
   mounted() {
@@ -377,7 +338,17 @@ export default {
         if (this.panelActive) this.resizeCharts();
       });
       this.$nextTick(() => {
-        ["typeChart", "unitHoursDistChart", "specialtyCorrChart", "unitDeptChart"].forEach((refName) => {
+        [
+          "cityAvgChart",
+          "unitHoursDistChart",
+          "specialtyCorrChart",
+          "provinceDistChart",
+          "cumulativeRadarChart",
+          "postCategoryChart",
+          "trendSkillChart",
+          "trendProfChart",
+          "trendMgmtChart",
+        ].forEach((refName) => {
           const el = this.$refs[refName];
           if (el) this.resizeObserver.observe(el);
         });
@@ -385,10 +356,15 @@ export default {
     },
     initCharts(forceReinit = false) {
       const refs = {
-        type: "typeChart",
+        cityAvg: "cityAvgChart",
         unitHoursDist: "unitHoursDistChart",
         specialtyCorr: "specialtyCorrChart",
-        unitDept: "unitDeptChart",
+        provinceDist: "provinceDistChart",
+        cumulativeRadar: "cumulativeRadarChart",
+        postCategory: "postCategoryChart",
+        trendSkill: "trendSkillChart",
+        trendProf: "trendProfChart",
+        trendMgmt: "trendMgmtChart",
       };
       Object.keys(refs).forEach((key) => {
         const el = this.$refs[refs[key]];
@@ -405,17 +381,28 @@ export default {
     resizeCharts() {
       Object.values(this.charts).forEach((c) => c && c.resize());
     },
-    refreshTypeData() {
-      this.typeData = buildHourTypeByCity(this.typeQuery);
+    refreshDashboardData() {
+      this.dashboardKpi = buildHourAnalysisKpi(this.dashboardQuery);
+      this.cityAvgData = buildCityAvgHoursChart(this.dashboardQuery);
+      this.provinceDistData = buildProvinceHourDistChart(this.dashboardQuery);
+      this.cumulativeRadarData = buildCumulativeSpecialtyRadar(this.dashboardQuery);
+      this.postCategoryData = buildPostCategoryBarChart(this.dashboardQuery);
+      this.postTrendData = buildPostCategoryTrendCharts(this.dashboardQuery);
+    },
+    handleDashboardQuery() {
+      this.refreshDashboardData();
+      this.renderDashboardCharts();
+    },
+    resetDashboardQuery() {
+      this.dashboardQuery = { ...DEFAULT_DASHBOARD_QUERY };
+      this.refreshDashboardData();
+      this.renderDashboardCharts();
     },
     refreshHoursDistData() {
       this.hoursDistData = buildWorkHoursDistributionData(
         this.hoursDistQuery,
         this.hoursDistProfessionalPath
       );
-    },
-    refreshUnitDeptData() {
-      this.unitDeptData = buildSpecialtyHourDiff(this.unitDeptQuery);
     },
     refreshSpecialtyCorrData() {
       this.specialtyCorrData = buildSpecialtyWorkCorrelation(this.specialtyCorrQuery);
@@ -520,15 +507,6 @@ export default {
       });
       this.$message.success(`已导出 ${rows.length} 条记录`);
     },
-    handleTypeQuery() {
-      this.refreshTypeData();
-      this.renderTypeChart();
-    },
-    resetTypeQuery() {
-      this.typeQuery = { ...DEFAULT_HOUR_ANALYSIS_QUERY };
-      this.refreshTypeData();
-      this.renderTypeChart();
-    },
     handleHoursDistQuery() {
       this.refreshHoursDistData();
       this.renderUnitHoursDistChart();
@@ -543,80 +521,223 @@ export default {
       this.refreshHoursDistData();
       this.renderUnitHoursDistChart();
     },
-    handleUnitDeptQuery() {
-      this.refreshUnitDeptData();
-      this.renderUnitDeptChart();
-    },
-    resetUnitDeptQuery() {
-      this.unitDeptQuery = { ...DEFAULT_UNIT_DEPT_QUERY };
-      this.refreshUnitDeptData();
-      this.renderUnitDeptChart();
-    },
     renderAllCharts() {
-      this.renderTypeChart();
+      this.renderDashboardCharts();
       this.renderUnitHoursDistChart();
       this.renderSpecialtyCorrChart();
-      this.renderUnitDeptChart();
     },
-    renderTypeChart() {
-      const chart = this.charts.type;
+    renderDashboardCharts() {
+      this.renderCityAvgChart();
+      this.renderProvinceDistChart();
+      this.renderCumulativeRadarChart();
+      this.renderPostCategoryChart();
+      this.renderPostTrendCharts();
+    },
+    renderCityAvgChart() {
+      const chart = this.charts.cityAvg;
       if (!chart) return;
-      const { categories, businessTrip, training, attendance } = this.typeData;
-      const maxVal = Math.max(...businessTrip, ...training, ...attendance, 50);
-      const yMax = Math.min(280, Math.ceil(maxVal / 50) * 50 + 50);
-
+      const { categories, values, provincialAvg } = this.cityAvgData;
       chart.setOption(
         baseChartOption({
           tooltip: { trigger: "axis" },
-          legend: legendTopCenter(["出差工时", "培训工时", "出勤工时"]),
-          grid: { left: "2%", right: "3%", top: "16%", bottom: "18%", containLabel: true },
+          legend: legendTopCenter(["平均工时", "全省平均工时"]),
+          grid: { left: "2%", right: "3%", top: "14%", bottom: "16%", containLabel: true },
           xAxis: {
             type: "category",
-            boundaryGap: false,
             data: categories,
-            axisLabel: {
-              interval: 0,
-              rotate: categories.length > 8 ? 40 : 0,
-              fontSize: 11,
-              hideOverlap: true,
-            },
+            axisLabel: { interval: 0, rotate: 35, fontSize: 11 },
           },
-          yAxis: {
-            type: "value",
-            min: 0,
-            max: yMax,
-            interval: Math.max(50, Math.round(yMax / 5)),
-          },
+          yAxis: { type: "value", min: 0, max: 220, interval: 40 },
           series: [
             {
-              name: "出差工时",
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 6,
-              lineStyle: { width: 2, color: HOUR_TYPE_COLORS.businessTrip },
-              itemStyle: { color: HOUR_TYPE_COLORS.businessTrip },
-              data: businessTrip,
+              name: "平均工时",
+              type: "bar",
+              barMaxWidth: 28,
+              itemStyle: { color: "#1890FF", borderRadius: [3, 3, 0, 0] },
+              data: values,
             },
             {
-              name: "培训工时",
+              name: "全省平均工时",
               type: "line",
+              symbol: "none",
+              lineStyle: { type: "dashed", color: "#FA8C16", width: 2 },
+              markLine: {
+                silent: true,
+                symbol: "none",
+                lineStyle: { color: "#FA8C16", type: "dashed" },
+                label: { formatter: `全省平均 ${provincialAvg}h`, color: "#FA8C16" },
+                data: [{ yAxis: provincialAvg }],
+              },
+              data: [],
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderProvinceDistChart() {
+      const chart = this.charts.provinceDist;
+      if (!chart) return;
+      const { categories, perCapita, cumulative, provincialAvg } = this.provinceDistData;
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis" },
+          legend: legendTopCenter(["累计工时", "人均工时", "全省平均"]),
+          grid: { left: "2%", right: "4%", top: "16%", bottom: "18%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            axisLabel: { interval: 0, rotate: 35, fontSize: 10 },
+          },
+          yAxis: [
+            { type: "value", name: "累计", min: 0 },
+            { type: "value", name: "人均(h)", min: 0, max: 12, splitLine: { show: false } },
+          ],
+          series: [
+            {
+              name: "累计工时",
+              type: "line",
+              yAxisIndex: 0,
               smooth: true,
-              symbol: "circle",
-              symbolSize: 6,
-              lineStyle: { width: 2, color: HOUR_TYPE_COLORS.training },
-              itemStyle: { color: HOUR_TYPE_COLORS.training },
-              data: training,
+              symbol: "none",
+              lineStyle: { width: 0 },
+              areaStyle: {
+                color: {
+                  type: "linear", x: 0, y: 0, x2: 0, y2: 1,
+                  colorStops: [
+                    { offset: 0, color: "rgba(24,144,255,0.45)" },
+                    { offset: 1, color: "rgba(24,144,255,0.05)" },
+                  ],
+                },
+              },
+              data: cumulative,
             },
             {
-              name: "出勤工时",
+              name: "人均工时",
+              type: "bar",
+              yAxisIndex: 1,
+              barMaxWidth: 16,
+              itemStyle: { color: "#69C0FF", borderRadius: [2, 2, 0, 0] },
+              data: perCapita,
+            },
+            {
+              name: "全省平均",
+              type: "line",
+              yAxisIndex: 1,
+              symbol: "none",
+              lineStyle: { type: "dashed", color: "#FA8C16", width: 2 },
+              markLine: {
+                silent: true,
+                symbol: "none",
+                data: [{ yAxis: provincialAvg }],
+                lineStyle: { color: "#FA8C16", type: "dashed" },
+              },
+              data: [],
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderCumulativeRadarChart() {
+      const chart = this.charts.cumulativeRadar;
+      if (!chart) return;
+      const { dims, values } = this.cumulativeRadarData;
+      const maxVal = Math.max(...values, 80);
+      chart.setOption(
+        baseChartOption({
+          radar: {
+            indicator: dims.map((name) => ({ name, max: maxVal + 15 })),
+            radius: "62%",
+            center: ["50%", "52%"],
+            axisName: { color: "#606266", fontSize: 11 },
+            splitArea: { areaStyle: { color: ["#fff", "#FAFAFA"] } },
+          },
+          series: [{
+            type: "radar",
+            symbol: "circle",
+            symbolSize: 5,
+            data: [{
+              value: values,
+              name: "累计工时",
+              lineStyle: { color: "#1890FF", width: 2 },
+              itemStyle: { color: "#1890FF" },
+              areaStyle: { color: withAlpha("#1890FF", 0.25) },
+            }],
+          }],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderPostCategoryChart() {
+      const chart = this.charts.postCategory;
+      if (!chart) return;
+      const { categories, management, professional, skill } = this.postCategoryData;
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis" },
+          legend: legendTopCenter(["管理类", "专业技术类", "技能类"]),
+          grid: { left: "2%", right: "2%", top: "14%", bottom: "16%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            axisLabel: { interval: 0, rotate: 35, fontSize: 10 },
+          },
+          yAxis: { type: "value", min: 0, max: 240, interval: 40 },
+          series: [
+            { name: "管理类", type: "bar", barMaxWidth: 12, itemStyle: { color: "#1890FF" }, data: management },
+            { name: "专业技术类", type: "bar", barMaxWidth: 12, itemStyle: { color: "#52C41A" }, data: professional },
+            { name: "技能类", type: "bar", barMaxWidth: 12, itemStyle: { color: "#FAAD14" }, data: skill },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderPostTrendCharts() {
+      this.renderSingleTrendChart("trendSkill", "skill", ["变电", "配电"], ["#EB2F96", "#1A558E"]);
+      this.renderSingleTrendChart("trendProf", "professional", ["营销", "方式"], ["#FA8C16", "#1A558E"]);
+      this.renderSingleTrendChart("trendMgmt", "management", ["人资", "党群"], ["#52C41A", "#8C8C8C"]);
+    },
+    renderSingleTrendChart(chartKey, dataKey, names, colors) {
+      const chart = this.charts[chartKey];
+      if (!chart) return;
+      const { categories } = this.postTrendData;
+      const pair = this.postTrendData[dataKey];
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis" },
+          legend: legendTopCenter(names),
+          grid: { left: "4%", right: "4%", top: "22%", bottom: "18%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            axisLabel: { interval: 1, rotate: 40, fontSize: 9 },
+          },
+          yAxis: { type: "value", min: 0, max: 240, splitNumber: 4 },
+          series: [
+            {
+              name: names[0],
               type: "line",
               smooth: true,
               symbol: "circle",
-              symbolSize: 6,
-              lineStyle: { width: 2, color: HOUR_TYPE_COLORS.attendance },
-              itemStyle: { color: HOUR_TYPE_COLORS.attendance },
-              data: attendance,
+              symbolSize: 4,
+              lineStyle: { width: 2, color: colors[0] },
+              itemStyle: { color: colors[0] },
+              data: pair.seriesA,
+            },
+            {
+              name: names[1],
+              type: "line",
+              smooth: true,
+              symbol: "circle",
+              symbolSize: 4,
+              lineStyle: { width: 2, color: colors[1] },
+              itemStyle: { color: colors[1] },
+              data: pair.seriesB,
             },
           ],
         }),
@@ -732,59 +853,6 @@ export default {
                   areaStyle: { color: withAlpha(C.blueDark, 0.15) },
                 },
               ],
-            },
-          ],
-        }),
-        true
-      );
-      chart.resize();
-    },
-    renderUnitDeptChart() {
-      const chart = this.charts.unitDept;
-      if (!chart) return;
-      const { categories, values } = this.unitDeptData;
-      const dimLabel = this.unitDeptQuery.dimension === "unit" ? "按单位" : "按部门";
-
-      chart.setOption(
-        baseChartOption({
-          title: {
-            text: "专业工时差异",
-            left: "center",
-            top: 4,
-            textStyle: { fontSize: 14, fontWeight: 600, color: "#303133" },
-          },
-          tooltip: {
-            trigger: "axis",
-            formatter: (params) => {
-              const p = params[0];
-              return `${p.name}<br/>工时差异指数：<strong>${p.value}%</strong><br/>维度：${dimLabel}`;
-            },
-          },
-          grid: { left: "2%", right: "3%", top: "18%", bottom: "16%", containLabel: true },
-          xAxis: {
-            type: "category",
-            boundaryGap: false,
-            data: categories,
-            axisLabel: { interval: 0, rotate: 32, fontSize: 11, hideOverlap: true },
-          },
-          yAxis: {
-            type: "value",
-            min: 0,
-            max: 100,
-            interval: 20,
-            axisLabel: { formatter: "{value}%", fontSize: 11 },
-          },
-          series: [
-            {
-              name: "专业工时差异",
-              type: "line",
-              smooth: true,
-              symbol: "circle",
-              symbolSize: 7,
-              lineStyle: { width: 2.5, color: "#13C2C2" },
-              itemStyle: { color: "#13C2C2", borderColor: "#fff", borderWidth: 2 },
-              areaStyle: { color: "rgba(19,194,194,0.12)" },
-              data: values,
             },
           ],
         }),
@@ -917,6 +985,86 @@ export default {
   color: #909399;
 }
 
+.chart-section--flat {
+  padding-bottom: 4px;
+  box-shadow: none;
+}
+
+.section-form--compact {
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+}
+
+.kpi-row {
+  display: grid;
+  grid-template-columns: repeat(4, 1fr);
+  gap: 12px;
+  width: 100%;
+}
+
+.kpi-card {
+  padding: 16px 18px;
+  background: #fff;
+  border: 1px solid #eef0f3;
+  border-radius: 4px;
+  box-shadow: 0 1px 4px rgba(0, 0, 0, 0.04);
+}
+
+.kpi-card__value {
+  font-size: 26px;
+  font-weight: 600;
+  color: #1890ff;
+  line-height: 1.2;
+}
+
+.kpi-card__unit {
+  font-size: 14px;
+  font-weight: 500;
+  margin-left: 2px;
+}
+
+.kpi-card__label {
+  margin-top: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #303133;
+}
+
+.kpi-card__desc {
+  margin-top: 4px;
+  font-size: 12px;
+  color: #909399;
+}
+
+.chart-grid-2 {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+}
+
+.trend-chart-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 12px;
+  width: 100%;
+  min-width: 0;
+}
+
+.trend-chart-item {
+  min-width: 0;
+}
+
+.chart-subtitle {
+  margin: 0 0 6px;
+  font-size: 13px;
+  font-weight: 500;
+  color: #606266;
+  text-align: center;
+}
+
 .chart-box {
   display: block;
   width: 100%;
@@ -931,6 +1079,14 @@ export default {
 
 .chart-box--md {
   height: 320px;
+}
+
+.chart-box--sm {
+  height: 240px;
+}
+
+.chart-box--radar {
+  height: 340px;
 }
 
 .stats-section {
@@ -964,6 +1120,20 @@ export default {
 .stats-pagination {
   margin-top: 14px;
   text-align: right;
+}
+
+@media (max-width: 1200px) {
+  .kpi-row {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .chart-grid-2 {
+    grid-template-columns: 1fr;
+  }
+
+  .trend-chart-grid {
+    grid-template-columns: 1fr;
+  }
 }
 
 @media (max-width: 768px) {
