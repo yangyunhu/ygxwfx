@@ -124,14 +124,10 @@
       <div ref="hoursChart" class="chart-box" />
     </section>
 
-    <!-- 图表3：部门迟到&早退情况 -->
+    <!-- 图表3：各单位迟到&早退情况 -->
     <section class="chart-card">
       <div class="chart-card__header">
-        <h3 class="chart-card__title">部门迟到&amp;早退情况</h3>
-        <el-radio-group v-model="lateEarlyDimension" size="small" @change="handleLateEarlyDimChange">
-          <el-radio-button label="unit">按单位</el-radio-button>
-          <el-radio-button label="department">按部门</el-radio-button>
-        </el-radio-group>
+        <h3 class="chart-card__title">各单位迟到&amp;早退情况</h3>
       </div>
       <div ref="lateEarlyChart" class="chart-box" />
     </section>
@@ -202,12 +198,10 @@ export default {
       professionalPath: [...DEFAULT_PROFESSIONAL_PATH],
       attendanceDayTypeFilter: "all",
       unitLeaveTypeFilter: DEFAULT_UNIT_LEAVE_TYPE,
-      lateEarlyDimension: "department",
       snapshot: buildComparisonDashboard(DEFAULT_COMPARISON_QUERY, {
         professionalPath: DEFAULT_PROFESSIONAL_PATH,
         attendanceDayTypeFilter: "all",
         unitLeaveTypeFilter: DEFAULT_UNIT_LEAVE_TYPE,
-        lateEarlyDimension: "department",
       }),
       charts: {},
       resizeHandler: null,
@@ -252,7 +246,6 @@ export default {
         professionalPath: this.professionalPath,
         attendanceDayTypeFilter: this.attendanceDayTypeFilter,
         unitLeaveTypeFilter: this.unitLeaveTypeFilter,
-        lateEarlyDimension: this.lateEarlyDimension,
       });
       this.$nextTick(() => this.renderAllCharts());
     },
@@ -267,7 +260,6 @@ export default {
       this.professionalPath = [...DEFAULT_PROFESSIONAL_PATH];
       this.attendanceDayTypeFilter = "all";
       this.unitLeaveTypeFilter = DEFAULT_UNIT_LEAVE_TYPE;
-      this.lateEarlyDimension = "department";
       this.refreshData();
     },
     handlePositionCategoryChange(category) {
@@ -286,9 +278,6 @@ export default {
       this.refreshData();
     },
     handleProfessionalPathChange() {
-      this.refreshData();
-    },
-    handleLateEarlyDimChange() {
       this.refreshData();
     },
     handleUnitLeaveTypeChange() {
@@ -490,7 +479,7 @@ export default {
           xAxis: {
             type: "category",
             data: categories,
-            axisLabel: { interval: 0, rotate: categories.length > 8 ? 30 : 0, fontSize: 11 },
+            axisLabel: { interval: 0, rotate: 35, fontSize: 11 },
           },
           yAxis: { type: "value", min: 0 },
           series: [

@@ -48,6 +48,50 @@
       </section>
 
       <section class="chart-section">
+        <div class="section-header-row">
+          <h3 class="section-title section-title--plain">各单位累计工时&amp;培训工时分布情况</h3>
+          <div class="section-header__controls">
+            <span class="control-label">专业分类：</span>
+            <el-cascader
+              v-model="hoursDistProfessionalPath"
+              :options="professionalCategoryOptions"
+              :props="professionalCascaderProps"
+              size="small"
+              clearable
+              filterable
+              placeholder="选择专业分类"
+              class="filter-cascader--professional"
+              @change="handleHoursDistProfessionalChange"
+            />
+          </div>
+        </div>
+        <el-form :inline="true" size="small" class="section-form">
+          <el-form-item label="时间：">
+            <el-date-picker
+              v-model="hoursDistQuery.startDate"
+              type="date"
+              placeholder="开始日期"
+              value-format="yyyy-MM-dd"
+              style="width: 140px"
+            />
+            <span class="date-sep">~</span>
+            <el-date-picker
+              v-model="hoursDistQuery.endDate"
+              type="date"
+              placeholder="结束日期"
+              value-format="yyyy-MM-dd"
+              style="width: 140px"
+            />
+          </el-form-item>
+          <el-form-item class="section-form__actions">
+            <el-button type="primary" icon="el-icon-search" @click="handleHoursDistQuery">查询</el-button>
+            <el-button icon="el-icon-refresh" @click="resetHoursDistQuery">重置</el-button>
+          </el-form-item>
+        </el-form>
+        <div ref="unitHoursDistChart" class="chart-box" />
+      </section>
+
+      <section class="chart-section">
         <h3 class="section-title">
           <span class="section-dot" />
           按单位及部门展示
@@ -174,6 +218,7 @@ import {
   SPECIALTY_OPTIONS,
   DEFAULT_HOUR_ANALYSIS_QUERY,
   DEFAULT_UNIT_DEPT_QUERY,
+  DEFAULT_UNIT_HOURS_DIST_QUERY,
   DEFAULT_DISTRIBUTION_QUERY,
   DIST_STATS_UNIT_OPTIONS,
   DIST_STATS_SPECIALTY_OPTIONS,
@@ -183,6 +228,11 @@ import {
   filterSpecialtyStatsRows,
   unitLabel,
 } from "../utils/workHourAnalysisData";
+import { buildWorkHoursDistributionData } from "../utils/unitAttendanceComparisonData";
+import {
+  professionalToCascaderOptions,
+  DEFAULT_PROFESSIONAL_PATH,
+} from "../utils/professionalClassification";
 import { downloadTableWithLog } from "../utils/exportLogger";
 
 const HOUR_TYPE_COLORS = {
@@ -207,12 +257,19 @@ export default {
       distUnitOptions: DIST_STATS_UNIT_OPTIONS,
       distSpecialtyOptions: DIST_STATS_SPECIALTY_OPTIONS,
       typeQuery: { ...DEFAULT_HOUR_ANALYSIS_QUERY },
+      hoursDistQuery: { ...DEFAULT_UNIT_HOURS_DIST_QUERY },
+      hoursDistProfessionalPath: [...DEFAULT_PROFESSIONAL_PATH],
+      professionalCascaderProps: { checkStrictly: true, expandTrigger: "hover" },
       unitDeptQuery: { ...DEFAULT_UNIT_DEPT_QUERY },
       distQuery: { ...DEFAULT_DISTRIBUTION_QUERY },
       distAllRows: generateSpecialtyStatsRows(),
       distCurrentPage: 1,
       distPageSize: 10,
       typeData: buildHourTypeByCity(DEFAULT_HOUR_ANALYSIS_QUERY),
+      hoursDistData: buildWorkHoursDistributionData(
+        DEFAULT_UNIT_HOURS_DIST_QUERY,
+        DEFAULT_PROFESSIONAL_PATH
+      ),
       unitDeptData: buildSpecialtyHourDiff(DEFAULT_UNIT_DEPT_QUERY),
       charts: {},
       resizeHandler: null,
@@ -226,6 +283,9 @@ export default {
     pagedDistTableData() {
       const start = (this.distCurrentPage - 1) * this.distPageSize;
       return this.filteredDistTableData.slice(start, start + this.distPageSize);
+    },
+    professionalCategoryOptions() {
+      return professionalToCascaderOptions();
     },
   },
   watch: {
@@ -268,7 +328,7 @@ export default {
         if (this.panelActive) this.resizeCharts();
       });
       this.$nextTick(() => {
-        ["typeChart", "unitDeptChart"].forEach((refName) => {
+        ["typeChart", "unitHoursDistChart", "unitDeptChart"].forEach((refName) => {
           const el = this.$refs[refName];
           if (el) this.resizeObserver.observe(el);
         });
@@ -277,6 +337,7 @@ export default {
     initCharts(forceReinit = false) {
       const refs = {
         type: "typeChart",
+        unitHoursDist: "unitHoursDistChart",
         unitDept: "unitDeptChart",
       };
       Object.keys(refs).forEach((key) => {
@@ -296,6 +357,12 @@ export default {
     },
     refreshTypeData() {
       this.typeData = buildHourTypeByCity(this.typeQuery);
+    },
+    refreshHoursDistData() {
+      this.hoursDistData = buildWorkHoursDistributionData(
+        this.hoursDistQuery,
+        this.hoursDistProfessionalPath
+      );
     },
     refreshUnitDeptData() {
       this.unitDeptData = buildSpecialtyHourDiff(this.unitDeptQuery);
@@ -373,6 +440,20 @@ export default {
       this.refreshTypeData();
       this.renderTypeChart();
     },
+    handleHoursDistQuery() {
+      this.refreshHoursDistData();
+      this.renderUnitHoursDistChart();
+    },
+    resetHoursDistQuery() {
+      this.hoursDistQuery = { ...DEFAULT_UNIT_HOURS_DIST_QUERY };
+      this.hoursDistProfessionalPath = [...DEFAULT_PROFESSIONAL_PATH];
+      this.refreshHoursDistData();
+      this.renderUnitHoursDistChart();
+    },
+    handleHoursDistProfessionalChange() {
+      this.refreshHoursDistData();
+      this.renderUnitHoursDistChart();
+    },
     handleUnitDeptQuery() {
       this.refreshUnitDeptData();
       this.renderUnitDeptChart();
@@ -384,6 +465,7 @@ export default {
     },
     renderAllCharts() {
       this.renderTypeChart();
+      this.renderUnitHoursDistChart();
       this.renderUnitDeptChart();
     },
     renderTypeChart() {
@@ -445,6 +527,70 @@ export default {
               lineStyle: { width: 2, color: HOUR_TYPE_COLORS.attendance },
               itemStyle: { color: HOUR_TYPE_COLORS.attendance },
               data: attendance,
+            },
+          ],
+        }),
+        true
+      );
+      chart.resize();
+    },
+    renderUnitHoursDistChart() {
+      const chart = this.charts.unitHoursDist;
+      if (!chart) return;
+      const { categories, workHours, trainingHours } = this.hoursDistData;
+
+      chart.setOption(
+        baseChartOption({
+          tooltip: { trigger: "axis" },
+          legend: { data: ["累计工时", "培训工时"], top: 0, left: "center" },
+          grid: { left: "2%", right: "2%", top: "14%", bottom: "12%", containLabel: true },
+          xAxis: {
+            type: "category",
+            data: categories,
+            boundaryGap: false,
+            axisLabel: { interval: 0, rotate: 35, fontSize: 11 },
+          },
+          yAxis: { type: "value", min: 0 },
+          series: [
+            {
+              name: "累计工时",
+              type: "line",
+              smooth: false,
+              symbol: "none",
+              lineStyle: { width: 0 },
+              areaStyle: {
+                color: {
+                  type: "linear",
+                  x: 0, y: 0, x2: 0, y2: 1,
+                  colorStops: [
+                    { offset: 0, color: "rgba(245, 34, 45, 0.55)" },
+                    { offset: 1, color: "rgba(245, 34, 45, 0.08)" },
+                  ],
+                },
+              },
+              itemStyle: { color: "#F5222D" },
+              label: { show: true, position: "top", fontSize: 10, color: "#F5222D" },
+              data: workHours,
+            },
+            {
+              name: "培训工时",
+              type: "line",
+              smooth: false,
+              symbol: "none",
+              lineStyle: { width: 0 },
+              areaStyle: {
+                color: {
+                  type: "linear",
+                  x: 0, y: 0, x2: 0, y2: 1,
+                  colorStops: [
+                    { offset: 0, color: "rgba(250, 173, 20, 0.6)" },
+                    { offset: 1, color: "rgba(250, 173, 20, 0.05)" },
+                  ],
+                },
+              },
+              itemStyle: { color: "#FAAD14" },
+              label: { show: true, position: "top", fontSize: 10, color: "#FAAD14" },
+              data: trainingHours,
             },
           ],
         }),
@@ -568,6 +714,35 @@ export default {
   font-size: 14px;
   font-weight: 600;
   color: #303133;
+}
+
+.section-title--plain {
+  margin: 0;
+}
+
+.section-header-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.section-header__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.control-label {
+  font-size: 13px;
+  color: #606266;
+  white-space: nowrap;
+}
+
+.filter-cascader--professional {
+  width: 320px;
 }
 
 .section-dot {

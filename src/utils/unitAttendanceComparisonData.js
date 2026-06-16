@@ -25,11 +25,6 @@ const UNIT_SHORT_NAMES = [
   "楚雄", "红河", "文山", "西双版纳", "大理", "德宏", "怒江", "迪庆",
 ];
 
-const DEPARTMENTS = [
-  "安监部", "办公室", "政企业务部", "党建部", "变电管理部",
-  "人力资源部", "市场营销部", "财务部", "A部", "B部",
-];
-
 function seededRandom(seed) {
   const x = Math.sin(seed * 12.9898 + 78.233) * 43758.5453;
   return x - Math.floor(x);
@@ -70,24 +65,26 @@ function buildWorkHoursByUnit(seed, professionalPath = []) {
   });
 }
 
-/** 图表3：迟到早退 — 按单位 */
+/** 各单位累计工时 & 培训工时分布（供考勤对比、工时分析等页面复用） */
+export function buildWorkHoursDistributionData(queryParams = {}, professionalPath = []) {
+  const pathKey = Array.isArray(professionalPath) ? professionalPath.join("/") : "";
+  const seed = filterSeed({ ...queryParams, professionalPathKey: pathKey });
+  const rows = buildWorkHoursByUnit(seed, professionalPath);
+  return {
+    professionalPathText: formatProfessionalPath(professionalPath),
+    categories: rows.map((d) => d.name),
+    workHours: rows.map((d) => d.workHours),
+    trainingHours: rows.map((d) => d.trainingHours),
+  };
+}
+
+/** 图表3：各单位迟到早退 */
 function buildLateEarlyByUnit(seed) {
   return UNIT_SHORT_NAMES.map((name, idx) => {
     const r = seededRandom(seed + idx + 500);
     const attendanceDays = Math.round(18 + r * 8);
     const lateCount = Math.round(1 + seededRandom(seed + idx + 600) * 6);
     const earlyCount = Math.round(seededRandom(seed + idx + 700) * 4);
-    return { name, attendanceDays, lateCount, earlyCount };
-  });
-}
-
-/** 图表3：迟到早退 — 按部门 */
-function buildLateEarlyByDept(seed) {
-  return DEPARTMENTS.map((name, idx) => {
-    const r = seededRandom(seed + idx + 800);
-    const attendanceDays = Math.round(15 + r * 10);
-    const lateCount = Math.round(1 + seededRandom(seed + idx + 900) * 8);
-    const earlyCount = Math.round(seededRandom(seed + idx + 1000) * 5);
     return { name, attendanceDays, lateCount, earlyCount };
   });
 }
@@ -100,15 +97,12 @@ export function buildComparisonDashboard(queryParams = {}, options = {}) {
     attendanceDayTypeFilter: options.attendanceDayTypeFilter,
     professionalPathKey: pathKey,
   });
-  const lateEarlyDimension = options.lateEarlyDimension || "department";
   const attendanceDayTypeFilter = options.attendanceDayTypeFilter || "all";
   const unitLeaveTypeFilter = options.unitLeaveTypeFilter || DEFAULT_UNIT_LEAVE_TYPE;
 
   const attendanceDays = buildAttendanceDaysByUnit(seed, attendanceDayTypeFilter);
   const workHours = buildWorkHoursByUnit(seed, professionalPath);
-  const lateEarly = lateEarlyDimension === "unit"
-    ? buildLateEarlyByUnit(seed)
-    : buildLateEarlyByDept(seed);
+  const lateEarly = buildLateEarlyByUnit(seed);
   const leaveByUnit = getLeaveByUnitChartData(queryParams, unitLeaveTypeFilter);
 
   return {
@@ -127,7 +121,6 @@ export function buildComparisonDashboard(queryParams = {}, options = {}) {
       trainingHours: workHours.map((d) => d.trainingHours),
     },
     lateEarly: {
-      dimension: lateEarlyDimension,
       categories: lateEarly.map((d) => d.name),
       attendanceDays: lateEarly.map((d) => d.attendanceDays),
       lateCount: lateEarly.map((d) => d.lateCount),
@@ -171,10 +164,9 @@ export function getExportRows(snapshot) {
       snapshot.workHours.professionalPathText, "",
     ]);
   });
-  const dimLabel = snapshot.lateEarly.dimension === "unit" ? "按单位" : "按部门";
   snapshot.lateEarly.categories.forEach((name, i) => {
     rows.push([
-      `部门迟到早退(${dimLabel})`, name,
+      "各单位迟到早退", name,
       snapshot.lateEarly.attendanceDays[i],
       snapshot.lateEarly.lateCount[i],
       snapshot.lateEarly.earlyCount[i], "",

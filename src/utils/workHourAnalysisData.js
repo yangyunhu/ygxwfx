@@ -53,6 +53,11 @@ export const DEFAULT_UNIT_DEPT_QUERY = {
   dimension: "department",
 };
 
+export const DEFAULT_UNIT_HOURS_DIST_QUERY = {
+  startDate: "2025-01-01",
+  endDate: "2025-12-31",
+};
+
 export const DEFAULT_DISTRIBUTION_QUERY = {
   unit: "all",
   specialty: "all",
